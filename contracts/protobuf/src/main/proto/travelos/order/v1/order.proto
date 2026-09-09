@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package travelos.order.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+import "travelos/offer/v1/offer.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.order.v1";
+option java_outer_classname = "OrderProto";
+
+// The transactional truth. Every command is idempotent: N retries => 1 order.
+service OrderService {
+  rpc CreateOrder(CreateOrderCommand) returns (Order);
+  rpc GetOrder(GetOrderRequest) returns (Order);
+  rpc CancelOrder(CancelOrderCommand) returns (Order);
+}
+
+enum OrderStatus {
+  ORDER_STATUS_UNSPECIFIED = 0;
+  CREATING = 1;
+  HELD = 2;
+  PAYMENT_PENDING = 3;
+  CONFIRMING = 4;
+  CONFIRMED = 5;
+  CHANGE_PENDING = 6;
+  CHANGED = 7;
+  CANCELLATION_PENDING = 8;
+  CANCELLED = 9;
+  FAILED = 10;
+  PARTIALLY_FAILED = 11;
+}
+
+enum OrderItemStatus {
+  ORDER_ITEM_STATUS_UNSPECIFIED = 0;
+  ITEM_PENDING = 1;
+  ITEM_HELD = 2;
+  ITEM_CONFIRMED = 3;
+  ITEM_FAILED = 4;
+  ITEM_CANCELLED = 5;
+}
+
+message OrderItem {
+  string item_id = 1;
+  travelos.offer.v1.Offer offer = 2;
+  OrderItemStatus status = 3;
+  string external_ref = 4;
+  string record_locator = 5;
+}
+
+message Order {
+  string order_id = 1;
+  string tenant_id = 2;
+  string trip_id = 3;
+
+  string supplier = 4;
+  string external_order_id = 5;
+
+  OrderStatus status = 6;
+  travelos.common.v1.Money total = 7;
+  repeated OrderItem items = 8;
+
+  string idempotency_key = 9;
+
+  // Evidence chain — the decision ledger hangs off these.
+  string policy_decision_id = 10;
+  string optimization_run_id = 11;
+  string approval_id = 12;
+
+  int64 version = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
+}
+
+message CreateOrderCommand {
+  // ctx.idempotency_key is REQUIRED.
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  string traveler_id = 3;
+  travelos.offer.v1.Bundle bundle = 4;
+
+  string policy_decision_id = 5;
+  string optimization_run_id = 6;
+  // Empty when policy did not require approval.
+  string approval_id = 7;
+}
+
+message GetOrderRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string order_id = 2;
+}
+
+message CancelOrderCommand {
+  travelos.common.v1.RequestContext ctx = 1;
+  string order_id = 2;
+  string reason = 3;
+}

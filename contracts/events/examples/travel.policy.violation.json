@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.policy.violation",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "policy",
+  "data": {"decisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RM","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","policyId":"US_STANDARD_TRAVEL","policyVersion":12,"reasons":[{"code":"CABIN_NOT_PERMITTED","ruleId":"DOMESTIC_ECONOMY_ONLY","message":"BUSINESS cabin is not permitted on domestic itineraries"}],"attemptedBy":"agent/travel-planner/v1"}
+}

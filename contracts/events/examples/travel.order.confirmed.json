@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.order.confirmed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "data": {"orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","supplier":"sandbox-air","externalOrderId":"SBX-4F9K2Q","total":{"currency":"USD","amountMinor":82000},"items":[{"itemId":"itm_01K4Q0N7S6Z2X8G5H3J9M1P7RJ","type":"AIR","status":"CONFIRMED","externalRef":"SBX-4F9K2Q","recordLocator":"K2Q4F9"}]}
+}

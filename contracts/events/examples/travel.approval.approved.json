@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.approval.approved",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "approval",
+  "data": {"approvalId":"apr_01K4Q0N7S6Z2X8G5H3J9M1P7RH","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","decidedBy":"human/bob","comment":"Customer meeting approved."}
+}

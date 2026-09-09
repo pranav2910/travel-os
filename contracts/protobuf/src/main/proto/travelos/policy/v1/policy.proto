@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package travelos.policy.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+import "travelos/offer/v1/offer.proto";
+import "travelos/trip/v1/trip.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.policy.v1";
+option java_outer_classname = "PolicyProto";
+
+// Deterministic. Versioned. Explainable. Never returns a bare boolean.
+service PolicyService {
+  // "Can these itineraries be booked for this traveler?" — one decision per candidate bundle.
+  rpc EvaluateTrip(EvaluateTripRequest) returns (EvaluateTripResponse);
+  // "May this principal (typically an agent) do THIS action NOW?" e.g. rebook an existing order for +$83.
+  rpc EvaluateAction(EvaluateActionRequest) returns (PolicyDecision);
+}
+
+enum Outcome {
+  OUTCOME_UNSPECIFIED = 0;
+  ALLOW = 1;
+  ALLOW_WITH_APPROVAL = 2;
+  DENY = 3;
+}
+
+message ReasonCode {
+  // Stable machine code, e.g. "CABIN_NOT_PERMITTED".
+  string code = 1;
+  string rule_id = 2;
+  // Human-readable, safe to show to the traveler.
+  string message = 3;
+}
+
+message ApproverRequirement {
+  // MANAGER | TRAVEL_ADMIN | FINANCE
+  string role = 1;
+  string reason_code = 2;
+}
+
+message PolicyDecision {
+  string decision_id = 1;
+  string policy_id = 2;
+  int32 policy_version = 3;
+
+  Outcome outcome = 4;
+  repeated string rules_evaluated = 5;
+  repeated ReasonCode reasons = 6;
+
+  bool requires_approval = 7;
+  repeated ApproverRequirement approvers = 8;
+
+  google.protobuf.Timestamp evaluated_at = 9;
+}
+
+message EvaluateTripRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  string traveler_id = 3;
+  travelos.trip.v1.TravelIntent intent = 4;
+  repeated travelos.offer.v1.Bundle candidates = 5;
+}
+
+message CandidateDecision {
+  string bundle_id = 1;
+  PolicyDecision decision = 2;
+}
+
+message EvaluateTripResponse {
+  string evaluation_id = 1;
+  repeated CandidateDecision candidates = 2;
+}
+
+message EvaluateActionRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  string traveler_id = 3;
+  // Capability being exercised: "order.create" | "order.change" | "order.cancel".
+  string action = 4;
+  travelos.common.v1.Money incremental_cost = 5;
+  travelos.offer.v1.Bundle proposed = 6;
+}

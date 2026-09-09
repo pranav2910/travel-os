@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/common.schema.json",
+  "title": "CommonEventTypes",
+  "$defs": {
+    "money": {
+      "type": "object",
+      "required": ["currency", "amountMinor"],
+      "additionalProperties": false,
+      "properties": {
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "amountMinor": { "type": "integer" }
+      }
+    },
+    "tripId": { "type": "string", "pattern": "^trip_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "orderId": { "type": "string", "pattern": "^ord_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "bundleId": { "type": "string", "pattern": "^bdl_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "policyDecisionId": { "type": "string", "pattern": "^pd_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "optimizationRunId": { "type": "string", "pattern": "^opt_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "approvalId": { "type": "string", "pattern": "^apr_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "searchSessionId": { "type": "string", "pattern": "^srch_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "idempotencyKey": { "type": "string", "pattern": "^[A-Za-z0-9_-]{1,64}:[A-Z][A-Z0-9-]{0,63}:[0-9]{1,9}$" },
+    "principal": { "type": "string", "pattern": "^(human|service|agent)/[a-z0-9][a-z0-9-]*(/v[0-9]+)?$" }
+  }
+}

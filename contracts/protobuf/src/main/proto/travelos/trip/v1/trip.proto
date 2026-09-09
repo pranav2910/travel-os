@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package travelos.trip.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.trip.v1";
+option java_outer_classname = "TripProto";
+
+enum TripStatus {
+  TRIP_STATUS_UNSPECIFIED = 0;
+  DRAFT = 1;
+  SUBMITTED = 2;
+  PLANNING = 3;
+  AWAITING_APPROVAL = 4;
+  APPROVED = 5;
+  BOOKING = 6;
+  BOOKED = 7;
+  CANCELLED = 8;
+  FAILED = 9;
+}
+
+// What the traveler needs, independent of how it is fulfilled.
+// Produced by intent extraction (an LLM, or an explicit form) and then frozen — search, policy and
+// optimization all reason over this, never over the original free text.
+message TravelIntent {
+  // IATA airport codes.
+  string origin = 1;
+  string destination = 2;
+
+  google.protobuf.Timestamp earliest_departure = 3;
+  google.protobuf.Timestamp arrival_deadline = 4;
+  google.protobuf.Timestamp return_after = 5;
+  google.protobuf.Timestamp latest_return = 6;
+
+  string purpose = 7;
+  bool hotel_required = 8;
+  // Slice 1: always 1.
+  int32 travelers = 9;
+}
+
+message Trip {
+  string trip_id = 1;
+  string tenant_id = 2;
+  string traveler_id = 3;
+
+  TravelIntent intent = 4;
+  TripStatus status = 5;
+
+  // Evidence chain: set as the trip moves through planning.
+  string selected_bundle_id = 6;
+  string optimization_run_id = 7;
+  string policy_decision_id = 8;
+  string approval_id = 9;
+  string order_id = 10;
+
+  int64 version = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp updated_at = 13;
+}

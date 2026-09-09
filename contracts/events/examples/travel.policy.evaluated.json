@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.policy.evaluated",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "policy",
+  "data": {"decisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RF","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","bundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD","policyId":"US_STANDARD_TRAVEL","policyVersion":12,"outcome":"ALLOW_WITH_APPROVAL","rulesEvaluated":["DOMESTIC_ECONOMY_ONLY","LOWEST_LOGICAL_FARE_DELTA","MANAGER_APPROVAL_THRESHOLD"],"reasons":[{"code":"AMOUNT_ABOVE_APPROVAL_THRESHOLD","ruleId":"MANAGER_APPROVAL_THRESHOLD","message":"Total USD 820.00 exceeds USD 500.00 auto-approve limit"}],"requiresApproval":true,"evaluatedFor":"human/alice"}
+}

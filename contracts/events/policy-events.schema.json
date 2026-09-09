@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/policy-events.schema.json",
+  "title": "PolicyEvents",
+  "$defs": {
+    "reason": {
+      "type": "object",
+      "required": ["code", "ruleId"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "ruleId": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "maxLength": 1000 }
+      }
+    },
+    "travel.policy.evaluated": {
+      "type": "object",
+      "required": ["decisionId", "tripId", "policyId", "policyVersion", "outcome", "rulesEvaluated", "requiresApproval"],
+      "additionalProperties": false,
+      "properties": {
+        "decisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "bundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
+        "action": { "type": "string", "pattern": "^[a-z]+\\.[a-z]+$" },
+        "policyId": { "type": "string", "minLength": 1 },
+        "policyVersion": { "type": "integer", "minimum": 1 },
+        "outcome": { "enum": ["ALLOW", "ALLOW_WITH_APPROVAL", "DENY"] },
+        "rulesEvaluated": { "type": "array", "items": { "type": "string" } },
+        "reasons": { "type": "array", "items": { "$ref": "#/$defs/reason" } },
+        "requiresApproval": { "type": "boolean" },
+        "evaluatedFor": { "$ref": "common.schema.json#/$defs/principal" }
+      }
+    },
+    "travel.policy.violation": {
+      "type": "object",
+      "required": ["decisionId", "tripId", "policyId", "policyVersion", "reasons"],
+      "additionalProperties": false,
+      "properties": {
+        "decisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "policyId": { "type": "string", "minLength": 1 },
+        "policyVersion": { "type": "integer", "minimum": 1 },
+        "reasons": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/reason" } },
+        "attemptedBy": { "$ref": "common.schema.json#/$defs/principal" }
+      }
+    }
+  }
+}

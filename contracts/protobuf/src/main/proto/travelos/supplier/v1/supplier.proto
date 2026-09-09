@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package travelos.supplier.v1;
+
+import "travelos/common/v1/common.proto";
+import "travelos/offer/v1/offer.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.supplier.v1";
+option java_outer_classname = "SupplierProto";
+
+// The ONLY door to the outside world. Services never see Amadeus/Sabre/NDC shapes — adapters behind
+// this interface normalize them. Rate limits, circuit breakers and retries live behind it too.
+service SupplierGateway {
+  rpc SearchAir(SearchAirRequest) returns (SearchAirResponse);
+  // Re-price before booking: offers expire and prices move.
+  rpc PriceOffer(PriceOfferRequest) returns (PriceOfferResponse);
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse);
+  // Slice 2 (disruption recovery). Adapters may return UNIMPLEMENTED until then.
+  rpc ChangeOrder(ChangeOrderRequest) returns (ChangeOrderResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+}
+
+message SearchAirRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string origin = 2;
+  string destination = 3;
+  travelos.common.v1.TimeWindow outbound_departure = 4;
+  // Absent => one-way.
+  travelos.common.v1.TimeWindow return_departure = 5;
+  int32 passengers = 6;
+  repeated travelos.common.v1.Cabin cabins = 7;
+}
+
+message SupplierError {
+  string provider = 1;
+  string code = 2;
+  string message = 3;
+  bool retryable = 4;
+}
+
+message SearchAirResponse {
+  string search_session_id = 1;
+  repeated travelos.offer.v1.Offer offers = 2;
+  // Partial results are normal: one adapter failing must not fail the search.
+  repeated SupplierError errors = 3;
+}
+
+message PriceOfferRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+  string provider_offer_id = 3;
+}
+
+message PriceOfferResponse {
+  travelos.offer.v1.Offer offer = 1;
+  bool price_changed = 2;
+}
+
+// Minimal passenger data. Passport / national ID never travels through here — that belongs to a
+// separately encrypted vault domain when (if) international travel is added.
+message Passenger {
+  string given_name = 1;
+  string family_name = 2;
+  string email = 3;
+  string loyalty_number = 4;
+}
+
+enum SupplierOrderStatus {
+  SUPPLIER_ORDER_STATUS_UNSPECIFIED = 0;
+  HELD = 1;
+  CONFIRMED = 2;
+  FAILED = 3;
+  CANCELLED = 4;
+  CHANGED = 5;
+}
+
+message CreateOrderRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+  string provider_offer_id = 3;
+  repeated Passenger passengers = 4;
+  // Opaque token from the payment provider — never a PAN.
+  string payment_token = 5;
+}
+
+message CreateOrderResponse {
+  string external_order_id = 1;
+  string record_locator = 2;
+  SupplierOrderStatus status = 3;
+  travelos.common.v1.Money charged = 4;
+  repeated string ticket_numbers = 5;
+}
+
+message ChangeOrderRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+  string external_order_id = 3;
+  string new_provider_offer_id = 4;
+}
+
+message ChangeOrderResponse {
+  string external_order_id = 1;
+  SupplierOrderStatus status = 2;
+  travelos.common.v1.Money incremental_cost = 3;
+}
+
+message CancelOrderRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+  string external_order_id = 3;
+}
+
+message CancelOrderResponse {
+  string external_order_id = 1;
+  SupplierOrderStatus status = 2;
+  travelos.common.v1.Money refund = 3;
+}

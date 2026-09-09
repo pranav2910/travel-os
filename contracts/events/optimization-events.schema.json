@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/optimization-events.schema.json",
+  "title": "OptimizationEvents",
+  "$defs": {
+    "travel.optimization.completed": {
+      "type": "object",
+      "required": ["optimizationRunId", "tripId", "candidatesEvaluated", "feasibleCandidates", "solver"],
+      "additionalProperties": false,
+      "properties": {
+        "optimizationRunId": { "$ref": "common.schema.json#/$defs/optimizationRunId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "selectedBundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
+        "selectedScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "candidatesEvaluated": { "type": "integer", "minimum": 0 },
+        "feasibleCandidates": { "type": "integer", "minimum": 0 },
+        "solver": { "type": "string", "minLength": 1 },
+        "solveTimeMs": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

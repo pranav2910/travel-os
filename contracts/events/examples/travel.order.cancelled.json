@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.order.cancelled",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "data": {"orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","refund":{"currency":"USD","amountMinor":82000},"reason":"Trip cancelled by traveler","cancelledBy":"human/alice"}
+}

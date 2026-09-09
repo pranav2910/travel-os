@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package travelos.offer.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.offer.v1";
+option java_outer_classname = "OfferProto";
+
+// Offers are what suppliers are willing to sell RIGHT NOW. They expire, they are not bookings.
+// Offer != Order.
+
+enum OfferType {
+  OFFER_TYPE_UNSPECIFIED = 0;
+  AIR = 1;
+  HOTEL = 2;
+  GROUND = 3;
+}
+
+message FlightSegment {
+  string segment_id = 1;
+  // IATA airline code, e.g. "DL".
+  string carrier = 2;
+  // e.g. "DL291".
+  string flight_number = 3;
+  string origin = 4;
+  string destination = 5;
+  google.protobuf.Timestamp departure = 6;
+  google.protobuf.Timestamp arrival = 7;
+  travelos.common.v1.Cabin cabin = 8;
+  string booking_class = 9;
+  string aircraft = 10;
+}
+
+// One direction of travel (NDC: PaxJourney). One or more segments.
+message Journey {
+  repeated FlightSegment segments = 1;
+}
+
+message AirOffer {
+  Journey outbound = 1;
+  // Absent for one-way.
+  Journey inbound = 2;
+  string fare_basis = 3;
+  int32 seats_remaining = 4;
+}
+
+message HotelOffer {
+  string property_id = 1;
+  string name = 2;
+  string address = 3;
+  double latitude = 4;
+  double longitude = 5;
+  google.protobuf.Timestamp check_in = 6;
+  google.protobuf.Timestamp check_out = 7;
+  travelos.common.v1.Money nightly_rate = 8;
+  int32 nights = 9;
+  string room_type = 10;
+}
+
+message Offer {
+  // Ours: "off_<ulid>". Stable across the search session; meaningless to suppliers.
+  string offer_id = 1;
+  string search_session_id = 2;
+  // Adapter id, e.g. "sandbox-air". Never a vendor payload shape.
+  string provider = 3;
+  string provider_offer_id = 4;
+
+  OfferType type = 5;
+  travelos.common.v1.Money total = 6;
+  bool refundable = 7;
+  travelos.common.v1.Money change_penalty = 8;
+  google.protobuf.Timestamp expires_at = 9;
+
+  oneof detail {
+    AirOffer air = 10;
+    HotelOffer hotel = 11;
+  }
+}
+
+// A candidate plan: one offer per travel component. Slice 1: exactly one AIR offer, optional HOTEL.
+message Bundle {
+  string bundle_id = 1;
+  repeated Offer offers = 2;
+  travelos.common.v1.Money total = 3;
+}

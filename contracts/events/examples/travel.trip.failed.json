@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.trip.failed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "travel-core",
+  "data": {"tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","stage":"BOOKING","reasonCode":"SUPPLIER_UNAVAILABLE","message":"sandbox-air returned UNAVAILABLE after 3 attempts"}
+}

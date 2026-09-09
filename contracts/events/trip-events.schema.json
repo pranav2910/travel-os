@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/trip-events.schema.json",
+  "title": "TripEvents",
+  "description": "Data payloads for topic travel.trip. Each $def key is an eventType.",
+  "$defs": {
+    "travel.trip.created": {
+      "type": "object",
+      "required": ["tripId", "travelerId", "status", "source"],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "travelerId": { "type": "string", "minLength": 1 },
+        "status": { "const": "SUBMITTED" },
+        "source": { "enum": ["WEB", "API", "AGENT", "CALENDAR", "EMAIL"] },
+        "requestedBy": { "$ref": "common.schema.json#/$defs/principal" }
+      }
+    },
+    "travel.trip.planned": {
+      "type": "object",
+      "required": ["tripId", "selectedBundleId", "optimizationRunId", "policyDecisionId", "requiresApproval", "total", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "selectedBundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
+        "optimizationRunId": { "$ref": "common.schema.json#/$defs/optimizationRunId" },
+        "policyDecisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
+        "requiresApproval": { "type": "boolean" },
+        "total": { "$ref": "common.schema.json#/$defs/money" },
+        "status": { "enum": ["AWAITING_APPROVAL", "APPROVED"] }
+      }
+    },
+    "travel.trip.booked": {
+      "type": "object",
+      "required": ["tripId", "orderId", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
+        "total": { "$ref": "common.schema.json#/$defs/money" }
+      }
+    },
+    "travel.trip.cancelled": {
+      "type": "object",
+      "required": ["tripId", "reason", "cancelledBy"],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "reason": { "type": "string", "maxLength": 1000 },
+        "cancelledBy": { "$ref": "common.schema.json#/$defs/principal" }
+      }
+    },
+    "travel.trip.failed": {
+      "type": "object",
+      "required": ["tripId", "stage", "reasonCode"],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "stage": { "enum": ["INTENT", "CONTEXT", "SEARCH", "POLICY", "OPTIMIZATION", "APPROVAL", "BOOKING"] },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
+        "message": { "type": "string", "maxLength": 2000 }
+      }
+    },
+    "travel.trip.completed": {
+      "type": "object",
+      "required": ["tripId", "orderId"],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" }
+      }
+    }
+  }
+}

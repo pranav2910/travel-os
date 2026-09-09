@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package travelos.common.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.common.v1";
+option java_outer_classname = "CommonProto";
+
+// Money is always carried in minor units (cents for USD) — never floating point.
+message Money {
+  // ISO 4217 code, e.g. "USD".
+  string currency = 1;
+  // Amount in the currency's minor unit: 82000 => USD 820.00.
+  int64 amount_minor = 2;
+}
+
+// Every actor in the platform has an identity: humans, services and agents.
+// Agents are machine identities with narrowly scoped capabilities — never "*".
+message Principal {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    HUMAN = 1;
+    SERVICE = 2;
+    AGENT = 3;
+  }
+  Kind kind = 1;
+  // Canonical id: "human/<subject>", "service/<name>", "agent/<name>/<version>".
+  string id = 2;
+}
+
+// Carried on every internal call. Tenant scoping and traceability are not optional.
+message RequestContext {
+  string tenant_id = 1;
+  // Business correlation id (normally the trip id) — joins the whole lifecycle across traces and events.
+  string correlation_id = 2;
+  // Id of the command that caused this call (event causation chain).
+  string causation_id = 3;
+  Principal principal = 4;
+  // Required on every mutating command. Format "<scope>:<COMMAND>:<n>", e.g. "trip_01J...:CREATE-ORDER:1".
+  string idempotency_key = 5;
+}
+
+message TimeWindow {
+  google.protobuf.Timestamp not_before = 1;
+  google.protobuf.Timestamp not_after = 2;
+}
+
+enum Cabin {
+  CABIN_UNSPECIFIED = 0;
+  ECONOMY = 1;
+  PREMIUM_ECONOMY = 2;
+  BUSINESS = 3;
+  FIRST = 4;
+}

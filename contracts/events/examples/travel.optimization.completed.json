@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.optimization.completed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "optimization",
+  "data": {"optimizationRunId":"opt_01K4Q0N7S6Z2X8G5H3J9M1P7RE","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","selectedBundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD","selectedScore":91.4,"candidatesEvaluated":14,"feasibleCandidates":9,"solver":"ortools-cpsat-9.15","solveTimeMs":42}
+}

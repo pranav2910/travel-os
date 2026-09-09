@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.order.created",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "data": {"orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","supplier":"sandbox-air","status":"CREATING","total":{"currency":"USD","amountMinor":82000},"idempotencyKey":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB:CREATE-ORDER:1","items":[{"itemId":"itm_01K4Q0N7S6Z2X8G5H3J9M1P7RJ","type":"AIR","status":"PENDING"}],"policyDecisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RF","optimizationRunId":"opt_01K4Q0N7S6Z2X8G5H3J9M1P7RE","approvalId":"apr_01K4Q0N7S6Z2X8G5H3J9M1P7RH"}
+}

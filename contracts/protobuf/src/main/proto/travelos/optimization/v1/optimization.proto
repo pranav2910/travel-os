@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package travelos.optimization.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+import "travelos/offer/v1/offer.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.optimization.v1";
+option java_outer_classname = "OptimizationProto";
+
+// Chooses among policy-permitted candidates. Returns the WHOLE ranking with a score breakdown,
+// so "why this one?" is answerable without re-running anything.
+service OptimizationService {
+  rpc OptimizeTrip(OptimizeTripRequest) returns (OptimizeTripResponse);
+}
+
+// Hard constraints: violating any one makes a candidate infeasible, regardless of score.
+message ConstraintSet {
+  google.protobuf.Timestamp arrival_deadline = 1;
+  google.protobuf.Timestamp return_after = 2;
+  repeated travelos.common.v1.Cabin allowed_cabins = 3;
+  travelos.common.v1.Money max_total = 4;
+  repeated string permitted_providers = 5;
+  // 0 => nonstop only. Negative => unconstrained.
+  int32 max_stops = 6;
+}
+
+// Soft objectives. Score(x) = w_cost*C + w_time*T + w_risk*R + w_preference*P + w_experience*X.
+message Weights {
+  double cost = 1;
+  double time = 2;
+  double risk = 3;
+  double preference = 4;
+  double experience = 5;
+}
+
+message OptimizationPreferences {
+  Weights weights = 1;
+  repeated string preferred_carriers = 2;
+  repeated string preferred_hotels = 3;
+}
+
+message ScoreBreakdown {
+  double cost = 1;
+  double time = 2;
+  double risk = 3;
+  double preference = 4;
+  double experience = 5;
+}
+
+message RankedCandidate {
+  string bundle_id = 1;
+  // 0..100, higher is better. Infeasible candidates score 0 and carry reasons.
+  double score = 2;
+  ScoreBreakdown breakdown = 3;
+  bool feasible = 4;
+  repeated string infeasibility_reasons = 5;
+  int32 rank = 6;
+}
+
+message OptimizeTripRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  repeated travelos.offer.v1.Bundle candidates = 3;
+  ConstraintSet constraints = 4;
+  OptimizationPreferences preferences = 5;
+}
+
+message OptimizeTripResponse {
+  string optimization_run_id = 1;
+  // Empty when no candidate is feasible.
+  string selected_bundle_id = 2;
+  repeated RankedCandidate ranking = 3;
+  string solver = 4;
+  int64 solve_time_ms = 5;
+}

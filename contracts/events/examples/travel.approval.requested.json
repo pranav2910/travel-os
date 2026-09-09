@@ -1,0 +1,11 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.approval.requested",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "approval",
+  "data": {"approvalId":"apr_01K4Q0N7S6Z2X8G5H3J9M1P7RH","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","requestedFrom":"emp_1002","role":"MANAGER","policyDecisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RF","total":{"currency":"USD","amountMinor":82000},"expiresAt":"2026-09-11T20:11:52Z"}
+}

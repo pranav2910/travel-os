@@ -1,0 +1,153 @@
+{
+  "realm": "travelos",
+  "enabled": true,
+  "displayName": "travel-os (local dev)",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "roles": {
+    "realm": [
+      { "name": "TRAVELER", "description": "Can create and view own trips" },
+      { "name": "MANAGER", "description": "Approves trips for direct reports" },
+      { "name": "TRAVEL_ADMIN", "description": "Manages policy and supplier configuration" },
+      { "name": "FINANCE", "description": "Reads spend and reconciliation" }
+    ]
+  },
+  "clientScopes": [
+    {
+      "name": "travelos",
+      "description": "Tenant + role claims consumed by every travel-os service",
+      "protocol": "openid-connect",
+      "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" },
+      "protocolMappers": [
+        {
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "employee_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "employee_id",
+            "claim.name": "employee_id",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "travelos-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "travelos-web",
+      "name": "Traveler / Manager web app",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://localhost:5173/*", "http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:5173", "http://localhost:3000"],
+      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+" },
+      "defaultClientScopes": ["travelos", "profile", "email", "roles"],
+      "optionalClientScopes": []
+    },
+    {
+      "clientId": "travelos-dev-cli",
+      "name": "DEV ONLY: password grant for curl / integration scripts",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "defaultClientScopes": ["travelos", "profile", "email", "roles"],
+      "optionalClientScopes": []
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "firstName": "Alice",
+      "lastName": "Nguyen",
+      "email": "alice@acme.example",
+      "emailVerified": true,
+      "attributes": { "tenant_id": ["acme"], "employee_id": ["emp_1001"] },
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["TRAVELER"]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "firstName": "Bob",
+      "lastName": "Okafor",
+      "email": "bob@acme.example",
+      "emailVerified": true,
+      "attributes": { "tenant_id": ["acme"], "employee_id": ["emp_1002"] },
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["TRAVELER", "MANAGER"]
+    },
+    {
+      "username": "carol",
+      "enabled": true,
+      "firstName": "Carol",
+      "lastName": "Diaz",
+      "email": "carol@acme.example",
+      "emailVerified": true,
+      "attributes": { "tenant_id": ["acme"], "employee_id": ["emp_1003"] },
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["TRAVELER", "TRAVEL_ADMIN", "FINANCE"]
+    },
+    {
+      "username": "zoe",
+      "enabled": true,
+      "firstName": "Zoe",
+      "lastName": "Park",
+      "email": "zoe@globex.example",
+      "emailVerified": true,
+      "attributes": { "tenant_id": ["globex"], "employee_id": ["emp_2001"] },
+      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
+      "realmRoles": ["TRAVELER"]
+    }
+  ]
+}

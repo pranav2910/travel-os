@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/approval-events.schema.json",
+  "title": "ApprovalEvents",
+  "$defs": {
+    "travel.approval.requested": {
+      "type": "object",
+      "required": ["approvalId", "tripId", "requestedFrom", "role", "policyDecisionId", "total"],
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "requestedFrom": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["MANAGER", "TRAVEL_ADMIN", "FINANCE"] },
+        "policyDecisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
+        "total": { "$ref": "common.schema.json#/$defs/money" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "travel.approval.approved": {
+      "type": "object",
+      "required": ["approvalId", "tripId", "decidedBy"],
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "decidedBy": { "$ref": "common.schema.json#/$defs/principal" },
+        "comment": { "type": "string", "maxLength": 2000 }
+      }
+    },
+    "travel.approval.rejected": {
+      "type": "object",
+      "required": ["approvalId", "tripId", "decidedBy"],
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "decidedBy": { "$ref": "common.schema.json#/$defs/principal" },
+        "comment": { "type": "string", "maxLength": 2000 }
+      }
+    }
+  }
+}

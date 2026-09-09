@@ -1,0 +1,59 @@
+# Kafka topic registry — the ONLY place topics are declared. Brokers run with auto-create disabled;
+# platform tooling (platform/local/kafka/create-topics.sh locally, Terraform/MSK in cloud) creates
+# exactly this list. A test in libs/events keeps this file, Topics.java and the local script in sync.
+#
+# Keying rule: every event is keyed by correlationId (the trip id), so all events of one trip land
+# on one partition in order. Consumers may rely on per-trip ordering and on nothing else.
+version: 1
+
+defaults:
+  partitions: 12
+  replication: 3
+  retention_ms: 604800000   # 7 days
+  key: correlationId
+
+topics:
+  - name: travel.intent
+    slice: 4
+    events: [travel.intent.detected, travel.intent.confirmed, travel.intent.rejected]
+
+  - name: travel.trip
+    slice: 1
+    events: [travel.trip.created, travel.trip.planned, travel.trip.booked, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
+
+  - name: travel.search
+    slice: 1
+    events: [travel.search.started, travel.search.completed, travel.search.failed]
+
+  - name: travel.policy
+    slice: 1
+    events: [travel.policy.evaluated, travel.policy.violation]
+
+  - name: travel.optimization
+    slice: 1
+    events: [travel.optimization.completed]
+
+  - name: travel.approval
+    slice: 1
+    events: [travel.approval.requested, travel.approval.approved, travel.approval.rejected]
+
+  - name: travel.order
+    slice: 1
+    events: [travel.order.created, travel.order.confirmed, travel.order.changed, travel.order.cancelled, travel.order.failed]
+
+  - name: travel.disruption
+    slice: 2
+    events: [travel.disruption.detected, travel.disruption.evaluated, travel.disruption.resolved]
+
+  - name: travel.expense
+    slice: 4
+    events: [travel.expense.created, travel.expense.reconciled]
+
+  - name: travel.agent
+    slice: 1
+    events: [travel.agent.action.requested, travel.agent.action.completed, travel.agent.action.rejected]
+
+  - name: travel.audit
+    slice: 1
+    retention_ms: 2592000000   # 30 days on the bus; durable copy lives in the Audit service (OpenSearch + S3)
+    events: [travel.audit.recorded]
