@@ -1,0 +1,17 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Overridden by TestTokens' JwtDecoder bean; kept so Boot's issuer validation config is inert.
+          issuer-uri: http://test-issuer/realms/travelos
+  kafka:
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+travelos:
+  outbox:
+    poll-interval: 200ms

@@ -9,10 +9,22 @@
   "ssoSessionIdleTimeout": 1800,
   "roles": {
     "realm": [
-      { "name": "TRAVELER", "description": "Can create and view own trips" },
-      { "name": "MANAGER", "description": "Approves trips for direct reports" },
-      { "name": "TRAVEL_ADMIN", "description": "Manages policy and supplier configuration" },
-      { "name": "FINANCE", "description": "Reads spend and reconciliation" }
+      {
+        "name": "TRAVELER",
+        "description": "Can create and view own trips"
+      },
+      {
+        "name": "MANAGER",
+        "description": "Approves trips for direct reports"
+      },
+      {
+        "name": "TRAVEL_ADMIN",
+        "description": "Manages policy and supplier configuration"
+      },
+      {
+        "name": "FINANCE",
+        "description": "Reads spend and reconciliation"
+      }
     ]
   },
   "clientScopes": [
@@ -20,8 +32,25 @@
       "name": "travelos",
       "description": "Tenant + role claims consumed by every travel-os service",
       "protocol": "openid-connect",
-      "attributes": { "include.in.token.scope": "true", "display.on.consent.screen": "false" },
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
       "protocolMappers": [
+        {
+          "name": "username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-property-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "username",
+            "claim.name": "preferred_username",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
         {
           "name": "tenant_id",
           "protocol": "openid-connect",
@@ -86,10 +115,24 @@
       "protocol": "openid-connect",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
-      "redirectUris": ["http://localhost:5173/*", "http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:5173", "http://localhost:3000"],
-      "attributes": { "pkce.code.challenge.method": "S256", "post.logout.redirect.uris": "+" },
-      "defaultClientScopes": ["travelos", "profile", "email", "roles"],
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "+"
+      },
+      "defaultClientScopes": [
+        "travelos",
+        "profile",
+        "email",
+        "roles"
+      ],
       "optionalClientScopes": []
     },
     {
@@ -100,7 +143,12 @@
       "protocol": "openid-connect",
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": true,
-      "defaultClientScopes": ["travelos", "profile", "email", "roles"],
+      "defaultClientScopes": [
+        "travelos",
+        "profile",
+        "email",
+        "roles"
+      ],
       "optionalClientScopes": []
     }
   ],
@@ -112,9 +160,24 @@
       "lastName": "Nguyen",
       "email": "alice@acme.example",
       "emailVerified": true,
-      "attributes": { "tenant_id": ["acme"], "employee_id": ["emp_1001"] },
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["TRAVELER"]
+      "attributes": {
+        "tenant_id": [
+          "acme"
+        ],
+        "employee_id": [
+          "emp_1001"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TRAVELER"
+      ]
     },
     {
       "username": "bob",
@@ -123,9 +186,25 @@
       "lastName": "Okafor",
       "email": "bob@acme.example",
       "emailVerified": true,
-      "attributes": { "tenant_id": ["acme"], "employee_id": ["emp_1002"] },
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["TRAVELER", "MANAGER"]
+      "attributes": {
+        "tenant_id": [
+          "acme"
+        ],
+        "employee_id": [
+          "emp_1002"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TRAVELER",
+        "MANAGER"
+      ]
     },
     {
       "username": "carol",
@@ -134,9 +213,26 @@
       "lastName": "Diaz",
       "email": "carol@acme.example",
       "emailVerified": true,
-      "attributes": { "tenant_id": ["acme"], "employee_id": ["emp_1003"] },
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["TRAVELER", "TRAVEL_ADMIN", "FINANCE"]
+      "attributes": {
+        "tenant_id": [
+          "acme"
+        ],
+        "employee_id": [
+          "emp_1003"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TRAVELER",
+        "TRAVEL_ADMIN",
+        "FINANCE"
+      ]
     },
     {
       "username": "zoe",
@@ -145,9 +241,24 @@
       "lastName": "Park",
       "email": "zoe@globex.example",
       "emailVerified": true,
-      "attributes": { "tenant_id": ["globex"], "employee_id": ["emp_2001"] },
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["TRAVELER"]
+      "attributes": {
+        "tenant_id": [
+          "globex"
+        ],
+        "employee_id": [
+          "emp_2001"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TRAVELER"
+      ]
     }
   ]
 }

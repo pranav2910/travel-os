@@ -25,3 +25,8 @@ include(":contracts:protobuf")
 // Shared libraries — small, dependency-light, no framework lock-in.
 include(":libs:common")
 include(":libs:events")
+include(":libs:spring-web")
+include(":libs:spring-outbox")
+
+// Services — Slice 1 only.
+include(":services:travel-core")

@@ -1,0 +1,88 @@
+package io.travelos.travelcore.api;
+
+import io.travelos.spring.web.auth.RequestPrincipal;
+import io.travelos.spring.web.error.ApiException;
+import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
+import io.travelos.travelcore.trip.TravelIntent;
+import io.travelos.travelcore.trip.Trip;
+import io.travelos.travelcore.trip.TripRepository;
+import io.travelos.travelcore.trip.TripService;
+import io.travelos.travelcore.trip.TripSource;
+import jakarta.validation.Valid;
+import java.net.URI;
+import java.util.List;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping(path = "/api/v1/trips", produces = "application/json")
+public class TripController {
+
+  private final TripService trips;
+
+  public TripController(TripService trips) {
+    this.trips = trips;
+  }
+
+  /**
+   * 202: the trip is accepted; planning continues asynchronously. Poll GET or follow the events.
+   */
+  @PostMapping(consumes = "application/json")
+  public ResponseEntity<TripResponse> create(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @Valid @RequestBody CreateTripRequest request) {
+    TripService.CreateTrip command;
+    try {
+      TravelIntent intent = request.intent() == null ? null : request.intent().toDomain();
+      command =
+          new TripService.CreateTrip(
+              request.travelerId(),
+              request.source() == null ? TripSource.API : request.source(),
+              request.request(),
+              intent);
+    } catch (IllegalArgumentException e) {
+      throw new ApiException.Unprocessable("INTENT_INVALID", e.getMessage());
+    }
+    Trip trip = trips.create(me, command, idempotencyKey);
+    return ResponseEntity.accepted()
+        .location(URI.create("/api/v1/trips/" + trip.tripId()))
+        .body(TripResponse.from(trip));
+  }
+
+  @GetMapping("/{tripId}")
+  public TripResponse get(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    return TripResponse.from(trips.get(me, tripId));
+  }
+
+  @GetMapping
+  public List<TripResponse> listMine(
+      @AuthenticationPrincipal RequestPrincipal me, @RequestParam(defaultValue = "50") int limit) {
+    return trips.listMine(me, Math.clamp(limit, 1, 200)).stream().map(TripResponse::from).toList();
+  }
+
+  /** The audit trail of status changes: the first piece of the explainability API. */
+  @GetMapping("/{tripId}/history")
+  public List<TripRepository.StatusChange> history(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    return trips.history(me, tripId);
+  }
+
+  /** Cancellation is a POST that returns 200 with the new state; repeats are idempotent. */
+  @PostMapping(path = "/{tripId}/cancellation", consumes = "application/json")
+  public TripResponse cancel(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @Valid @RequestBody CancelTripRequest request) {
+    return TripResponse.from(trips.cancel(me, tripId, request.reason()));
+  }
+}

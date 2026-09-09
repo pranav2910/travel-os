@@ -2,6 +2,7 @@ package io.travelos.events;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.travelos.events.testing.EventSchemas;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -53,11 +54,8 @@ class TopicsRegistryTest {
     return names;
   }
 
-  private static JsonNode registry() throws IOException {
-    try (InputStream in = TopicsRegistryTest.class.getResourceAsStream("/topics.yaml")) {
-      assertThat(in).as("topics.yaml on test classpath").isNotNull();
-      return YAMLMapper.builder().build().readTree(in);
-    }
+  private static JsonNode registry() {
+    return YAMLMapper.builder().build().readTree(EventSchemas.resource("topics.yaml"));
   }
 
   private static String resource(String name) throws IOException {

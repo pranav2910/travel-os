@@ -1,0 +1,2 @@
+io.travelos.spring.web.auth.ResourceServerSecurityAutoConfiguration
+io.travelos.spring.web.WebSupportAutoConfiguration

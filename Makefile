@@ -10,7 +10,7 @@ export JAVA_HOME
 GRADLE  := ./gradlew
 COMPOSE := docker compose -f platform/local/docker-compose.yml
 
-.PHONY: help up down nuke ps logs build test check fmt clean
+.PHONY: help up down nuke ps logs build test check fmt clean run
 
 help: ## list targets
 > @grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -42,6 +42,9 @@ check: ## full verification: compile, format check, tests
 
 fmt: ## apply code formatting
 > $(GRADLE) spotlessApply
+
+run: ## run one service against the local platform: make run SVC=travel-core
+> $(GRADLE) :services:$(SVC):bootRun
 
 clean: ## remove build outputs
 > $(GRADLE) clean

@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: travel-core
+  datasource:
+    # The travel_core_app role can reach ONLY the travel_core database (ADR-0006).
+    url: ${TRAVEL_CORE_DB_URL:jdbc:postgresql://localhost:5432/travel_core}
+    username: ${TRAVEL_CORE_DB_USER:travel_core_app}
+    password: ${TRAVEL_CORE_DB_PASSWORD:travel_core-dev}
+    hikari:
+      maximum-pool-size: ${TRAVEL_CORE_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+      validation-timeout: 2000
+  flyway:
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        # delivery.timeout.ms must be >= linger.ms + request.timeout.ms (Kafka validates this at startup).
+        request.timeout.ms: 15000
+        linger.ms: 5
+        delivery.timeout.ms: 45000
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8081}
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+travelos:
+  outbox:
+    poll-interval: 500ms
+    batch-size: 100
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] "

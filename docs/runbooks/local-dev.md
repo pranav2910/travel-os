@@ -45,6 +45,26 @@ curl -s -X POST http://localhost:8180/realms/travelos/protocol/openid-connect/to
 Claims services rely on: `iss` = `http://localhost:8180/realms/travelos`, `aud` contains `travelos-api`,
 `tenant_id`, `employee_id`, `roles[]`. Inspect with `python3 -c 'import sys,base64,json; t=sys.argv[1].split(".")[1]; print(json.dumps(json.loads(base64.urlsafe_b64decode(t+"==")),indent=2))' "$TOKEN"`.
 
+## Run a service and exercise it
+
+```bash
+make run SVC=travel-core            # http://localhost:8081, Flyway migrates travel_core on start
+TOKEN=$(curl -s -X POST http://localhost:8180/realms/travelos/protocol/openid-connect/token \
+  -d client_id=travelos-dev-cli -d grant_type=password -d username=alice -d password=password \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+
+curl -s -X POST http://localhost:8081/api/v1/trips \
+  -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' \
+  -d '{"request":"Seattle before 9am Tuesday, back Wednesday evening",
+       "intent":{"origin":"BOS","destination":"SEA","earliestDeparture":"2026-10-06T10:00:00Z",
+                 "arrivalDeadline":"2026-10-06T17:00:00Z","returnAfter":"2026-10-07T20:00:00Z",
+                 "latestReturn":"2026-10-08T06:00:00Z","purpose":"customer meeting","hotelRequired":true}}'
+# -> 202 {"tripId":"trip_01...","status":"SUBMITTED",...}; GET /api/v1/trips/{tripId}, /history,
+#    POST /api/v1/trips/{tripId}/cancellation {"reason":"..."} (Idempotency-Key required on every POST)
+```
+
+Metrics: `curl -s localhost:8081/actuator/prometheus | grep travelos_outbox` — `backlog` should sit at 0.
+
 ## Kafka
 
 ```bash

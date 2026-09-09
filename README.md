@@ -18,13 +18,18 @@ The agent is one component inside a reliable enterprise transaction system, not 
 round trip; the platform plans, governs, books and audits it end to end. Nothing else ships until
 every box below is checked, in a real deployment, with real tests.
 
+Built so far: contracts, shared libs, local platform, and **Travel Core** (`services/travel-core`):
+`POST /api/v1/trips` with mandatory `Idempotency-Key`, tenant-scoped reads, arranger rules,
+cancellation with optimistic locking, status history, and `travel.trip.*` events through a
+transactional outbox. Verified against the live platform with real Keycloak tokens.
+
 | Slice 1 definition of done | | |
 |---|---|---|
-| ☐ real authentication (OIDC) | ☐ tenant isolation | ☐ Postgres persistence |
-| ☐ versioned APIs | ☑ provider abstraction (contract) | ☐ deterministic policy |
-| ☐ optimization engine | ☐ durable workflow | ☐ booking idempotency |
-| ☐ retry-safe supplier calls | ☑ Kafka event contracts | ☐ audit trail |
-| ☐ distributed tracing | ☐ metrics | ☐ integration tests |
+| ☑ real authentication (OIDC, tested with signed RS256 tokens) | ☑ tenant isolation (cross-tenant read = 404, tested) | ☑ Postgres persistence (Flyway, DB-per-service) |
+| ☑ versioned APIs (`/api/v1`) | ☑ provider abstraction (contract) | ☐ deterministic policy |
+| ☐ optimization engine | ☐ durable workflow | ☐ booking idempotency (trip creation ✓, orders pending) |
+| ☐ retry-safe supplier calls | ☑ Kafka events (transactional outbox) | ☐ audit trail |
+| ☐ distributed tracing | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
 | ☑ contract tests | ☐ E2E happy path | ☐ failure-path tests |
 | ☐ Docker images | ☐ Terraform | ☐ EKS deployment |
 | ☑ CI pipeline | ☐ CD pipeline | ☐ rollback |
