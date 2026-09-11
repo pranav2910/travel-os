@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: supplier-gateway
+  datasource:
+    url: ${SUPPLIER_GATEWAY_DB_URL:jdbc:postgresql://localhost:5432/supplier_gateway}
+    username: ${SUPPLIER_GATEWAY_DB_USER:supplier_gateway_app}
+    password: ${SUPPLIER_GATEWAY_DB_PASSWORD:supplier_gateway-dev}
+    hikari:
+      maximum-pool-size: ${SUPPLIER_GATEWAY_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+  flyway:
+    locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8084}
+  shutdown: graceful
+
+travelos:
+  grpc:
+    server:
+      port: ${GRPC_PORT:9084}
+  suppliers:
+    sandbox-air:
+      # Per-adapter protection. Real suppliers publish their limits; these are the sandbox's.
+      rate-limit-per-second: 50
+      circuit-breaker:
+        failure-rate-threshold: 50
+        sliding-window-size: 20
+        wait-in-open-state: 30s
+
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] [%X{correlation_id:-}] "

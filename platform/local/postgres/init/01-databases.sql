@@ -24,6 +24,10 @@ CREATE ROLE approval_app LOGIN PASSWORD 'approval-dev';
 CREATE DATABASE approval OWNER approval_app;
 REVOKE CONNECT ON DATABASE approval FROM PUBLIC;
 
+CREATE ROLE supplier_gateway_app LOGIN PASSWORD 'supplier_gateway-dev';
+CREATE DATABASE supplier_gateway OWNER supplier_gateway_app;
+REVOKE CONNECT ON DATABASE supplier_gateway FROM PUBLIC;
+
 CREATE ROLE orders_app LOGIN PASSWORD 'orders-dev';
 CREATE DATABASE orders OWNER orders_app;
 REVOKE CONNECT ON DATABASE orders FROM PUBLIC;

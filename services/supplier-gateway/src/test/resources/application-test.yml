@@ -1,0 +1,17 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://test-issuer/realms/travelos
+travelos:
+  grpc:
+    server:
+      port: 0
+  suppliers:
+    sandbox-air:
+      rate-limit-per-second: 200
+      circuit-breaker:
+        failure-rate-threshold: 50
+        sliding-window-size: 10
+        wait-in-open-state: 2s

@@ -60,6 +60,9 @@ temporal-testing = { module = "io.temporal:temporal-testing", version.ref = "tem
 
 # Resilience
 resilience4j-spring-boot = { module = "io.github.resilience4j:resilience4j-spring-boot4", version.ref = "resilience4j" }
+resilience4j-circuitbreaker = { module = "io.github.resilience4j:resilience4j-circuitbreaker", version.ref = "resilience4j" }
+resilience4j-ratelimiter = { module = "io.github.resilience4j:resilience4j-ratelimiter", version.ref = "resilience4j" }
+resilience4j-retry = { module = "io.github.resilience4j:resilience4j-retry", version.ref = "resilience4j" }
 
 # Utilities
 jackson-databind = { module = "tools.jackson.core:jackson-databind" }

@@ -1,1 +1,2 @@
 io.travelos.spring.grpc.GrpcServerAutoConfiguration
+io.travelos.spring.grpc.GrpcClientsAutoConfiguration
