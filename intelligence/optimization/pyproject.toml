@@ -39,3 +39,8 @@ extend-exclude = ["src/travelos"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "W"]
+
+[tool.ruff.lint.isort]
+# The generated `travelos` package may not exist yet when lint runs (CI); classify it explicitly so
+# import sorting does not depend on build order.
+known-first-party = ["travelos", "travelos_optimization"]

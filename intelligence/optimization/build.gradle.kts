@@ -30,7 +30,7 @@ val pyGenProto by tasks.registering(Exec::class) {
 val pyLint by tasks.registering(Exec::class) {
     description = "ruff check + format check."
     group = "python"
-    dependsOn(pySync)
+    dependsOn(pyGenProto)
     workingDir = projectDir
     commandLine("uv", "run", "--frozen", "ruff", "check", "src", "tests", "scripts")
     inputs.dir("src/travelos_optimization")
