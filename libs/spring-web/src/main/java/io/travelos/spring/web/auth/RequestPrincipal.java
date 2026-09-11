@@ -14,9 +14,18 @@ import org.jspecify.annotations.Nullable;
  * @param tenant the caller's tenant — every repository call must be scoped by it
  * @param employeeId the caller's employee id when the caller is a person (traveler id in trips)
  * @param roles realm roles as issued (TRAVELER, MANAGER, TRAVEL_ADMIN, FINANCE)
+ * @param givenName from the given_name claim, when the IdP issues it
+ * @param familyName from the family_name claim
+ * @param email from the email claim
  */
 public record RequestPrincipal(
-    Principal principal, TenantId tenant, @Nullable String employeeId, Set<String> roles) {
+    Principal principal,
+    TenantId tenant,
+    @Nullable String employeeId,
+    Set<String> roles,
+    @Nullable String givenName,
+    @Nullable String familyName,
+    @Nullable String email) {
 
   public RequestPrincipal {
     roles = Set.copyOf(roles);

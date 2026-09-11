@@ -28,12 +28,16 @@ include(":libs:events")
 include(":libs:spring-web")
 include(":libs:spring-outbox")
 include(":libs:spring-grpc-support")
+include(":libs:workflow-contracts")
 
 // Services — Slice 1 only.
 include(":services:travel-core")
 include(":services:policy")
 include(":services:supplier-gateway")
 include(":services:order")
+
+// Temporal workflows: durable coordination of the trip lifecycle.
+include(":workflows:trip-planning")
 
 // Python services are wired into the same Gradle check so there is one gate.
 include(":intelligence:optimization")

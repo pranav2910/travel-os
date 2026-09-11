@@ -72,6 +72,11 @@ message Order {
   int64 version = 13;
   google.protobuf.Timestamp created_at = 14;
   google.protobuf.Timestamp updated_at = 15;
+
+  // Set on FAILED / PARTIALLY_FAILED: stable machine code and whether every confirmed
+  // component was released again.
+  string failure_code = 16;
+  bool compensated = 17;
 }
 
 message CreateOrderCommand {

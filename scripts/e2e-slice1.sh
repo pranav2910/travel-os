@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Slice 1 end-to-end against the LIVE local platform and running services (see docs/runbooks/local-dev.md):
+#   travel-core :8081/:9081, policy :8082/:9082, optimization :9083, supplier-gateway :8084/:9084,
+#   order :8085/:9085, trip-planning worker :8086, plus Postgres/Kafka/Temporal/Keycloak from `make up`.
+#
+# Two trips:
+#   1. with a policy that requires a manager for everything -> AWAITING_APPROVAL -> bob approves -> BOOKED
+#   2. with the seed policy -> in policy, zero approvals -> BOOKED
+# Every step asserts what the platform says (status codes, statuses, evidence ids, events on the
+# real broker). Exit code != 0 means Slice 1 is not working. Nothing is mocked.
+set -euo pipefail
+
+KC=${KC:-http://localhost:8180}
+CORE=${CORE:-http://localhost:8081}
+POLICY=${POLICY:-http://localhost:8082}
+ORDER=${ORDER:-http://localhost:8085}
+COMPOSE="docker compose -f $(dirname "$0")/../platform/local/docker-compose.yml"
+SEED="$(dirname "$0")/../platform/local/seed/policies/acme-us-standard.json"
+
+pass() { printf '  \033[32mPASS\033[0m %s\n' "$*"; }
+fail() { printf '  \033[31mFAIL\033[0m %s\n' "$*"; exit 1; }
+json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
+
+tok() {
+  curl -sf -X POST "$KC/realms/travelos/protocol/openid-connect/token" -d client_id=travelos-dev-cli \
+    -d grant_type=password -d "username=$1" -d password=password | json 'd["access_token"]'
+}
+
+echo "== 0. health"
+for svc in "$CORE" "$POLICY" "$ORDER" http://localhost:8084 http://localhost:8086; do
+  curl -sf "$svc/actuator/health/readiness" >/dev/null || fail "$svc not ready"
+done
+nc -z localhost 9083 || fail "optimization gRPC :9083 not listening"
+pass "all services ready"
+
+ALICE=$(tok alice); BOB=$(tok bob); CAROL=$(tok carol)
+
+publish_policy() { # $1 = python expression mutating d (the seed document), $2 = note
+  python3 -c "import json,sys; d=json.load(open('$SEED')); $1; print(json.dumps({'document': d, 'note': '$2'}))" \
+    | curl -s -X POST "$POLICY/api/v1/policies" -H "Authorization: Bearer $CAROL" -H 'Content-Type: application/json' -d @- \
+    | json '"v%s %s" % (d.get("version"), d.get("policyId") or d.get("code"))'
+}
+
+create_trip() { # prints trip id
+  curl -s -X POST "$CORE/api/v1/trips" -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: e2e-$(date +%s%N)" \
+    -H 'Content-Type: application/json' -d '{"request":"Seattle before 5pm Tuesday Oct 6, back Wednesday evening, customer meeting",
+      "intent":{"origin":"BOS","destination":"SEA","earliestDeparture":"2026-10-06T10:00:00Z","arrivalDeadline":"2026-10-06T23:00:00Z",
+                "returnAfter":"2026-10-07T20:00:00Z","latestReturn":"2026-10-08T06:00:00Z","purpose":"customer meeting"},"source":"WEB"}' \
+    | json 'd["tripId"]'
+}
+
+wait_status() { # $1 trip, $2 expected status (or "|"-separated), $3 timeout seconds
+  local t=0
+  while [ $t -lt "$3" ]; do
+    local s; s=$(curl -s "$CORE/api/v1/trips/$1" -H "Authorization: Bearer $ALICE" | json 'd["status"]')
+    case "|$2|" in *"|$s|"*) echo "$s"; return 0;; esac
+    case "$s" in FAILED|CANCELLED) echo "$s"; return 0;; esac
+    sleep 1; t=$((t+1))
+  done
+  echo "TIMEOUT"; return 0
+}
+
+trip_view() { curl -s "$CORE/api/v1/trips/$1" -H "Authorization: Bearer $ALICE"; }
+
+echo "== 1. approval path: publish a policy where every trip needs a manager"
+publish_policy 'd["approval"]["managerRequiredAbove"]=1' 'e2e: approval required for everything' | sed 's/^/  published /'
+TRIP1=$(create_trip); echo "  trip $TRIP1"
+S=$(wait_status "$TRIP1" "AWAITING_APPROVAL" 60); [ "$S" = "AWAITING_APPROVAL" ] || { trip_view "$TRIP1"; fail "expected AWAITING_APPROVAL, got $S"; }
+pass "workflow searched, applied policy, optimized and asked for approval"
+V=$(trip_view "$TRIP1")
+echo "$V" | json 'd["evidence"]["selectedBundleId"]' | grep -q '^bdl_' || fail "no selected bundle in evidence"
+echo "$V" | json 'd["evidence"]["optimizationRunId"]' | grep -q '^opt_' || fail "no optimization run in evidence"
+echo "$V" | json 'd["evidence"]["policyDecisionId"]' | grep -q '^pd_' || fail "no policy decision in evidence"
+[ "$(echo "$V" | json 'd["approval"]["status"]')" = "PENDING" ] || fail "approval not pending"
+pass "evidence chain present: $(echo "$V" | json '"bundle=%s opt=%s pd=%s total=%s" % (d["evidence"]["selectedBundleId"], d["evidence"]["optimizationRunId"], d["evidence"]["policyDecisionId"], d["total"]["display"])')"
+
+echo "  alice tries to approve her own trip:"
+CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$CORE/api/v1/trips/$TRIP1/approval" -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: self-$TRIP1" -H 'Content-Type: application/json' -d '{"decision":"APPROVE"}')
+[ "$CODE" = "403" ] && pass "403 for the traveler" || fail "expected 403, got $CODE"
+echo "  bob (manager) approves:"
+R=$(curl -s -X POST "$CORE/api/v1/trips/$TRIP1/approval" -H "Authorization: Bearer $BOB" -H "Idempotency-Key: approve-$TRIP1" -H 'Content-Type: application/json' -d '{"decision":"APPROVE","comment":"Customer meeting approved."}')
+[ "$(echo "$R" | json 'd.get("status")')" = "APPROVED" ] && pass "approval recorded by $(echo "$R" | json 'd["decidedBy"]')" || fail "approval failed: $R"
+S=$(wait_status "$TRIP1" "BOOKED" 90); [ "$S" = "BOOKED" ] || { trip_view "$TRIP1"; fail "expected BOOKED, got $S"; }
+V=$(trip_view "$TRIP1"); ORDER1=$(echo "$V" | json 'd["evidence"]["orderId"]')
+pass "BOOKED with order $ORDER1 (approval $(echo "$V" | json 'd["evidence"]["approvalId"]'))"
+
+echo "== 2. zero-approval path: back to the seed policy"
+publish_policy 'pass' 'e2e: seed policy restored' | sed 's/^/  published /'
+TRIP2=$(create_trip); echo "  trip $TRIP2"
+S=$(wait_status "$TRIP2" "BOOKED" 90); [ "$S" = "BOOKED" ] || { trip_view "$TRIP2"; fail "expected BOOKED, got $S"; }
+V=$(trip_view "$TRIP2"); ORDER2=$(echo "$V" | json 'd["evidence"]["orderId"]')
+[ "$(echo "$V" | json 'd.get("approval")')" = "None" ] && pass "BOOKED with order $ORDER2 and no approval in the loop" || fail "unexpected approval on the in-policy trip"
+
+echo "== 3. the transactional truth"
+O=$(curl -s "$ORDER/api/v1/orders/$ORDER2" -H "Authorization: Bearer $ALICE")
+[ "$(echo "$O" | json 'd["status"]')" = "CONFIRMED" ] || fail "order not CONFIRMED: $O"
+pass "order CONFIRMED at $(echo "$O" | json 'd["supplier"]') ref $(echo "$O" | json 'd["externalOrderId"]') locator $(echo "$O" | json 'd["items"][0]["recordLocator"]') total $(echo "$O" | json 'd["total"]["display"]')"
+[ "$(echo "$O" | json 'd["policyDecisionId"]')" = "$(echo "$V" | json 'd["evidence"]["policyDecisionId"]')" ] && pass "order carries the same policy decision id as the trip" || fail "evidence mismatch between trip and order"
+CODE=$(curl -s -o /dev/null -w '%{http_code}' "$ORDER/api/v1/orders/$ORDER2" -H "Authorization: Bearer $(tok zoe)")
+[ "$CODE" = "404" ] && pass "another tenant gets 404 for the order" || fail "cross-tenant order read returned $CODE"
+
+echo "== 4. explainability"
+D=$(curl -s "$POLICY/api/v1/policy-decisions?tripId=$TRIP2" -H "Authorization: Bearer $ALICE")
+N=$(echo "$D" | json 'len(d)'); [ "$N" -gt 5 ] || fail "expected one policy decision per candidate, got $N"
+pass "$N policy decisions recorded for the trip; outcomes: $(echo "$D" | json 'sorted(set(x["outcome"] for x in d))')"
+H=$(curl -s "$CORE/api/v1/trips/$TRIP2/history" -H "Authorization: Bearer $ALICE" | json '" -> ".join(h["to"] for h in d)')
+[ "$H" = "SUBMITTED -> PLANNING -> APPROVED -> BOOKING -> BOOKED" ] && pass "history: $H" || fail "unexpected history: $H"
+
+echo "== 5. durable coordination + the event trail"
+# Capture first: with pipefail, grep -q closing the pipe early would fail the pipeline via SIGPIPE.
+WF=$($COMPOSE exec -T temporal temporal workflow describe --address temporal:7233 --namespace travelos -w "$TRIP2" 2>/dev/null || true)
+echo "$WF" | grep -E 'Status|Type' | head -3 | sed 's/^/  /'
+echo "$WF" | grep -qi 'completed' && pass "Temporal workflow $TRIP2 COMPLETED" || fail "workflow not completed"
+EVENTS=$($COMPOSE exec -T kafka bash -c "for t in travel.trip travel.policy travel.optimization travel.approval travel.order; do /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic \$t --from-beginning --timeout-ms 4000 2>/dev/null; done" | grep "$TRIP2" | python3 -c 'import sys,json,collections; c=collections.Counter(json.loads(l)["eventType"] for l in sys.stdin if l.strip()); print(dict(sorted(c.items())))')
+echo "  events for $TRIP2: $EVENTS"
+echo "$EVENTS" | grep -q "travel.trip.created" && echo "$EVENTS" | grep -q "travel.order.confirmed" && echo "$EVENTS" | grep -q "travel.trip.booked" && pass "created -> policy -> order.confirmed -> booked all on the broker" || fail "event trail incomplete"
+
+echo
+echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy)"

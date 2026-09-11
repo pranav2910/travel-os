@@ -73,6 +73,20 @@ Policy service: `make run SVC=policy`, then `make seed-policy` publishes
 gRPC (`travelos.policy.v1.PolicyService`) listens on 9082 with reflection enabled, so
 `grpcurl -plaintext localhost:9082 list` works if you have grpcurl installed.
 
+## Run the whole thing (Slice 1)
+
+In separate terminals (or `&`): `make run SVC=travel-core`, `make run SVC=policy`,
+`make run SVC=supplier-gateway`, `make run SVC=order`, `make run-worker`, `make run-optimization`.
+Then:
+
+```bash
+./scripts/e2e-slice1.sh    # two trips: one through manager approval, one in policy; asserts every step
+```
+
+Temporal UI: http://localhost:8233 (namespace `travelos`, workflow id = trip id). The worker's
+Kafka consumer group is `trip-planning-worker`; on a fresh group it replays history, which is safe
+(workflow id = trip id, already-terminal trips complete immediately).
+
 ## Kafka
 
 ```bash

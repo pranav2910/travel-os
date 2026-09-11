@@ -1,6 +1,8 @@
 package io.travelos.travelcore.api;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.travelos.travelcore.api.ApprovalController.ApprovalResponse;
+import io.travelos.travelcore.approval.Approval;
 import io.travelos.travelcore.trip.Trip;
 import io.travelos.travelcore.trip.TripEvidence;
 import io.travelos.travelcore.trip.TripSource;
@@ -21,9 +23,23 @@ public record TripResponse(
     String createdBy,
     long version,
     Instant createdAt,
-    Instant updatedAt) {
+    Instant updatedAt,
+    TravelerView traveler,
+    @Nullable MoneyView total,
+    @Nullable ApprovalResponse approval,
+    @Nullable String failureStage,
+    @Nullable String failureCode) {
+
+  public record TravelerView(
+      String travelerId, String givenName, String familyName, String email) {}
+
+  public record MoneyView(String currency, long amountMinor, String display) {}
 
   public static TripResponse from(Trip trip) {
+    return from(trip, null);
+  }
+
+  public static TripResponse from(Trip trip, @Nullable Approval approval) {
     return new TripResponse(
         trip.tripId(),
         trip.tenantId().value(),
@@ -36,6 +52,18 @@ public record TripResponse(
         trip.createdBy().id(),
         trip.version(),
         trip.createdAt(),
-        trip.updatedAt());
+        trip.updatedAt(),
+        new TravelerView(
+            trip.traveler().travelerId(),
+            trip.traveler().givenName(),
+            trip.traveler().familyName(),
+            trip.traveler().email()),
+        trip.total() == null
+            ? null
+            : new MoneyView(
+                trip.total().currency(), trip.total().amountMinor(), trip.total().toString()),
+        approval == null ? null : ApprovalResponse.from(approval),
+        trip.failureStage(),
+        trip.failureCode());
   }
 }

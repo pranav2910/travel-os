@@ -13,5 +13,10 @@ spring:
       properties:
         enable.idempotence: true
 travelos:
+  grpc:
+    server:
+      port: 0
+  temporal:
+    enabled: false
   outbox:
     poll-interval: 200ms

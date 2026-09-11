@@ -60,7 +60,9 @@ public class TripController {
   @GetMapping("/{tripId}")
   public TripResponse get(
       @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
-    return TripResponse.from(trips.get(me, tripId));
+    Trip trip = trips.get(me, tripId);
+    return TripResponse.from(
+        trip, trips.latestApproval(trip.tenantId(), trip.tripId()).orElse(null));
   }
 
   @GetMapping

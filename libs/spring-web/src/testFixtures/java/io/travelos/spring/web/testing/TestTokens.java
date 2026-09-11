@@ -87,13 +87,17 @@ public class TestTokens {
   }
 
   public static String user(String username, String tenant, String employeeId, List<String> roles) {
+    String given = Character.toUpperCase(username.charAt(0)) + username.substring(1);
     return token(
         b ->
             b.subject(username)
                 .claim("preferred_username", username)
                 .claim("tenant_id", tenant)
                 .claim("employee_id", employeeId)
-                .claim("roles", roles));
+                .claim("roles", roles)
+                .claim("given_name", given)
+                .claim("family_name", "Traveler")
+                .claim("email", username + "@" + tenant + ".example"));
   }
 
   public static String token(Consumer<JWTClaimsSet.Builder> customizer) {

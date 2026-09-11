@@ -9,7 +9,7 @@ export JAVA_HOME
 GRADLE  := ./gradlew
 COMPOSE := docker compose -f platform/local/docker-compose.yml
 
-.PHONY: help up down nuke ps logs build test check fmt clean run seed-policy run-optimization
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -44,6 +44,9 @@ fmt: ## apply code formatting
 
 run: ## run one service against the local platform: make run SVC=travel-core
 	$(GRADLE) :services:$(SVC):bootRun
+
+run-worker: ## run the Temporal trip-planning worker
+	$(GRADLE) :workflows:trip-planning:bootRun
 
 run-optimization: ## run the Python optimization service (gRPC :9083)
 	cd intelligence/optimization && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && uv run --frozen python -m travelos_optimization.server

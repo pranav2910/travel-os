@@ -58,7 +58,14 @@ public final class TenantJwtAuthenticationConverter
             .collect(Collectors.toUnmodifiableSet());
 
     RequestPrincipal request =
-        new RequestPrincipal(principal, tenant, jwt.getClaimAsString(EMPLOYEE_CLAIM), roles);
+        new RequestPrincipal(
+            principal,
+            tenant,
+            jwt.getClaimAsString(EMPLOYEE_CLAIM),
+            roles,
+            jwt.getClaimAsString("given_name"),
+            jwt.getClaimAsString("family_name"),
+            jwt.getClaimAsString("email"));
     return new TravelOsAuthentication(jwt, request, authorities);
   }
 }

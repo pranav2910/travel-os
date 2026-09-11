@@ -56,6 +56,13 @@ management:
       show-details: never
 
 travelos:
+  grpc:
+    server:
+      port: ${GRPC_PORT:9081}
+  temporal:
+    enabled: ${TEMPORAL_ENABLED:true}
+    address: ${TEMPORAL_ADDRESS:localhost:7233}
+    namespace: travelos
   outbox:
     poll-interval: 500ms
     batch-size: 100

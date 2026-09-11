@@ -1,6 +1,7 @@
 package io.travelos.travelcore.trip;
 
 import io.travelos.common.identity.Principal;
+import io.travelos.common.money.Money;
 import io.travelos.common.tenant.TenantId;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,7 +27,9 @@ public class TripRepository {
       origin, destination, earliest_departure, arrival_deadline, return_after, latest_return,
       purpose, hotel_required, travelers,
       selected_bundle_id, optimization_run_id, policy_decision_id, approval_id, order_id,
-      created_by, idempotency_key, request_fingerprint, version, created_at, updated_at
+      created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
+      traveler_given_name, traveler_family_name, traveler_email, total_currency, total_minor,
+      failure_stage, failure_code
       """;
 
   private final JdbcClient jdbc;
@@ -42,11 +45,13 @@ public class TripRepository {
             INSERT INTO trip (trip_id, tenant_id, traveler_id, status, source, request_text,
               origin, destination, earliest_departure, arrival_deadline, return_after, latest_return,
               purpose, hotel_required, travelers,
-              created_by, idempotency_key, request_fingerprint, version, created_at, updated_at)
+              created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
+              traveler_given_name, traveler_family_name, traveler_email)
             VALUES (:tripId, :tenantId, :travelerId, :status, :source, :requestText,
               :origin, :destination, :earliestDeparture, :arrivalDeadline, :returnAfter, :latestReturn,
               :purpose, :hotelRequired, :travelers,
-              :createdBy, :idempotencyKey, :requestFingerprint, :version, :createdAt, :updatedAt)
+              :createdBy, :idempotencyKey, :requestFingerprint, :version, :createdAt, :updatedAt,
+              :givenName, :familyName, :email)
             """)
         .param("tripId", trip.tripId())
         .param("tenantId", trip.tenantId().value())
@@ -69,6 +74,9 @@ public class TripRepository {
         .param("version", trip.version())
         .param("createdAt", ts(trip.createdAt()))
         .param("updatedAt", ts(trip.updatedAt()))
+        .param("givenName", trip.traveler().givenName())
+        .param("familyName", trip.traveler().familyName())
+        .param("email", trip.traveler().email())
         .update();
   }
 
@@ -105,17 +113,34 @@ public class TripRepository {
         .list();
   }
 
-  /** Optimistic concurrency: updates only if nobody else moved the trip since we read it. */
-  public boolean updateStatus(Trip updated, long expectedVersion) {
+  /**
+   * Optimistic concurrency: writes status, evidence, total and failure fields only if nobody else
+   * moved the trip since we read it.
+   */
+  public boolean update(Trip updated, long expectedVersion) {
+    TripEvidence e = updated.evidence();
     int rows =
         jdbc.sql(
                 """
-                UPDATE trip SET status = :status, version = :version, updated_at = :updatedAt
+                UPDATE trip SET status = :status, version = :version, updated_at = :updatedAt,
+                  selected_bundle_id = :bundle, optimization_run_id = :optimizationRun,
+                  policy_decision_id = :policyDecision, approval_id = :approval, order_id = :orderId,
+                  total_currency = :currency, total_minor = :totalMinor,
+                  failure_stage = :failureStage, failure_code = :failureCode
                 WHERE tenant_id = :tenantId AND trip_id = :tripId AND version = :expectedVersion
                 """)
             .param("status", updated.status().name())
             .param("version", updated.version())
             .param("updatedAt", ts(updated.updatedAt()))
+            .param("bundle", e.selectedBundleId())
+            .param("optimizationRun", e.optimizationRunId())
+            .param("policyDecision", e.policyDecisionId())
+            .param("approval", e.approvalId())
+            .param("orderId", e.orderId())
+            .param("currency", updated.total() == null ? null : updated.total().currency())
+            .param("totalMinor", updated.total() == null ? null : updated.total().amountMinor())
+            .param("failureStage", updated.failureStage())
+            .param("failureCode", updated.failureCode())
             .param("tenantId", updated.tenantId().value())
             .param("tripId", updated.tripId())
             .param("expectedVersion", expectedVersion)
@@ -190,6 +215,8 @@ public class TripRepository {
                 rs.getString("purpose"),
                 rs.getBoolean("hotel_required"),
                 rs.getInt("travelers"));
+    String currency = rs.getString("total_currency");
+    Money total = currency == null ? null : Money.of(currency, rs.getLong("total_minor"));
     return new Trip(
         rs.getString("trip_id"),
         TenantId.of(rs.getString("tenant_id")),
@@ -209,7 +236,15 @@ public class TripRepository {
         rs.getString("request_fingerprint"),
         rs.getLong("version"),
         instant(rs, "created_at"),
-        instant(rs, "updated_at"));
+        instant(rs, "updated_at"),
+        new TravelerSnapshot(
+            rs.getString("traveler_id"),
+            rs.getString("traveler_given_name"),
+            rs.getString("traveler_family_name"),
+            rs.getString("traveler_email")),
+        total,
+        rs.getString("failure_stage"),
+        rs.getString("failure_code"));
   }
 
   private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {

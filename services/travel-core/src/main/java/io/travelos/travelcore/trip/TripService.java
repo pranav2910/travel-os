@@ -1,10 +1,17 @@
 package io.travelos.travelcore.trip;
 
+import io.travelos.common.identity.Principal;
 import io.travelos.common.ids.IdPrefix;
 import io.travelos.common.ids.Ids;
+import io.travelos.common.money.Money;
+import io.travelos.common.tenant.TenantId;
 import io.travelos.spring.outbox.Outbox;
 import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
+import io.travelos.travelcore.approval.Approval;
+import io.travelos.travelcore.approval.ApprovalRepository;
+import io.travelos.travelcore.approval.ApprovalSignaler;
+import io.travelos.workflows.TripPlanning;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -20,11 +27,20 @@ public class TripService {
   private static final int SLICE_1_MAX_TRAVELERS = 1;
 
   private final TripRepository trips;
+  private final ApprovalRepository approvals;
+  private final ApprovalSignaler signaler;
   private final Outbox outbox;
   private final Clock clock;
 
-  public TripService(TripRepository trips, Outbox outbox, Clock clock) {
+  public TripService(
+      TripRepository trips,
+      ApprovalRepository approvals,
+      ApprovalSignaler signaler,
+      Outbox outbox,
+      Clock clock) {
     this.trips = trips;
+    this.approvals = approvals;
+    this.signaler = signaler;
     this.outbox = outbox;
     this.clock = clock;
   }
@@ -58,6 +74,12 @@ public class TripService {
     }
 
     Instant now = clock.instant();
+    // The snapshot is the requester's own claims when they travel themselves; an arranger's trip
+    // for someone else only knows the traveler id until Enterprise Context supplies the profile.
+    TravelerSnapshot traveler =
+        travelerId.equals(me.employeeId())
+            ? TravelerSnapshot.of(travelerId, me)
+            : new TravelerSnapshot(travelerId, "", "", "");
     Trip trip =
         new Trip(
             Ids.newId(IdPrefix.TRIP),
@@ -73,7 +95,11 @@ public class TripService {
             fingerprint,
             0,
             now,
-            now);
+            now,
+            traveler,
+            null,
+            null,
+            null);
     trips.insert(trip);
     trips.appendHistory(trip, null, TripStatus.SUBMITTED, null, me.principal(), now);
     outbox.append(TripEvents.created(trip, null, clock));
@@ -87,6 +113,17 @@ public class TripService {
         .filter(trip -> TripAccess.canRead(me, trip))
         // 404, not 403: the caller learns nothing about trips they cannot see.
         .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
+  }
+
+  /** Internal (workflow) read: tenant-scoped, no per-person visibility rule. */
+  @Transactional(readOnly = true)
+  public Trip getInternal(TenantId tenant, String tripId) {
+    return trips.find(tenant, tripId).orElseThrow(() -> new ApiException.NotFound("trip", tripId));
+  }
+
+  @Transactional(readOnly = true)
+  public Optional<Approval> latestApproval(TenantId tenant, String tripId) {
+    return approvals.latestForTrip(tenant, tripId);
   }
 
   @Transactional(readOnly = true)
@@ -117,13 +154,158 @@ public class TripService {
     }
     Instant now = clock.instant();
     Trip cancelled = trip.withStatus(TripStatus.CANCELLED, now);
-    if (!trips.updateStatus(cancelled, trip.version())) {
+    if (!trips.update(cancelled, trip.version())) {
       throw new ApiException.Conflict(
           "TRIP_MODIFIED_CONCURRENTLY", "trip changed while cancelling; re-read and retry");
     }
     trips.appendHistory(trip, trip.status(), TripStatus.CANCELLED, reason, me.principal(), now);
     outbox.append(TripEvents.cancelled(cancelled, reason, me.principal(), null, clock));
     return cancelled;
+  }
+
+  /**
+   * The workflow's lever. Validates the lifecycle, records evidence, creates the approval when
+   * entering AWAITING_APPROVAL, and publishes the matching event. Idempotent: asking for the
+   * current status returns the trip unchanged.
+   */
+  @Transactional
+  public Trip transition(TenantId tenant, Principal actor, Transition t) {
+    Trip trip = getInternal(tenant, t.tripId());
+    if (trip.status() == t.to()) {
+      return trip;
+    }
+    if (!trip.status().canTransitionTo(t.to())) {
+      throw new IllegalStateException(
+          "trip " + trip.tripId() + " cannot go from " + trip.status() + " to " + t.to());
+    }
+    Instant now = clock.instant();
+    Trip next =
+        trip.withStatus(t.to(), now)
+            .withEvidence(
+                trip.evidence()
+                    .merge(
+                        t.selectedBundleId(),
+                        t.optimizationRunId(),
+                        t.policyDecisionId(),
+                        null,
+                        t.orderId()),
+                t.total());
+    Approval approval = null;
+    if (t.to() == TripStatus.AWAITING_APPROVAL) {
+      String role =
+          t.approverRole() == null || t.approverRole().isBlank() ? "MANAGER" : t.approverRole();
+      String policyDecisionId = next.evidence().policyDecisionId();
+      approval =
+          approvals
+              .pendingForTrip(tenant, trip.tripId())
+              .orElseGet(
+                  () -> {
+                    Approval created =
+                        new Approval(
+                            Ids.newId(IdPrefix.APPROVAL),
+                            tenant,
+                            trip.tripId(),
+                            role,
+                            Approval.Status.PENDING,
+                            policyDecisionId,
+                            now,
+                            null,
+                            null,
+                            null,
+                            null);
+                    approvals.insert(created);
+                    return created;
+                  });
+      next =
+          next.withEvidence(
+              next.evidence().merge(null, null, null, approval.approvalId(), null), null);
+    }
+    if (t.to() == TripStatus.FAILED) {
+      next = next.withFailure(t.failureStage(), t.failureCode());
+    }
+    if (!trips.update(next, trip.version())) {
+      throw new IllegalStateException("trip " + trip.tripId() + " changed concurrently; retry");
+    }
+    trips.appendHistory(trip, trip.status(), t.to(), t.reason(), actor, now);
+    switch (t.to()) {
+      case AWAITING_APPROVAL -> {
+        outbox.append(TripEvents.planned(next, true, t.causationId(), clock));
+        outbox.append(TripEvents.approvalRequested(next, approval, clock));
+      }
+      case APPROVED -> {
+        if (trip.status() == TripStatus.PLANNING) {
+          outbox.append(TripEvents.planned(next, false, t.causationId(), clock));
+        }
+      }
+      case BOOKED -> outbox.append(TripEvents.booked(next, t.causationId(), clock));
+      case FAILED ->
+          outbox.append(
+              TripEvents.failed(
+                  next, t.failureStage(), t.failureCode(), t.reason(), t.causationId(), clock));
+      case CANCELLED ->
+          outbox.append(
+              TripEvents.cancelled(
+                  next,
+                  t.reason() == null ? "cancelled" : t.reason(),
+                  actor,
+                  t.causationId(),
+                  clock));
+      default -> {}
+    }
+    return next;
+  }
+
+  /** A manager or travel admin (never the traveler) decides the pending approval. */
+  @Transactional
+  public Approval decideApproval(
+      RequestPrincipal me,
+      String tripId,
+      Approval.Status decision,
+      @Nullable String comment,
+      String idempotencyKey) {
+    if (decision == Approval.Status.PENDING) {
+      throw new IllegalArgumentException("decision must be APPROVED or REJECTED");
+    }
+    Trip trip =
+        trips
+            .find(me.tenant(), tripId)
+            .filter(t -> TripAccess.canRead(me, t))
+            .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
+    if (!me.hasAnyRole("MANAGER", "TRAVEL_ADMIN")) {
+      throw new ApiException.Forbidden(
+          "NOT_AN_APPROVER", "only MANAGER or TRAVEL_ADMIN may decide approvals");
+    }
+    if (trip.travelerId().equals(me.employeeId())) {
+      throw new ApiException.Forbidden("SELF_APPROVAL", "a traveler cannot approve their own trip");
+    }
+    Optional<Approval> pending = approvals.pendingForTrip(me.tenant(), tripId);
+    if (pending.isEmpty()) {
+      Approval latest =
+          approvals
+              .latestForTrip(me.tenant(), tripId)
+              .orElseThrow(
+                  () ->
+                      new ApiException.Conflict(
+                          "NO_PENDING_APPROVAL", "this trip is not awaiting approval"));
+      if (idempotencyKey.equals(latest.decisionIdempotencyKey())) {
+        return latest;
+      }
+      throw new ApiException.Conflict(
+          "APPROVAL_ALREADY_DECIDED",
+          "approval " + latest.approvalId() + " was already " + latest.status());
+    }
+    Instant now = clock.instant();
+    if (!approvals.decide(
+        pending.get(), decision, me.principal().id(), comment, idempotencyKey, now)) {
+      throw new ApiException.Conflict("APPROVAL_ALREADY_DECIDED", "decided concurrently; re-read");
+    }
+    Approval decided = approvals.find(me.tenant(), pending.get().approvalId()).orElseThrow();
+    outbox.append(TripEvents.approvalDecided(trip, decided, me.principal(), comment, clock));
+    signaler.approvalDecided(
+        trip.tripId(),
+        new TripPlanning.ApprovalDecision(
+            decided.approvalId(), decided.status().name(), me.principal().id(), comment));
+    return decided;
   }
 
   /** The create command, decoupled from the HTTP shape. */
@@ -151,4 +333,19 @@ public class TripService {
       return Fingerprints.sha256Hex(canonical);
     }
   }
+
+  /** A lifecycle move requested by the workflow. Blank evidence fields keep existing values. */
+  public record Transition(
+      String tripId,
+      TripStatus to,
+      @Nullable String reason,
+      @Nullable String selectedBundleId,
+      @Nullable String optimizationRunId,
+      @Nullable String policyDecisionId,
+      @Nullable String orderId,
+      @Nullable Money total,
+      @Nullable String approverRole,
+      @Nullable String failureStage,
+      @Nullable String failureCode,
+      @Nullable String causationId) {}
 }

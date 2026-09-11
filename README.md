@@ -23,6 +23,17 @@ Built so far: contracts, shared libs, local platform, and **Travel Core** (`serv
 cancellation with optimistic locking, status history, and `travel.trip.*` events through a
 transactional outbox. Verified against the live platform with real Keycloak tokens.
 
+**Supplier Gateway** (`services/supplier-gateway`): the only door to suppliers; a sandbox airline
+with deterministic inventory, expiring offers and supplier-side idempotent orders; per-adapter
+rate limiter + circuit breaker; documented failure injection. **Order** (`services/order`): the
+transactional truth; idempotent create, resumable per-item saga with re-pricing, bounded retries and
+compensation, honest FAILED / PARTIALLY_FAILED. **Optimization** (`intelligence/optimization`,
+Python + OR-Tools): feasibility with named reasons, five normalized objectives, CP-SAT selection,
+whole ranking returned. **Trip-planning workflow** (`workflows/trip-planning`, Temporal): started by
+`travel.trip.created`, drives Travel Core through PLANNING → (AWAITING_APPROVAL) → APPROVED →
+BOOKING → BOOKED, waits for a manager's signal with lost-signal recovery, records every failure
+with stage + code.
+
 **Policy** (`services/policy`): per-tenant, versioned policy documents published by travel admins
 (`POST /api/v1/policies`, idempotent by content hash); a deterministic engine exposed over gRPC
 (`EvaluateTrip` per candidate, `EvaluateAction` for agents and people) that returns outcome,
@@ -33,11 +44,11 @@ published as a `travel.policy.*` event; explainability read API at `/api/v1/poli
 | Slice 1 definition of done | | |
 |---|---|---|
 | ☑ real authentication (OIDC, tested with signed RS256 tokens) | ☑ tenant isolation (cross-tenant read = 404, tested) | ☑ Postgres persistence (Flyway, DB-per-service) |
-| ☑ versioned APIs (`/api/v1`) | ☑ provider abstraction (contract) | ☑ deterministic policy (versioned documents, evidence per decision) |
-| ☐ optimization engine | ☐ durable workflow | ☐ booking idempotency (trip creation ✓, orders pending) |
-| ☐ retry-safe supplier calls | ☑ Kafka events (transactional outbox) | ☐ audit trail |
+| ☑ versioned APIs (`/api/v1`) | ☑ provider abstraction (sandbox adapter behind `SupplierGateway`) | ☑ deterministic policy (versioned documents, evidence per decision) |
+| ☑ optimization engine (OR-Tools CP-SAT) | ☑ durable workflow (Temporal, resumable, signal-driven approvals) | ☑ booking idempotency (trips, orders, supplier orders) |
+| ☑ retry-safe supplier calls (bounded retries, breaker, idempotent keys) | ☑ Kafka events (transactional outbox) | ◐ audit trail (decision + status history in each service; the Audit service that aggregates them is next) |
 | ☐ distributed tracing | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
-| ☑ contract tests | ☐ E2E happy path | ☐ failure-path tests |
+| ☑ contract tests | ☑ E2E happy path (`scripts/e2e-slice1.sh` against the live platform) | ☑ failure-path tests (sold out, declined, repricing, compensation, timeouts, denials) |
 | ☐ Docker images | ☐ Terraform | ☐ EKS deployment |
 | ☑ CI pipeline | ☐ CD pipeline | ☐ rollback |
 

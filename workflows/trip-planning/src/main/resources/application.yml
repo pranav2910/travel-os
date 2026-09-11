@@ -1,0 +1,62 @@
+spring:
+  application:
+    name: trip-planning-worker
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: trip-planning-worker
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8086}
+  shutdown: graceful
+
+travelos:
+  temporal:
+    address: ${TEMPORAL_ADDRESS:localhost:7233}
+    namespace: travelos
+  grpc:
+    clients:
+      travel-core:
+        address: ${TRAVEL_CORE_ADDRESS:localhost:9081}
+      policy:
+        address: ${POLICY_ADDRESS:localhost:9082}
+      optimization:
+        address: ${OPTIMIZATION_ADDRESS:localhost:9083}
+      supplier-gateway:
+        address: ${SUPPLIER_GATEWAY_ADDRESS:localhost:9084}
+        deadline: 20s
+      order:
+        address: ${ORDER_ADDRESS:localhost:9085}
+        deadline: 60s
+  workflow:
+    # The machine identity every downstream call is made as. Scoped, never "*".
+    principal: agent/trip-planner/v1
+    approval-timeout: ${APPROVAL_TIMEOUT:PT48H}
+    # Opaque token from the tenant's payment provider. Never a card number.
+    payment-token: ${PAYMENT_TOKEN:tok_corp_visa_sandbox}
+
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{correlation_id:-}] "

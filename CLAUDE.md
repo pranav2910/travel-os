@@ -32,6 +32,12 @@ produces evidence (decision id, policy version, rules evaluated, reason codes).
 - **gRPC is grpc-java hosted directly** (`libs/spring-grpc-support`), not spring-grpc: its Boot 4 line was not
   cleanly published when we started. Every internal call validates `RequestContext` (tenant, principal, correlation).
 
+- **The workflow asks, it never decides.** `TripWorkflowImpl` is deterministic code over idempotent
+  activities; policy/optimization/order services own the decisions. Workflow id = trip id. Approvals
+  arrive as signals and are also re-read from Travel Core, so a lost signal only delays.
+- **Every failure names its stage and code** (`FAILED` trips carry `failure_stage` + `failure_code`;
+  orders carry `failure_code` + `compensated`). No silent failures, no generic "error".
+
 ## Layout
 
 - `contracts/` protobuf (internal gRPC), JSON-schema events, OpenAPI (public REST `/api/v1`)
@@ -40,7 +46,8 @@ produces evidence (decision id, policy version, rules evaluated, reason codes).
   `spring-grpc-support`: grpc-java hosting, RequestContext validation)
 - `services/` Spring Boot services, one directory each, own DB, own Flyway migrations
 - `intelligence/` Python: optimization (OR-Tools), llm-gateway, agent-runtime
-- `workflows/` Temporal workflow definitions + workers
+- `workflows/` Temporal workflow definitions + workers (`trip-planning`); `libs/workflow-contracts` holds the names/payloads shared with services
+- `scripts/e2e-slice1.sh` the live end-to-end check; run it after `make up` + all services
 - `platform/local/` docker compose for local dev (Postgres 17, Redis 8, Kafka 4 KRaft, Temporal, Keycloak)
 - `docs/` architecture, ADRs, runbooks
 

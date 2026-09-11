@@ -9,6 +9,9 @@ dependencies {
     implementation(project(":libs:events"))
     implementation(project(":libs:spring-web"))
     implementation(project(":libs:spring-outbox"))
+    implementation(project(":libs:spring-grpc-support"))
+    implementation(project(":libs:workflow-contracts"))
+    implementation(libs.temporal.sdk)
 
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)

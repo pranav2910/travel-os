@@ -3,6 +3,7 @@ syntax = "proto3";
 package travelos.trip.v1;
 
 import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
 
 option java_multiple_files = true;
 option java_package = "io.travelos.contracts.trip.v1";
@@ -58,4 +59,56 @@ message Trip {
   int64 version = 11;
   google.protobuf.Timestamp created_at = 12;
   google.protobuf.Timestamp updated_at = 13;
+
+  // Who travels, as captured from the identity provider at request time. The Enterprise Context
+  // service replaces this snapshot with the real traveler profile in a later slice.
+  TravelerSnapshot traveler = 14;
+  // Total of the selected bundle once planned.
+  travelos.common.v1.Money total = 15;
+  string request_text = 16;
+  // PENDING | APPROVED | REJECTED, or empty when no approval was ever requested.
+  string approval_status = 17;
+  string failure_stage = 18;
+  string failure_code = 19;
+}
+
+message TravelerSnapshot {
+  string traveler_id = 1;
+  string given_name = 2;
+  string family_name = 3;
+  string email = 4;
+}
+
+// Internal API used by the trip workflow. Travel Core stays the owner of trip state; the workflow
+// asks it to move, and every move is validated against the lifecycle and recorded as history.
+service TravelCoreService {
+  rpc GetTrip(GetTripRequest) returns (Trip);
+  // Idempotent: asking for the current status returns the trip unchanged.
+  rpc TransitionTrip(TransitionTripRequest) returns (Trip);
+}
+
+message GetTripRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+}
+
+message TransitionTripRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  TripStatus to = 3;
+  string reason = 4;
+
+  // Evidence, set when known.
+  string selected_bundle_id = 5;
+  string optimization_run_id = 6;
+  string policy_decision_id = 7;
+  string order_id = 8;
+  travelos.common.v1.Money total = 9;
+
+  // AWAITING_APPROVAL: the role that must approve. Travel Core creates the approval record and
+  // returns its id in Trip.approval_id; the decision arrives as a workflow signal.
+  string approver_role = 10;
+  // FAILED: where and why. failure_code is a stable machine code.
+  string failure_stage = 11;
+  string failure_code = 12;
 }

@@ -63,7 +63,9 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
             .setApprovalId(nullToEmpty(o.approvalId()))
             .setVersion(o.version())
             .setCreatedAt(ts(o.createdAt()))
-            .setUpdatedAt(ts(o.updatedAt()));
+            .setUpdatedAt(ts(o.updatedAt()))
+            .setFailureCode(nullToEmpty(o.failureCode()))
+            .setCompensated(o.compensated());
     for (OrderRecord.Item item : o.items()) {
       b.addItems(
           OrderItem.newBuilder()
