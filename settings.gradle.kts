@@ -33,6 +33,7 @@ include(":libs:spring-grpc-support")
 include(":services:travel-core")
 include(":services:policy")
 include(":services:supplier-gateway")
+include(":services:order")
 
 // Python services are wired into the same Gradle check so there is one gate.
 include(":intelligence:optimization")

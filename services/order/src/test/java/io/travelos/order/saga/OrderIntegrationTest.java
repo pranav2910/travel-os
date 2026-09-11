@@ -1,0 +1,410 @@
+package io.travelos.order.saga;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.travelos.contracts.common.v1.Money;
+import io.travelos.contracts.common.v1.Principal;
+import io.travelos.contracts.common.v1.RequestContext;
+import io.travelos.contracts.offer.v1.AirOffer;
+import io.travelos.contracts.offer.v1.Bundle;
+import io.travelos.contracts.offer.v1.FlightSegment;
+import io.travelos.contracts.offer.v1.Journey;
+import io.travelos.contracts.offer.v1.Offer;
+import io.travelos.contracts.offer.v1.OfferType;
+import io.travelos.contracts.order.v1.CancelOrderCommand;
+import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.order.v1.GetOrderRequest;
+import io.travelos.contracts.order.v1.Order;
+import io.travelos.contracts.order.v1.OrderItemStatus;
+import io.travelos.contracts.order.v1.OrderServiceGrpc;
+import io.travelos.contracts.order.v1.OrderStatus;
+import io.travelos.contracts.supplier.v1.Passenger;
+import io.travelos.events.Topics;
+import io.travelos.events.testing.EventSchemas;
+import io.travelos.spring.grpc.GrpcServerLifecycle;
+import io.travelos.spring.web.testing.TestTokens;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.kafka.autoconfigure.KafkaConnectionDetails;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.web.client.RestClient;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.kafka.KafkaContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
+/** Real gRPC in, real gRPC out (to a scripted gateway on a real port), real Postgres and Kafka. */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("test")
+@Import(TestTokens.class)
+@Testcontainers
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class OrderIntegrationTest {
+
+  @Container @ServiceConnection
+  static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:17.11");
+
+  @Container @ServiceConnection
+  static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.3.1");
+
+  static final FakeSupplierGateway SUPPLIER = new FakeSupplierGateway();
+  static final String TRIP = "trip_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+  static final java.util.concurrent.atomic.AtomicInteger ATTEMPT =
+      new java.util.concurrent.atomic.AtomicInteger();
+
+  @DynamicPropertySource
+  static void supplierAddress(DynamicPropertyRegistry registry) throws IOException {
+    int port = SUPPLIER.start();
+    registry.add("travelos.grpc.clients.supplier-gateway.address", () -> "localhost:" + port);
+  }
+
+  @Autowired Environment environment;
+  @Autowired GrpcServerLifecycle grpc;
+  @Autowired JdbcClient jdbc;
+  @Autowired KafkaConnectionDetails kafkaConnection;
+
+  private final JsonMapper json = JsonMapper.builder().build();
+  private ManagedChannel channel;
+  private OrderServiceGrpc.OrderServiceBlockingStub orders;
+  private RestClient http;
+  private KafkaConsumer<String, String> consumer;
+  private final List<ConsumerRecord<String, String>> received = new ArrayList<>();
+
+  @BeforeAll
+  void setUp() {
+    channel = ManagedChannelBuilder.forAddress("localhost", grpc.port()).usePlaintext().build();
+    orders = OrderServiceGrpc.newBlockingStub(channel);
+    int port = environment.getRequiredProperty("local.server.port", Integer.class);
+    http =
+        RestClient.builder()
+            .baseUrl("http://localhost:" + port)
+            .defaultStatusHandler(s -> true, (rq, rs) -> {})
+            .build();
+    Properties props = new Properties();
+    props.put(
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+        String.join(",", kafkaConnection.getBootstrapServers()));
+    props.put(ConsumerConfig.GROUP_ID_CONFIG, "order-test-" + System.nanoTime());
+    props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    consumer = new KafkaConsumer<>(props);
+    consumer.subscribe(List.of(Topics.ORDER));
+  }
+
+  @AfterAll
+  void tearDown() {
+    consumer.close();
+    channel.shutdownNow();
+    SUPPLIER.stop();
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(1)
+  void happyPathConfirmsTheOrderWithEvidenceAndIsIdempotent() {
+    String key = TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet();
+    CreateOrderCommand command = command(key, bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA1", "ok-DL291"));
+
+    Order first = orders.createOrder(command);
+    Order second = orders.createOrder(command);
+    Order third = orders.createOrder(command);
+
+    assertThat(first.getOrderId()).startsWith("ord_");
+    assertThat(first.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(first.getExternalOrderId()).startsWith("EXT-");
+    assertThat(first.getItemsList())
+        .singleElement()
+        .satisfies(
+            item -> {
+              assertThat(item.getStatus()).isEqualTo(OrderItemStatus.ITEM_CONFIRMED);
+              assertThat(item.getRecordLocator()).startsWith("LOC");
+              assertThat(item.getOffer().getProviderOfferId()).isEqualTo("ok-DL291");
+            });
+    assertThat(first.getPolicyDecisionId()).isEqualTo("pd_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+    assertThat(first.getApprovalId()).isEqualTo("apr_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+    assertThat(second).isEqualTo(first);
+    assertThat(third).isEqualTo(first);
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM travel_order WHERE idempotency_key = :k")
+                .param("k", key)
+                .query(Long.class)
+                .single())
+        .isEqualTo(1L);
+    assertThat(SUPPLIER.createAttempts)
+        .containsKey(first.getOrderId() + ":" + first.getItems(0).getItemId());
+    assertThat(
+            SUPPLIER
+                .createAttempts
+                .get(first.getOrderId() + ":" + first.getItems(0).getItemId())
+                .get())
+        .as("replays never reach the supplier again")
+        .isEqualTo(1);
+
+    Order fetched =
+        orders.getOrder(
+            GetOrderRequest.newBuilder().setCtx(ctx("")).setOrderId(first.getOrderId()).build());
+    assertThat(fetched).isEqualTo(first);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(2)
+  void transientSupplierFailuresAreRetriedWithinBounds() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA2", "flaky-UA100")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(
+            SUPPLIER
+                .createAttempts
+                .get(order.getOrderId() + ":" + order.getItems(0).getItemId())
+                .get())
+        .isEqualTo(3);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(3)
+  void aFailedComponentCompensatesTheConfirmedOnes() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA3", "ok-DL100", "soldout-DL200")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
+    assertThat(order.getItems(0).getStatus())
+        .as("the confirmed first leg was released")
+        .isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(order.getItems(1).getStatus()).isEqualTo(OrderItemStatus.ITEM_FAILED);
+    assertThat(SUPPLIER.cancelled).contains(order.getItems(0).getExternalRef());
+    JsonNode view =
+        json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.alice()).getBody());
+    assertThat(view.get("failureCode").asString()).isEqualTo("SEAT_NO_LONGER_AVAILABLE");
+    assertThat(view.get("compensated").asBoolean()).isTrue();
+    // Replaying the same command returns the failed order; the saga is not restarted.
+    assertThat(
+            orders
+                .createOrder(
+                    command(
+                        order.getIdempotencyKey(),
+                        bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA3", "ok-DL100", "soldout-DL200")))
+                .getStatus())
+        .isEqualTo(OrderStatus.FAILED);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(4)
+  void compensationThatCannotCompleteIsPartiallyFailedAndHonestAboutIt() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA4", "stuck-DL300", "soldout-DL400")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.PARTIALLY_FAILED);
+    JsonNode view =
+        json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.bob()).getBody());
+    assertThat(view.get("compensated").asBoolean()).isFalse();
+    assertThat(view.get("items").get(0).get("status").asString())
+        .as("still confirmed at the supplier: a human must release it")
+        .isEqualTo("CONFIRMED");
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(5)
+  void aHigherRepriceIsNotSilentlyAccepted() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA5", "pricier-AA500")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.FAILED);
+    JsonNode view =
+        json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.alice()).getBody());
+    assertThat(view.get("failureCode").asString()).isEqualTo("PRICE_CHANGED");
+    assertThat(view.get("failureMessage").asString()).contains("re-evaluate policy");
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(6)
+  void cancellingAConfirmedOrderReleasesItAndIsIdempotent() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA6", "ok-B6600")));
+    CancelOrderCommand cancel =
+        CancelOrderCommand.newBuilder()
+            .setCtx(ctx(order.getOrderId() + ":CANCEL-ORDER:1"))
+            .setOrderId(order.getOrderId())
+            .setReason("Trip cancelled by traveler")
+            .build();
+    Order cancelled = orders.cancelOrder(cancel);
+    assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    assertThat(cancelled.getItems(0).getStatus()).isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(orders.cancelOrder(cancel)).isEqualTo(cancelled);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(7)
+  void guardsAndTenancy() {
+    assertThatThrownBy(
+            () -> orders.createOrder(CreateOrderCommand.newBuilder().setTripId(TRIP).build()))
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.INVALID_ARGUMENT));
+    assertThatThrownBy(
+            () -> orders.createOrder(command("", bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA7", "ok-x"))))
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getDescription()).contains("idempotency_key"));
+    String key = TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet();
+    Order order =
+        orders.createOrder(command(key, bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA8", "ok-y")));
+    assertThatThrownBy(
+            () ->
+                orders.createOrder(command(key, bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FA9", "ok-y"))))
+        .as("same key, different bundle")
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getDescription()).contains("IDEMPOTENCY_KEY_REUSED"));
+    assertThat(
+            get("/api/v1/orders/" + order.getOrderId(), TestTokens.alice()).getStatusCode().value())
+        .isEqualTo(200);
+    assertThat(
+            get("/api/v1/orders/" + order.getOrderId(), TestTokens.dan()).getStatusCode().value())
+        .isEqualTo(404);
+    assertThat(
+            get("/api/v1/orders/" + order.getOrderId(), TestTokens.zoe()).getStatusCode().value())
+        .isEqualTo(404);
+    assertThat(
+            get("/api/v1/orders/" + order.getOrderId(), TestTokens.bob()).getStatusCode().value())
+        .isEqualTo(200);
+    JsonNode mine =
+        json.readTree(get("/api/v1/orders?tripId=" + TRIP, TestTokens.alice()).getBody());
+    assertThat(mine).isNotEmpty();
+    assertThat(mine.findValues("orderId").stream().map(JsonNode::asString))
+        .contains(order.getOrderId());
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(99)
+  void everyOrderEventIsContractValid() {
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              consumer.poll(Duration.ofMillis(250)).forEach(received::add);
+              List<String> types =
+                  received.stream()
+                      .map(r -> json.readTree(r.value()).get("eventType").asString())
+                      .toList();
+              assertThat(types)
+                  .contains(
+                      "travel.order.created",
+                      "travel.order.confirmed",
+                      "travel.order.failed",
+                      "travel.order.cancelled");
+            });
+    for (ConsumerRecord<String, String> record : received) {
+      assertThat(EventSchemas.violations(record.value())).as(record.value()).isEmpty();
+      assertThat(record.key()).isEqualTo(TRIP);
+    }
+  }
+
+  // ------------------------------------------------------------------ helpers
+
+  private static CreateOrderCommand command(String key, Bundle bundle) {
+    return CreateOrderCommand.newBuilder()
+        .setCtx(ctx(key))
+        .setTripId(TRIP)
+        .setTravelerId("emp_1001")
+        .setBundle(bundle)
+        .setPolicyDecisionId("pd_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        .setOptimizationRunId("opt_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        .setApprovalId("apr_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        .addPassengers(
+            Passenger.newBuilder()
+                .setGivenName("Alice")
+                .setFamilyName("Nguyen")
+                .setEmail("alice@acme.example"))
+        .setPaymentToken("tok_corp_visa")
+        .build();
+  }
+
+  private static RequestContext ctx(String key) {
+    return RequestContext.newBuilder()
+        .setTenantId("acme")
+        .setCorrelationId(TRIP)
+        .setCausationId("cmd_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        .setIdempotencyKey(key)
+        .setPrincipal(
+            Principal.newBuilder().setKind(Principal.Kind.AGENT).setId("agent/trip-planner/v1"))
+        .build();
+  }
+
+  private static Bundle bundle(String bundleId, String... providerOfferIds) {
+    Bundle.Builder b = Bundle.newBuilder().setBundleId(bundleId);
+    long total = 0;
+    for (String id : providerOfferIds) {
+      long cents = FakeSupplierGateway.cents(id);
+      total += cents;
+      b.addOffers(
+          Offer.newBuilder()
+              .setOfferId("off_" + id)
+              .setProvider("sandbox-air")
+              .setProviderOfferId(id)
+              .setType(OfferType.AIR)
+              .setTotal(Money.newBuilder().setCurrency("USD").setAmountMinor(cents))
+              .setAir(
+                  AirOffer.newBuilder()
+                      .setOutbound(
+                          Journey.newBuilder()
+                              .addSegments(
+                                  FlightSegment.newBuilder()
+                                      .setCarrier("DL")
+                                      .setOrigin("BOS")
+                                      .setDestination("SEA")))));
+    }
+    return b.setTotal(Money.newBuilder().setCurrency("USD").setAmountMinor(total)).build();
+  }
+
+  private ResponseEntity<String> get(String path, String token) {
+    return http.get()
+        .uri(path)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .retrieve()
+        .toEntity(String.class);
+  }
+}

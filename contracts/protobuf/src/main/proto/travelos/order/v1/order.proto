@@ -5,6 +5,7 @@ package travelos.order.v1;
 import "google/protobuf/timestamp.proto";
 import "travelos/common/v1/common.proto";
 import "travelos/offer/v1/offer.proto";
+import "travelos/supplier/v1/supplier.proto";
 
 option java_multiple_files = true;
 option java_package = "io.travelos.contracts.order.v1";
@@ -84,6 +85,11 @@ message CreateOrderCommand {
   string optimization_run_id = 6;
   // Empty when policy did not require approval.
   string approval_id = 7;
+
+  // Who travels, as the supplier needs it. Comes from the traveler profile (Enterprise Context).
+  repeated travelos.supplier.v1.Passenger passengers = 8;
+  // Opaque token from the payment provider (corporate card / virtual card). Never a PAN.
+  string payment_token = 9;
 }
 
 message GetOrderRequest {
