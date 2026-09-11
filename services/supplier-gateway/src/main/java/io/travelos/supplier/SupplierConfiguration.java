@@ -1,5 +1,6 @@
 package io.travelos.supplier;
 
+import io.travelos.common.time.Clocks;
 import java.time.Clock;
 import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -12,7 +13,7 @@ class SupplierConfiguration {
 
   @Bean
   Clock clock() {
-    return Clock.systemUTC();
+    return Clocks.micros();
   }
 
   @Bean

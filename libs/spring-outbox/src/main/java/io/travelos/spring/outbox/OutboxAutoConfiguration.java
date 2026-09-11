@@ -2,6 +2,7 @@ package io.travelos.spring.outbox;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.travelos.common.time.Clocks;
 import io.travelos.events.EventCodec;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -31,7 +32,7 @@ public class OutboxAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public Clock travelosClock() {
-    return Clock.systemUTC();
+    return Clocks.micros();
   }
 
   @Bean

@@ -1,5 +1,6 @@
 package io.travelos.order;
 
+import io.travelos.common.time.Clocks;
 import java.time.Clock;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +15,6 @@ public class OrderApplication {
 
   @Bean
   Clock clock() {
-    return Clock.systemUTC();
+    return Clocks.micros();
   }
 }
