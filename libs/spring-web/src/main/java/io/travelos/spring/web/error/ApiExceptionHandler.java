@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -29,6 +31,17 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
   @ExceptionHandler(ApiException.class)
   public ProblemDetail handleApi(ApiException e) {
     return problem(e.status(), e.code(), e.getMessage());
+  }
+
+  /** Method security ({@code @PreAuthorize}) throws after the filter chain; map it explicitly. */
+  @ExceptionHandler(AccessDeniedException.class)
+  public ProblemDetail handleAccessDenied(AccessDeniedException e) {
+    return problem(HttpStatus.FORBIDDEN, "FORBIDDEN", "you do not have permission to do this");
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ProblemDetail handleAuthentication(AuthenticationException e) {
+    return problem(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "authentication is required");
   }
 
   @ExceptionHandler(IllegalArgumentException.class)

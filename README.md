@@ -23,10 +23,17 @@ Built so far: contracts, shared libs, local platform, and **Travel Core** (`serv
 cancellation with optimistic locking, status history, and `travel.trip.*` events through a
 transactional outbox. Verified against the live platform with real Keycloak tokens.
 
+**Policy** (`services/policy`): per-tenant, versioned policy documents published by travel admins
+(`POST /api/v1/policies`, idempotent by content hash); a deterministic engine exposed over gRPC
+(`EvaluateTrip` per candidate, `EvaluateAction` for agents and people) that returns outcome,
+rules evaluated, reason codes, approvers and **economics** (lowest logical fare, in-policy
+ceiling, traveler reward, traveler out-of-pocket); every decision persisted as evidence and
+published as a `travel.policy.*` event; explainability read API at `/api/v1/policy-decisions`.
+
 | Slice 1 definition of done | | |
 |---|---|---|
 | ☑ real authentication (OIDC, tested with signed RS256 tokens) | ☑ tenant isolation (cross-tenant read = 404, tested) | ☑ Postgres persistence (Flyway, DB-per-service) |
-| ☑ versioned APIs (`/api/v1`) | ☑ provider abstraction (contract) | ☐ deterministic policy |
+| ☑ versioned APIs (`/api/v1`) | ☑ provider abstraction (contract) | ☑ deterministic policy (versioned documents, evidence per decision) |
 | ☐ optimization engine | ☐ durable workflow | ☐ booking idempotency (trip creation ✓, orders pending) |
 | ☐ retry-safe supplier calls | ☑ Kafka events (transactional outbox) | ☐ audit trail |
 | ☐ distributed tracing | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |

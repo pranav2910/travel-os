@@ -5,43 +5,185 @@
   "$defs": {
     "reason": {
       "type": "object",
-      "required": ["code", "ruleId"],
+      "required": [
+        "code",
+        "ruleId"
+      ],
       "additionalProperties": false,
       "properties": {
-        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
-        "ruleId": { "type": "string", "minLength": 1 },
-        "message": { "type": "string", "maxLength": 1000 }
+        "code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "ruleId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
+    },
+    "money": {
+      "$ref": "common.schema.json#/$defs/money"
+    },
+    "travel.policy.published": {
+      "type": "object",
+      "required": [
+        "policyId",
+        "policyVersion",
+        "publishedBy",
+        "documentHash"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "policyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "publishedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "documentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 500
+        }
       }
     },
     "travel.policy.evaluated": {
       "type": "object",
-      "required": ["decisionId", "tripId", "policyId", "policyVersion", "outcome", "rulesEvaluated", "requiresApproval"],
+      "required": [
+        "decisionId",
+        "tripId",
+        "policyId",
+        "policyVersion",
+        "outcome",
+        "rulesEvaluated",
+        "requiresApproval"
+      ],
       "additionalProperties": false,
       "properties": {
-        "decisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "bundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
-        "action": { "type": "string", "pattern": "^[a-z]+\\.[a-z]+$" },
-        "policyId": { "type": "string", "minLength": 1 },
-        "policyVersion": { "type": "integer", "minimum": 1 },
-        "outcome": { "enum": ["ALLOW", "ALLOW_WITH_APPROVAL", "DENY"] },
-        "rulesEvaluated": { "type": "array", "items": { "type": "string" } },
-        "reasons": { "type": "array", "items": { "$ref": "#/$defs/reason" } },
-        "requiresApproval": { "type": "boolean" },
-        "evaluatedFor": { "$ref": "common.schema.json#/$defs/principal" }
+        "decisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "bundleId": {
+          "$ref": "common.schema.json#/$defs/bundleId"
+        },
+        "action": {
+          "type": "string",
+          "pattern": "^[a-z]+\\.[a-z]+$"
+        },
+        "policyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "outcome": {
+          "enum": [
+            "ALLOW",
+            "ALLOW_WITH_APPROVAL",
+            "DENY",
+            "ALLOW_WITH_TRAVELER_PAYMENT"
+          ]
+        },
+        "rulesEvaluated": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "requiresApproval": {
+          "type": "boolean"
+        },
+        "evaluatedFor": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "economics": {
+          "type": "object",
+          "required": [
+            "referenceFare",
+            "inPolicyCeiling",
+            "travelerIncentive",
+            "travelerPays"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "referenceFare": {
+              "$ref": "common.schema.json#/$defs/money"
+            },
+            "inPolicyCeiling": {
+              "$ref": "common.schema.json#/$defs/money"
+            },
+            "travelerIncentive": {
+              "$ref": "common.schema.json#/$defs/money"
+            },
+            "travelerPays": {
+              "$ref": "common.schema.json#/$defs/money"
+            }
+          }
+        }
       }
     },
     "travel.policy.violation": {
       "type": "object",
-      "required": ["decisionId", "tripId", "policyId", "policyVersion", "reasons"],
+      "required": [
+        "decisionId",
+        "tripId",
+        "policyId",
+        "policyVersion",
+        "reasons"
+      ],
       "additionalProperties": false,
       "properties": {
-        "decisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "policyId": { "type": "string", "minLength": 1 },
-        "policyVersion": { "type": "integer", "minimum": 1 },
-        "reasons": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/reason" } },
-        "attemptedBy": { "$ref": "common.schema.json#/$defs/principal" }
+        "decisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "policyId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policyVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reasons": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/reason"
+          }
+        },
+        "attemptedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
       }
     }
   }

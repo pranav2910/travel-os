@@ -39,6 +39,12 @@ server:
   shutdown: graceful
 
 management:
+  otlp:
+    metrics:
+      export:
+        # Prometheus scrape is the default; push to an OTLP collector only when one is configured.
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
   endpoints:
     web:
       exposure:

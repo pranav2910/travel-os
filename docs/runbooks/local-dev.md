@@ -23,6 +23,8 @@ Docker Desktop needs ~3 GB for the platform; Java services run on the host.
 | Temporal UI | http://localhost:8233 | — |
 | Keycloak | http://localhost:8180 (realm `travelos`) | admin console `admin` / `admin` |
 
+Service ports (HTTP 808x pairs with gRPC 908x): travel-core 8081 · policy 8082 / 9082 · optimization 8083 / 9083 · supplier-gateway 8084 / 9084 · order 8085 / 9085.
+
 Databases: `enterprise_context`, `travel_core`, `policy`, `approval`, `orders`, `audit`, plus `temporal`, `temporal_visibility`.
 
 ## Dev users (realm `travelos`, password `password`)
@@ -64,6 +66,12 @@ curl -s -X POST http://localhost:8081/api/v1/trips \
 ```
 
 Metrics: `curl -s localhost:8081/actuator/prometheus | grep travelos_outbox` — `backlog` should sit at 0.
+
+Policy service: `make run SVC=policy`, then `make seed-policy` publishes
+`platform/local/seed/policies/acme-us-standard.json` for tenant acme as carol (TRAVEL_ADMIN).
+`GET /api/v1/policies` lists versions; `GET /api/v1/policy-decisions?tripId=...` explains decisions.
+gRPC (`travelos.policy.v1.PolicyService`) listens on 9082 with reflection enabled, so
+`grpcurl -plaintext localhost:9082 list` works if you have grpcurl installed.
 
 ## Kafka
 

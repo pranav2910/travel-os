@@ -27,7 +27,7 @@ topics:
 
   - name: travel.policy
     slice: 1
-    events: [travel.policy.evaluated, travel.policy.violation]
+    events: [travel.policy.published, travel.policy.evaluated, travel.policy.violation]
 
   - name: travel.optimization
     slice: 1

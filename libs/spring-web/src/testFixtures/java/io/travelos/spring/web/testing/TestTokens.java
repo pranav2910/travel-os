@@ -1,4 +1,4 @@
-package io.travelos.travelcore.api;
+package io.travelos.spring.web.testing;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -26,8 +26,11 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 /**
  * Mints RS256 tokens the way Keycloak would, against a key pair generated per JVM, and supplies the
- * matching {@link JwtDecoder} (issuer + audience validated, like production). The full bearer-token
- * filter chain therefore runs in tests — nothing is mocked around security.
+ * matching {@link JwtDecoder} (issuer + audience validated, like production). Import this class
+ * into a {@code @SpringBootTest} and the full bearer-token filter chain runs against real tokens.
+ *
+ * <p>The dev users mirror platform/local/keycloak/travelos-realm.json plus {@code dan}, a second
+ * plain traveler at acme for "same tenant, different person" cases.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class TestTokens {
@@ -58,48 +61,39 @@ public class TestTokens {
     return decoder;
   }
 
-  /** alice@acme, TRAVELER. */
+  /** alice@acme, TRAVELER, emp_1001. */
   public static String alice() {
-    return token(
-        b ->
-            b.subject("alice")
-                .claim("preferred_username", "alice")
-                .claim("tenant_id", "acme")
-                .claim("employee_id", "emp_1001")
-                .claim("roles", List.of("TRAVELER")));
+    return user("alice", "acme", "emp_1001", List.of("TRAVELER"));
   }
 
-  /** bob@acme, MANAGER + TRAVELER. */
+  /** bob@acme, TRAVELER + MANAGER, emp_1002. */
   public static String bob() {
-    return token(
-        b ->
-            b.subject("bob")
-                .claim("preferred_username", "bob")
-                .claim("tenant_id", "acme")
-                .claim("employee_id", "emp_1002")
-                .claim("roles", List.of("TRAVELER", "MANAGER")));
+    return user("bob", "acme", "emp_1002", List.of("TRAVELER", "MANAGER"));
   }
 
-  /** dan@acme, another plain TRAVELER. */
+  /** carol@acme, TRAVELER + TRAVEL_ADMIN + FINANCE, emp_1003. */
+  public static String carol() {
+    return user("carol", "acme", "emp_1003", List.of("TRAVELER", "TRAVEL_ADMIN", "FINANCE"));
+  }
+
+  /** dan@acme, another plain TRAVELER, emp_1004. */
   public static String dan() {
-    return token(
-        b ->
-            b.subject("dan")
-                .claim("preferred_username", "dan")
-                .claim("tenant_id", "acme")
-                .claim("employee_id", "emp_1004")
-                .claim("roles", List.of("TRAVELER")));
+    return user("dan", "acme", "emp_1004", List.of("TRAVELER"));
   }
 
-  /** zoe@globex, TRAVELER — the other tenant. */
+  /** zoe@globex, TRAVELER, emp_2001: the other tenant. */
   public static String zoe() {
+    return user("zoe", "globex", "emp_2001", List.of("TRAVELER"));
+  }
+
+  public static String user(String username, String tenant, String employeeId, List<String> roles) {
     return token(
         b ->
-            b.subject("zoe")
-                .claim("preferred_username", "zoe")
-                .claim("tenant_id", "globex")
-                .claim("employee_id", "emp_2001")
-                .claim("roles", List.of("TRAVELER")));
+            b.subject(username)
+                .claim("preferred_username", username)
+                .claim("tenant_id", tenant)
+                .claim("employee_id", employeeId)
+                .claim("roles", roles));
   }
 
   public static String token(Consumer<JWTClaimsSet.Builder> customizer) {

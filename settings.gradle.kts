@@ -27,6 +27,8 @@ include(":libs:common")
 include(":libs:events")
 include(":libs:spring-web")
 include(":libs:spring-outbox")
+include(":libs:spring-grpc-support")
 
 // Services — Slice 1 only.
 include(":services:travel-core")
+include(":services:policy")

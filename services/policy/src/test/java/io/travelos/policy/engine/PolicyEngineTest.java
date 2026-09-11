@@ -1,0 +1,345 @@
+package io.travelos.policy.engine;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.travelos.common.identity.Principal;
+import io.travelos.common.money.Money;
+import io.travelos.events.testing.EventSchemas;
+import io.travelos.policy.document.PolicyDocument;
+import io.travelos.policy.document.PolicyDocument.Consequence;
+import io.travelos.policy.document.PolicyDocuments;
+import io.travelos.policy.engine.Decision.CandidateEvaluation;
+import io.travelos.policy.engine.Decision.Outcome;
+import io.travelos.policy.engine.Facts.Action;
+import io.travelos.policy.engine.Facts.Air;
+import io.travelos.policy.engine.Facts.Candidate;
+import io.travelos.policy.engine.Facts.Hotel;
+import io.travelos.policy.engine.Facts.Trip;
+import java.util.List;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+/** The seed policy (platform/local/seed/policies/acme-us-standard.json) is the fixture. */
+class PolicyEngineTest {
+
+  private static final PolicyDocument POLICY =
+      PolicyDocuments.parse(EventSchemas.resource("policies/acme-us-standard.json"));
+  private static final Trip DOMESTIC =
+      new Trip("trip_1", "emp_1001", "BOS", "SEA", false, "domestic: BOS(US)-SEA(US)");
+  private static final Trip INTERNATIONAL =
+      new Trip("trip_2", "emp_1001", "BOS", "LHR", true, "international: BOS(US)-LHR(GB)");
+  private static final Principal AGENT = new Principal.Agent("disruption-recovery", "v1");
+  private static final Principal HUMAN = new Principal.Human("alice");
+
+  private final PolicyEngine engine = new PolicyEngine();
+
+  private static Candidate air(String id, long fareCents, Cabin cabin, int stops) {
+    return new Candidate(
+        id, Money.usd(fareCents), new Air(Money.usd(fareCents), cabin, stops), null);
+  }
+
+  private static Candidate airAndHotel(String id, long fareCents, long nightlyCents, int nights) {
+    return new Candidate(
+        id,
+        Money.usd(fareCents + nightlyCents * nights),
+        new Air(Money.usd(fareCents), Cabin.ECONOMY, 0),
+        new Hotel(Money.usd(nightlyCents), nights));
+  }
+
+  @Nested
+  class Trips {
+
+    @Test
+    void theWholeStoryOfOneSearch() {
+      List<CandidateEvaluation> result =
+          engine.evaluateTrip(
+              POLICY,
+              DOMESTIC,
+              List.of(
+                  air("A", 47500, Cabin.ECONOMY, 0),
+                  air("B", 62500, Cabin.ECONOMY, 1),
+                  air("C", 90000, Cabin.BUSINESS, 0),
+                  air("D", 56000, Cabin.ECONOMY, 2),
+                  air("E", 70000, Cabin.ECONOMY, 0)));
+
+      Decision a = result.get(0).decision();
+      assertThat(a.outcome()).isEqualTo(Outcome.ALLOW);
+      assertThat(a.violations()).isEmpty();
+      assertThat(a.economics().referenceFare()).isEqualTo(Money.usd(47500));
+      assertThat(a.economics().inPolicyCeiling()).isEqualTo(Money.usd(62500));
+      assertThat(a.economics().travelerIncentive())
+          .as("25% of the USD 150.00 headroom")
+          .isEqualTo(Money.usd(3750));
+      assertThat(a.economics().travelerPays()).isEqualTo(Money.usd(0));
+      assertThat(a.rulesEvaluated())
+          .containsExactly(
+              "CURRENCY",
+              "CABIN_PERMITTED",
+              "MAX_STOPS",
+              "LOWEST_LOGICAL_FARE",
+              "HOTEL_NIGHTLY_LIMIT",
+              "MANAGER_APPROVAL_THRESHOLD",
+              "INCENTIVE_SHARE");
+
+      Decision b = result.get(1).decision();
+      assertThat(b.outcome())
+          .as("exactly at the ceiling, one stop allowed")
+          .isEqualTo(Outcome.ALLOW);
+      assertThat(b.economics().travelerIncentive()).isEqualTo(Money.usd(0));
+
+      Decision c = result.get(2).decision();
+      assertThat(c.outcome()).isEqualTo(Outcome.DENY);
+      // Every objection is reported, not just the first: "and even if the cabin were allowed, it is
+      // USD 275 over the ceiling" is exactly what an explainability screen wants.
+      assertThat(c.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("CABIN_NOT_PERMITTED", "FARE_ABOVE_POLICY_CEILING");
+      assertThat(c.violations().getFirst().message()).contains("BUSINESS").contains("domestic");
+      assertThat(c.economics().travelerPays())
+          .as("a denied option costs nothing")
+          .isEqualTo(Money.usd(0));
+      assertThat(c.economics().travelerIncentive()).isEqualTo(Money.usd(0));
+
+      Decision d = result.get(3).decision();
+      assertThat(d.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(d.requiresApproval()).isTrue();
+      assertThat(d.approverRoles()).containsExactly("MANAGER");
+      assertThat(d.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("TOO_MANY_STOPS");
+      assertThat(d.economics().travelerIncentive()).isEqualTo(Money.usd(1625));
+
+      Decision e = result.get(4).decision();
+      assertThat(e.outcome()).isEqualTo(Outcome.ALLOW_WITH_TRAVELER_PAYMENT);
+      assertThat(e.requiresApproval()).isFalse();
+      assertThat(e.economics().travelerPays())
+          .as("USD 700 - USD 625 ceiling")
+          .isEqualTo(Money.usd(7500));
+      assertThat(e.economics().travelerIncentive()).isEqualTo(Money.usd(0));
+      assertThat(e.violations())
+          .singleElement()
+          .satisfies(
+              v -> {
+                assertThat(v.code()).isEqualTo("FARE_ABOVE_POLICY_CEILING");
+                assertThat(v.consequence()).isEqualTo(Consequence.TRAVELER_PAYS);
+                assertThat(v.message())
+                    .contains("USD 700.00")
+                    .contains("USD 625.00")
+                    .contains("USD 475.00");
+              });
+    }
+
+    @Test
+    void lowestLogicalFareIgnoresCabinsThePolicyForbids() {
+      List<CandidateEvaluation> result =
+          engine.evaluateTrip(
+              POLICY,
+              DOMESTIC,
+              List.of(
+                  air("cheap-business", 30000, Cabin.BUSINESS, 0),
+                  air("economy", 47500, Cabin.ECONOMY, 0)));
+      assertThat(result.get(1).decision().economics().referenceFare())
+          .as("a forbidden cabin cannot define the benchmark")
+          .isEqualTo(Money.usd(47500));
+      assertThat(result.get(1).decision().outcome()).isEqualTo(Outcome.ALLOW);
+    }
+
+    @Test
+    void internationalRoutesUseTheInternationalCabinList() {
+      List<CandidateEvaluation> result =
+          engine.evaluateTrip(
+              POLICY,
+              INTERNATIONAL,
+              List.of(
+                  air("pe", 120000, Cabin.PREMIUM_ECONOMY, 0),
+                  air("biz", 300000, Cabin.BUSINESS, 0)));
+      assertThat(result.get(0).decision().outcome())
+          .as("premium economy is fine internationally, but the total needs a manager")
+          .isEqualTo(Outcome.ALLOW);
+      assertThat(result.get(1).decision().outcome()).isEqualTo(Outcome.DENY);
+    }
+
+    @Test
+    void hotelAndTotalThresholds() {
+      List<CandidateEvaluation> result =
+          engine.evaluateTrip(
+              POLICY,
+              DOMESTIC,
+              List.of(
+                  airAndHotel("pricey-hotel", 50000, 30000, 2),
+                  airAndHotel("big-total", 50000, 20000, 4),
+                  airAndHotel("fine", 50000, 20000, 2)));
+
+      Decision hotel = result.get(0).decision();
+      assertThat(hotel.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(hotel.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("HOTEL_RATE_ABOVE_LIMIT");
+      assertThat(hotel.economics().travelerIncentive())
+          .as("all three share the USD 500 fare, so the ceiling is 650 and the headroom 150")
+          .isEqualTo(Money.usd(3750));
+
+      Decision total = result.get(1).decision();
+      assertThat(total.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(total.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("TOTAL_ABOVE_APPROVAL_THRESHOLD");
+
+      assertThat(result.get(2).decision().outcome()).isEqualTo(Outcome.ALLOW);
+    }
+
+    @Test
+    void foreignCurrencyIsDeniedNotConverted() {
+      Candidate euro =
+          new Candidate(
+              "eur",
+              Money.of("EUR", 40000),
+              new Air(Money.of("EUR", 40000), Cabin.ECONOMY, 0),
+              null);
+      Decision decision =
+          engine.evaluateTrip(POLICY, DOMESTIC, List.of(euro)).getFirst().decision();
+      assertThat(decision.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(decision.violations())
+          .extracting(Decision.Violation::code)
+          .contains("CURRENCY_MISMATCH");
+    }
+
+    @Test
+    void incentiveIsCapped() {
+      List<CandidateEvaluation> result =
+          engine.evaluateTrip(
+              POLICY,
+              DOMESTIC,
+              List.of(air("cheap", 10000, Cabin.ECONOMY, 0), air("ref", 10000, Cabin.ECONOMY, 0)));
+      // ceiling = 10000 + 15000; savings 15000 * 0.25 = 3750 < cap. Push the band: use a wider
+      // policy.
+      assertThat(result.getFirst().decision().economics().travelerIncentive())
+          .isEqualTo(Money.usd(3750));
+      PolicyDocument wide =
+          PolicyDocuments.parse(
+              EventSchemas.resource("policies/acme-us-standard.json")
+                  .replace("\"maxAmountAbove\": 15000", "\"maxAmountAbove\": 100000"));
+      Decision capped =
+          engine
+              .evaluateTrip(wide, DOMESTIC, List.of(air("cheap", 10000, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(capped.economics().travelerIncentive())
+          .as("25% of 1000.00 is 250.00, capped at 50.00")
+          .isEqualTo(Money.usd(5000));
+    }
+
+    @Test
+    void isDeterministic() {
+      List<Candidate> candidates =
+          List.of(
+              air("A", 47500, Cabin.ECONOMY, 0),
+              air("E", 70000, Cabin.ECONOMY, 0),
+              air("C", 90000, Cabin.BUSINESS, 0));
+      assertThat(engine.evaluateTrip(POLICY, DOMESTIC, candidates))
+          .isEqualTo(engine.evaluateTrip(POLICY, DOMESTIC, candidates));
+    }
+  }
+
+  @Nested
+  class Actions {
+
+    @Test
+    void agentMayRebookWithinTheAutonomyLimit() {
+      Decision decision =
+          engine.evaluateAction(
+              POLICY, DOMESTIC, new Action("order.change", Money.usd(8300), null), AGENT);
+      assertThat(decision.outcome()).isEqualTo(Outcome.ALLOW);
+      assertThat(decision.rulesEvaluated()).containsExactly("AGENT_REBOOKING_AUTONOMY");
+    }
+
+    @Test
+    void agentRebookingAboveTheLimitNeedsTheTraveler() {
+      Decision decision =
+          engine.evaluateAction(
+              POLICY, DOMESTIC, new Action("order.change", Money.usd(12000), null), AGENT);
+      assertThat(decision.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(decision.approverRoles()).containsExactly("TRAVELER");
+      assertThat(decision.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("INCREMENTAL_COST_ABOVE_AUTONOMY_LIMIT");
+    }
+
+    @Test
+    void agentRebookingIntoAForbiddenCabinIsDeniedRegardlessOfCost() {
+      Decision decision =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Action("order.change", Money.usd(5000), air("biz", 60000, Cabin.BUSINESS, 0)),
+              AGENT);
+      assertThat(decision.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(decision.violations())
+          .extracting(Decision.Violation::code)
+          .contains("CABIN_NOT_PERMITTED");
+      assertThat(decision.rulesEvaluated()).contains("AGENT_REBOOKING_AUTONOMY", "CABIN_PERMITTED");
+    }
+
+    @Test
+    void agentsNeverCancelOrCreateAlone() {
+      assertThat(
+              engine
+                  .evaluateAction(POLICY, DOMESTIC, new Action("order.cancel", null, null), AGENT)
+                  .outcome())
+          .isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      Decision create =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Action("order.create", null, air("A", 47500, Cabin.ECONOMY, 0)),
+              AGENT);
+      assertThat(create.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(create.approverRoles()).containsExactly("TRAVELER");
+      assertThat(create.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("AGENTS_PROPOSE_PEOPLE_BOOK");
+      assertThat(create.economics().travelerIncentive())
+          .as("the proposal still carries its economics")
+          .isEqualTo(Money.usd(3750));
+    }
+
+    @Test
+    void unknownActionsAreDeniedForEveryone() {
+      for (Principal actor : List.of(AGENT, HUMAN)) {
+        Decision decision =
+            engine.evaluateAction(POLICY, DOMESTIC, new Action("database.drop", null, null), actor);
+        assertThat(decision.outcome()).isEqualTo(Outcome.DENY);
+        assertThat(decision.violations())
+            .extracting(Decision.Violation::code)
+            .containsExactly("UNKNOWN_ACTION");
+      }
+    }
+
+    @Test
+    void humansCancelFreelyButChangesNeedAProposal() {
+      assertThat(
+              engine
+                  .evaluateAction(POLICY, DOMESTIC, new Action("order.cancel", null, null), HUMAN)
+                  .outcome())
+          .isEqualTo(Outcome.ALLOW);
+      Decision noProposal =
+          engine.evaluateAction(POLICY, DOMESTIC, new Action("order.change", null, null), HUMAN);
+      assertThat(noProposal.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(noProposal.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("PROPOSAL_REQUIRED");
+    }
+
+    @Test
+    void humanChangeAboveTheManagerThresholdNeedsAManager() {
+      Decision decision =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Action("order.change", Money.usd(150000), air("A", 47500, Cabin.ECONOMY, 0)),
+              HUMAN);
+      assertThat(decision.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(decision.approverRoles()).containsExactly("MANAGER");
+    }
+  }
+}

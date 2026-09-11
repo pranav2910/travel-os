@@ -27,11 +27,17 @@ produces evidence (decision id, policy version, rules evaluated, reason codes).
   segments of the event type (`travel.order.confirmed` -> `travel.order`). Topics are declared in
   `contracts/events/topics.yaml`, never auto-created.
 - **Agents are machine identities** (`agent/<name>/<version>`) with scoped capabilities, never `*`.
+- **Policy decisions carry economics** (reference fare, ceiling, traveler incentive, traveler pays): policy is an
+  incentive, not only a gate. Every evaluation is persisted as evidence and emitted as an event.
+- **gRPC is grpc-java hosted directly** (`libs/spring-grpc-support`), not spring-grpc: its Boot 4 line was not
+  cleanly published when we started. Every internal call validates `RequestContext` (tenant, principal, correlation).
 
 ## Layout
 
 - `contracts/` protobuf (internal gRPC), JSON-schema events, OpenAPI (public REST `/api/v1`)
-- `libs/` shared Java (`common`: ids, money, tenant, idempotency, principal; `events`: envelope + codec)
+- `libs/` shared Java (`common`: ids, money, tenant, idempotency, principal; `events`: envelope + codec + schema test fixtures;
+  `spring-web`: JWT tenant principal, problem details, Idempotency-Key, test tokens; `spring-outbox`: transactional outbox;
+  `spring-grpc-support`: grpc-java hosting, RequestContext validation)
 - `services/` Spring Boot services, one directory each, own DB, own Flyway migrations
 - `intelligence/` Python: optimization (OR-Tools), llm-gateway, agent-runtime
 - `workflows/` Temporal workflow definitions + workers

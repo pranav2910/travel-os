@@ -7,6 +7,7 @@ import io.travelos.events.EventCodec;
 import io.travelos.events.EventEnvelope;
 import io.travelos.events.Topics;
 import io.travelos.events.testing.EventSchemas;
+import io.travelos.spring.web.testing.TestTokens;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;

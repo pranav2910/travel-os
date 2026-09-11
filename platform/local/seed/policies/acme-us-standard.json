@@ -1,0 +1,19 @@
+{
+  "policyId": "US_STANDARD_TRAVEL",
+  "name": "US standard travel policy",
+  "currency": "USD",
+  "flight": {
+    "domesticCabins": ["ECONOMY"],
+    "internationalCabins": ["ECONOMY", "PREMIUM_ECONOMY"],
+    "lowestLogicalFare": { "maxAmountAbove": 15000, "onViolation": "TRAVELER_PAYS" },
+    "maxStops": 1,
+    "maxStopsOnViolation": "REQUIRE_APPROVAL"
+  },
+  "hotel": { "nightlyLimit": 24000, "onViolation": "REQUIRE_APPROVAL" },
+  "approval": { "managerRequiredAbove": 120000 },
+  "autonomy": {
+    "flightRebooking": { "enabled": true, "maxIncrementalCost": 10000 },
+    "cancellation": { "enabled": false }
+  },
+  "incentives": { "enabled": true, "shareOfSavings": 0.25, "maxReward": 5000 }
+}

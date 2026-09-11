@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: policy
+  datasource:
+    # The policy_app role can reach ONLY the policy database (ADR-0006).
+    url: ${POLICY_DB_URL:jdbc:postgresql://localhost:5432/policy}
+    username: ${POLICY_DB_USER:policy_app}
+    password: ${POLICY_DB_PASSWORD:policy-dev}
+    hikari:
+      maximum-pool-size: ${POLICY_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+      validation-timeout: 2000
+  flyway:
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        linger.ms: 5
+        delivery.timeout.ms: 45000
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8082}
+  shutdown: graceful
+
+travelos:
+  grpc:
+    server:
+      port: ${GRPC_PORT:9082}
+  outbox:
+    poll-interval: 500ms
+    batch-size: 100
+
+management:
+  otlp:
+    metrics:
+      export:
+        # Prometheus scrape is the default; push to an OTLP collector only when one is configured.
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] [%X{correlation_id:-}] "

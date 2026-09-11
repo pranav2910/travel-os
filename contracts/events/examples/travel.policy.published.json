@@ -1,0 +1,17 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.policy.published",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "policy:US_STANDARD_TRAVEL",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "policy",
+  "data": {
+    "policyId": "US_STANDARD_TRAVEL",
+    "policyVersion": 12,
+    "publishedBy": "human/carol",
+    "documentHash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+    "note": "Raise hotel nightly limit for Q4 conferences"
+  }
+}

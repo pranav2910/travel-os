@@ -24,6 +24,21 @@ enum Outcome {
   ALLOW = 1;
   ALLOW_WITH_APPROVAL = 2;
   DENY = 3;
+  // Bookable without approval, but the traveler pays economics.traveler_pays out of pocket.
+  ALLOW_WITH_TRAVELER_PAYMENT = 4;
+}
+
+// The money consequences of a candidate for the traveler. Policy is an incentive, not only a gate:
+// in-policy choices below the ceiling earn a reward, choices above it cost the traveler the excess.
+message Economics {
+  // Lowest logical fare among the candidates evaluated together (the policy's benchmark).
+  travelos.common.v1.Money reference_fare = 1;
+  // reference_fare + the policy's permitted band. At or below this is in policy.
+  travelos.common.v1.Money in_policy_ceiling = 2;
+  // Reward earned by choosing this candidate (zero when none).
+  travelos.common.v1.Money traveler_incentive = 3;
+  // Amount the traveler pays personally when the candidate exceeds the ceiling (zero when none).
+  travelos.common.v1.Money traveler_pays = 4;
 }
 
 message ReasonCode {
@@ -53,6 +68,9 @@ message PolicyDecision {
   repeated ApproverRequirement approvers = 8;
 
   google.protobuf.Timestamp evaluated_at = 9;
+
+  // Present for trip/bundle evaluations and for actions that propose a bundle.
+  Economics economics = 10;
 }
 
 message EvaluateTripRequest {

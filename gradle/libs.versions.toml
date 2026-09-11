@@ -3,7 +3,6 @@
 [versions]
 java = "21"
 spring-boot = "4.1.1"
-spring-grpc = "1.1.1"
 temporal = "1.38.0"
 grpc = "1.84.0"
 protobuf = "4.35.1"
@@ -21,13 +20,14 @@ json-schema-validator = "3.0.7"
 [libraries]
 # BOMs
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
-spring-grpc-bom = { module = "org.springframework.grpc:spring-grpc-dependencies", version.ref = "spring-grpc" }
 
 # Contracts / RPC
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-inprocess = { module = "io.grpc:grpc-inprocess", version.ref = "grpc" }
+grpc-services = { module = "io.grpc:grpc-services", version.ref = "grpc" }
+grpc-api = { module = "io.grpc:grpc-api", version.ref = "grpc" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 javax-annotation-api = { module = "javax.annotation:javax.annotation-api", version = "1.3.2" }
@@ -48,9 +48,6 @@ spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-bo
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
-spring-grpc-server-starter = { module = "org.springframework.grpc:spring-grpc-server-spring-boot-starter" }
-spring-grpc-client-starter = { module = "org.springframework.grpc:spring-grpc-client-spring-boot-starter" }
-spring-grpc-test = { module = "org.springframework.grpc:spring-grpc-test" }
 micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
 springdoc-openapi = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
 postgresql = { module = "org.postgresql:postgresql" }
