@@ -23,8 +23,8 @@ message ConstraintSet {
   repeated travelos.common.v1.Cabin allowed_cabins = 3;
   travelos.common.v1.Money max_total = 4;
   repeated string permitted_providers = 5;
-  // 0 => nonstop only. Negative => unconstrained.
-  int32 max_stops = 6;
+  // Absent => unconstrained. 0 => nonstop only. (optional: proto3 scalars have no presence.)
+  optional int32 max_stops = 6;
 }
 
 // Soft objectives. Score(x) = w_cost*C + w_time*T + w_risk*R + w_preference*P + w_experience*X.

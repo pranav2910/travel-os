@@ -26,6 +26,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      # Python services are part of the same Gradle check (intelligence/*/build.gradle.kts).
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+          cache-dependency-glob: "intelligence/**/uv.lock"
       - name: check
         run: ./gradlew check --no-daemon --stacktrace
       - name: test reports

@@ -32,3 +32,6 @@ include(":libs:spring-grpc-support")
 // Services — Slice 1 only.
 include(":services:travel-core")
 include(":services:policy")
+
+// Python services are wired into the same Gradle check so there is one gate.
+include(":intelligence:optimization")

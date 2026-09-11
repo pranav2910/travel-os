@@ -22,6 +22,7 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 intelligence/**/generated/
+intelligence/optimization/src/travelos/
 
 # Node
 node_modules/
