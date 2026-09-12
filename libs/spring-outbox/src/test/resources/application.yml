@@ -13,3 +13,13 @@ travelos:
   outbox:
     poll-interval: 200ms
     batch-size: 2
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      # Boot 4 turns propagation off together with export, so export stays on here and only the
+      # OTLP exporter is disabled; spans land in the test's InMemorySpanExporter.
+      enabled: true
+      otlp:
+        enabled: false

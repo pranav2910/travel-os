@@ -1,8 +1,12 @@
 package io.travelos.travelcore.approval;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.opentracingshim.OpenTracingShim;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowClientOptions;
 import io.temporal.client.WorkflowNotFoundException;
+import io.temporal.opentracing.OpenTracingClientInterceptor;
+import io.temporal.opentracing.OpenTracingOptions;
 import io.temporal.serviceclient.WorkflowServiceStubs;
 import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.travelos.workflows.TripPlanning;
@@ -26,6 +30,7 @@ class TemporalConfiguration {
       havingValue = "true",
       matchIfMissing = true)
   WorkflowClient workflowClient(
+      org.springframework.beans.factory.ObjectProvider<OpenTelemetry> otel,
       @org.springframework.beans.factory.annotation.Value(
               "${travelos.temporal.address:localhost:7233}")
           String address,
@@ -34,8 +39,18 @@ class TemporalConfiguration {
     WorkflowServiceStubs stubs =
         WorkflowServiceStubs.newServiceStubs(
             WorkflowServiceStubsOptions.newBuilder().setTarget(address).build());
+    // Signals carry the approver's request span into the workflow's trace.
+    OpenTracingOptions tracing =
+        OpenTracingOptions.newBuilder()
+            .setTracer(
+                OpenTracingShim.createTracerShim(otel.getIfAvailable(() -> OpenTelemetry.noop())))
+            .build();
     return WorkflowClient.newInstance(
-        stubs, WorkflowClientOptions.newBuilder().setNamespace(namespace).build());
+        stubs,
+        WorkflowClientOptions.newBuilder()
+            .setNamespace(namespace)
+            .setInterceptors(new OpenTracingClientInterceptor(tracing))
+            .build());
   }
 
   @Bean

@@ -2,6 +2,7 @@ package io.travelos.spring.outbox;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
 import io.travelos.common.time.Clocks;
 import io.travelos.events.EventCodec;
 import java.time.Clock;
@@ -22,7 +23,8 @@ import org.springframework.transaction.support.TransactionTemplate;
       "org.springframework.boot.jdbc.autoconfigure.JdbcClientAutoConfiguration",
       "org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration",
       "org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration",
-      "org.springframework.boot.micrometer.metrics.autoconfigure.MetricsAutoConfiguration"
+      "org.springframework.boot.micrometer.metrics.autoconfigure.MetricsAutoConfiguration",
+      "org.springframework.boot.opentelemetry.autoconfigure.OpenTelemetrySdkAutoConfiguration"
     })
 @ConditionalOnBean({JdbcClient.class, KafkaTemplate.class, PlatformTransactionManager.class})
 @EnableConfigurationProperties(OutboxProperties.class)
@@ -43,8 +45,12 @@ public class OutboxAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(Outbox.class)
-  public Outbox outbox(JdbcClient jdbc, EventCodec codec, Clock clock) {
-    return new JdbcOutbox(jdbc, codec, clock);
+  public Outbox outbox(
+      JdbcClient jdbc,
+      EventCodec codec,
+      Clock clock,
+      org.springframework.beans.factory.ObjectProvider<OpenTelemetry> otel) {
+    return new JdbcOutbox(jdbc, codec, clock, otel.getIfAvailable());
   }
 
   @Bean
@@ -60,9 +66,16 @@ public class OutboxAutoConfiguration {
       KafkaTemplate<String, String> kafka,
       OutboxProperties properties,
       Clock clock,
-      org.springframework.beans.factory.ObjectProvider<MeterRegistry> meters) {
+      org.springframework.beans.factory.ObjectProvider<MeterRegistry> meters,
+      org.springframework.beans.factory.ObjectProvider<OpenTelemetry> otel) {
     MeterRegistry registry = meters.getIfAvailable(SimpleMeterRegistry::new);
     return new OutboxPublisher(
-        jdbc, new TransactionTemplate(transactionManager), kafka, properties, clock, registry);
+        jdbc,
+        new TransactionTemplate(transactionManager),
+        kafka,
+        properties,
+        clock,
+        registry,
+        otel.getIfAvailable());
   }
 }

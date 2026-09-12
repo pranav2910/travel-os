@@ -11,7 +11,7 @@ import grpc
 from travelos.common.v1 import common_pb2
 from travelos.offer.v1 import offer_pb2
 from travelos.optimization.v1 import optimization_pb2, optimization_pb2_grpc
-from travelos_optimization import ids, solver
+from travelos_optimization import ids, solver, tracing
 from travelos_optimization.model import (
     UTC,
     Cabin,
@@ -38,6 +38,7 @@ def require_context(ctx: common_pb2.RequestContext, context: grpc.ServicerContex
         context.abort(grpc.StatusCode.INVALID_ARGUMENT, "ctx.principal is required")
     if not ctx.correlation_id:
         context.abort(grpc.StatusCode.INVALID_ARGUMENT, "ctx.correlation_id is required")
+    tracing.tag_current_span(ctx.tenant_id, ctx.correlation_id, ctx.principal.id)
 
 
 def _ts(ts) -> datetime | None:

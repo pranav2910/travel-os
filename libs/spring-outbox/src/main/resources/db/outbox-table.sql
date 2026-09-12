@@ -6,6 +6,8 @@ CREATE TABLE outbox (
     partition_key  VARCHAR(128) NOT NULL,
     payload        JSONB        NOT NULL,
     created_at     TIMESTAMPTZ  NOT NULL,
-    published_at   TIMESTAMPTZ
+    published_at   TIMESTAMPTZ,
+    -- W3C traceparent of the transaction that appended the row; restored when relayed.
+    trace_parent   VARCHAR(80)
 );
 CREATE INDEX outbox_unpublished_idx ON outbox (created_at) WHERE published_at IS NULL;

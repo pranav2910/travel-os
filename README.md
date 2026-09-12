@@ -51,7 +51,7 @@ published as a `travel.policy.*` event; explainability read API at `/api/v1/poli
 | ☑ versioned APIs (`/api/v1`) | ☑ provider abstraction (sandbox adapter behind `SupplierGateway`) | ☑ deterministic policy (versioned documents, evidence per decision) |
 | ☑ optimization engine (OR-Tools CP-SAT) | ☑ durable workflow (Temporal, resumable, signal-driven approvals) | ☑ booking idempotency (trips, orders, supplier orders) |
 | ☑ retry-safe supplier calls (bounded retries, breaker, idempotent keys) | ☑ Kafka events (transactional outbox) | ◐ audit trail (decision + status history in each service; the Audit service that aggregates them is next) |
-| ☐ distributed tracing | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
+| ☑ distributed tracing (one trace per trip across HTTP, outbox, Kafka, Temporal, gRPC, Python; Tempo + Grafana) | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
 | ☑ contract tests | ☑ E2E happy path (`scripts/e2e-slice1.sh` against the live platform) | ☑ failure-path tests (sold out, declined, repricing, compensation, timeouts, denials, unclear text, gateway outage) |
 | ☑ Docker images (8, layered, non-root; `make stack-up` runs the whole platform in Docker) | ☐ Terraform | ☐ EKS deployment |
 | ☑ CI pipeline | ◐ CD pipeline (images published to GHCR per commit; no cluster yet) | ☐ rollback |

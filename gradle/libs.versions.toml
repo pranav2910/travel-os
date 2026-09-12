@@ -4,6 +4,7 @@
 java = "21"
 spring-boot = "4.1.1"
 temporal = "1.38.0"
+opentelemetry = "1.62.0"
 grpc = "1.84.0"
 protobuf = "4.35.1"
 protobuf-plugin = "0.10.0"
@@ -57,6 +58,16 @@ flyway-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 temporal-sdk = { module = "io.temporal:temporal-sdk", version.ref = "temporal" }
 temporal-spring-boot-starter = { module = "io.temporal:temporal-spring-boot-starter", version.ref = "temporal" }
 temporal-testing = { module = "io.temporal:temporal-testing", version.ref = "temporal" }
+temporal-opentracing = { module = "io.temporal:temporal-opentracing", version.ref = "temporal" }
+
+# Tracing
+opentelemetry-api = { module = "io.opentelemetry:opentelemetry-api" }
+opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk" }
+opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing" }
+opentelemetry-opentracing-shim = { module = "io.opentelemetry:opentelemetry-opentracing-shim", version.ref = "opentelemetry" }
+micrometer-core = { module = "io.micrometer:micrometer-core" }
+micrometer-observation = { module = "io.micrometer:micrometer-observation" }
+micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel" }
 
 # Resilience
 resilience4j-spring-boot = { module = "io.github.resilience4j:resilience4j-spring-boot4", version.ref = "resilience4j" }

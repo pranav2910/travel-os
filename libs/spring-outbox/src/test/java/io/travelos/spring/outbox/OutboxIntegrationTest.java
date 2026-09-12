@@ -4,10 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.context.Scope;
+import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.travelos.common.tenant.TenantId;
 import io.travelos.events.EventCodec;
 import io.travelos.events.EventEnvelope;
 import io.travelos.events.Topics;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -46,6 +52,8 @@ class OutboxIntegrationTest {
   @Autowired TransactionTemplate tx;
   @Autowired JdbcClient jdbc;
   @Autowired KafkaConnectionDetails kafkaConnection;
+  @Autowired OpenTelemetry openTelemetry;
+  @Autowired InMemorySpanExporter exporter;
 
   private final EventCodec codec = new EventCodec();
   private KafkaConsumer<String, String> consumer;
@@ -82,16 +90,22 @@ class OutboxIntegrationTest {
           }
         });
 
+    // Other tests share the topic; only this test's key counts.
     List<ConsumerRecord<String, String>> received = new ArrayList<>();
     await()
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
-              consumer.poll(Duration.ofMillis(200)).forEach(received::add);
+              consumer
+                  .poll(Duration.ofMillis(200))
+                  .forEach(
+                      r -> {
+                        if ("trip_ordered".equals(r.key())) {
+                          received.add(r);
+                        }
+                      });
               assertThat(received).hasSize(5);
             });
-
-    assertThat(received).allSatisfy(record -> assertThat(record.key()).isEqualTo("trip_ordered"));
     assertThat(received.stream().map(record -> codec.fromJson(record.value())))
         .containsExactlyElementsOf(events);
     assertThat(
@@ -99,6 +113,45 @@ class OutboxIntegrationTest {
                 .query(Long.class)
                 .single())
         .isZero();
+  }
+
+  @Test
+  void theAppendingTransactionsTraceReachesTheConsumer() {
+    exporter.reset();
+    Span request = openTelemetry.getTracer("test").spanBuilder("POST /api/v1/trips").startSpan();
+    try (Scope ignored = request.makeCurrent()) {
+      tx.executeWithoutResult(status -> outbox.append(event("trip_traced", Map.of("k", "v"))));
+    } finally {
+      request.end();
+    }
+
+    List<ConsumerRecord<String, String>> received = new ArrayList<>();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              consumer.poll(Duration.ofMillis(200)).forEach(received::add);
+              assertThat(received.stream().filter(r -> "trip_traced".equals(r.key()))).hasSize(1);
+            });
+    ConsumerRecord<String, String> record =
+        received.stream().filter(r -> "trip_traced".equals(r.key())).findFirst().orElseThrow();
+    String traceparent =
+        new String(record.headers().lastHeader("traceparent").value(), StandardCharsets.UTF_8);
+    assertThat(traceparent)
+        .as("the consumer sees the trace of the request that appended the row")
+        .contains(request.getSpanContext().getTraceId());
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(exporter.getFinishedSpanItems())
+                    .anySatisfy(
+                        span -> {
+                          assertThat(span.getName()).isEqualTo("outbox publish travel.trip");
+                          assertThat(span.getKind()).isEqualTo(SpanKind.PRODUCER);
+                          assertThat(span.getTraceId())
+                              .isEqualTo(request.getSpanContext().getTraceId());
+                        }));
   }
 
   @Test

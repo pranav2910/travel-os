@@ -130,6 +130,29 @@ issuer `http://localhost:8180/realms/travelos` but fetches the signing keys from
 CI builds all eight images on every run and pushes them to GHCR (`:main` and `:<sha>`) on pushes to
 main, so `TAG=<sha> make stack-up` runs exactly what CI tested.
 
+## Tracing: one trace per trip
+
+`make up` also starts an OpenTelemetry collector (:4317 gRPC, :4318 HTTP), Tempo (:3200) and Grafana
+(http://localhost:3000, anonymous admin, Tempo pre-provisioned). Every service exports spans when
+`TRACING_EXPORT_ENABLED=true` (set by `make run*` and the Docker stack; off in tests). The trace
+crosses every boundary:
+
+| Hop | Mechanism |
+|---|---|
+| HTTP request -> service | Spring's observation on the server; `trip.id` tagged once the trip exists |
+| service -> outbox -> Kafka | the appending transaction's `traceparent` is stored on the row and restored at relay; the record carries it as a header |
+| Kafka -> consumer (worker, audit) | Spring Kafka consumer observation (`spring.kafka.listener.observation-enabled`) |
+| consumer -> Temporal workflow -> activities | Temporal's OpenTracing interceptors over the OTel shim (workflow headers) |
+| activity -> gRPC service | Micrometer gRPC client/server interceptors (`libs/spring-grpc-support`); `RequestContexts.require` tags `trip.id`, `tenant.id`, `principal.id` |
+| gRPC -> Python (optimization, llm-gateway) | OpenTelemetry gRPC server instrumentation; `OTEL_EXPORTER_OTLP_ENDPOINT` |
+
+Find a trip in Grafana -> Explore -> Tempo -> TraceQL: `{ span.trip.id = "trip_01..." }`. From the
+shell: `curl -s 'localhost:3200/api/search?q=%7B%20span.trip.id%20%3D%20%22trip_01...%22%20%7D'`.
+The e2e script's last section asserts that one trace id covers at least five services.
+
+Boot 4 gotcha: `management.tracing.export.enabled=false` also installs a no-op propagator, so with
+export off the trace does not cross hops even locally. That is why the switch is on for any real run.
+
 ## Kafka
 
 ```bash

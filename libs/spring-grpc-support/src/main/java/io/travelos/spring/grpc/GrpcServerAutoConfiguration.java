@@ -4,6 +4,9 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerInterceptor;
 import io.grpc.protobuf.services.HealthStatusManager;
+import io.micrometer.core.instrument.binder.grpc.ObservationGrpcServerInterceptor;
+import io.micrometer.observation.ObservationRegistry;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -45,11 +48,16 @@ public class GrpcServerAutoConfiguration {
       GrpcServerProperties properties,
       ObjectProvider<BindableService> services,
       ObjectProvider<ServerInterceptor> interceptors,
+      ObjectProvider<ObservationRegistry> observations,
       HealthStatusManager health) {
     // Interceptors run in registration order for outbound and reverse for inbound; MDC first so
-    // the exception mapper logs with context.
+    // the exception mapper logs with context; the observation (span) outermost of all.
     List<ServerInterceptor> ordered =
-        interceptors.orderedStream().sorted((a, b) -> rank(a) - rank(b)).toList();
+        new ArrayList<>(interceptors.orderedStream().sorted((a, b) -> rank(a) - rank(b)).toList());
+    ObservationRegistry registry = observations.getIfAvailable();
+    if (registry != null) {
+      ordered.add(new ObservationGrpcServerInterceptor(registry));
+    }
     return new GrpcServerLifecycle(properties, services.orderedStream().toList(), ordered, health);
   }
 

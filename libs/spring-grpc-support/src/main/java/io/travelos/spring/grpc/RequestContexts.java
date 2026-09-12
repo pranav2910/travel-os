@@ -1,6 +1,7 @@
 package io.travelos.spring.grpc;
 
 import io.grpc.Status;
+import io.opentelemetry.api.trace.Span;
 import io.travelos.common.identity.Principal;
 import io.travelos.common.tenant.TenantId;
 import io.travelos.contracts.common.v1.RequestContext;
@@ -48,6 +49,21 @@ public final class RequestContexts {
           .withDescription("ctx.correlation_id is required")
           .asRuntimeException();
     }
+    tagCurrentSpan(tenant, principal, ctx.getCorrelationId());
     return new Validated(tenant, principal, ctx.getCorrelationId());
+  }
+
+  /**
+   * Every server span carries who and what, so a trace can be found by trip id (Tempo: {@code {
+   * span.trip.id = "trip_..." }}) and read without opening a single payload.
+   */
+  public static void tagCurrentSpan(TenantId tenant, Principal principal, String correlationId) {
+    Span span = Span.current();
+    if (!span.getSpanContext().isValid()) {
+      return;
+    }
+    span.setAttribute("tenant.id", tenant.value());
+    span.setAttribute("trip.id", correlationId);
+    span.setAttribute("principal.id", principal.id());
   }
 }

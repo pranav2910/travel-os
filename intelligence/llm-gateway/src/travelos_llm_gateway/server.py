@@ -19,6 +19,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from travelos.llm.v1 import llm_pb2, llm_pb2_grpc
+from travelos_llm_gateway import tracing
 from travelos_llm_gateway.budget import TenantBudget
 from travelos_llm_gateway.providers import Provider, provider_from_env
 from travelos_llm_gateway.service import LlmGatewayService
@@ -33,12 +34,15 @@ def build_server(
     provider: Provider | None = None,
     budget: TenantBudget | None = None,
     max_workers: int = 8,
+    interceptors: list[grpc.ServerInterceptor] | None = None,
 ) -> tuple[grpc.Server, int]:
     provider = provider or provider_from_env(dict(os.environ))
     if budget is None:
         usd = float(os.environ.get("LLM_TENANT_DAILY_BUDGET_USD", "5"))
         budget = TenantBudget(int(usd * 1_000_000))
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
+    server = grpc.server(
+        futures.ThreadPoolExecutor(max_workers=max_workers), interceptors=interceptors or []
+    )
     llm_pb2_grpc.add_LlmGatewayServicer_to_server(LlmGatewayService(provider, budget), server)
     health_servicer = health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
@@ -58,7 +62,9 @@ def main() -> None:
         format="%(asctime)s %(levelname)s [llm-gateway] %(name)s: %(message)s",
     )
     port = int(os.environ.get("GRPC_PORT", "9087"))
-    server, bound = build_server(port)
+    server, bound = build_server(
+        port, interceptors=tracing.configure("llm-gateway", dict(os.environ))
+    )
     server.start()
     log.info("gRPC server listening on port %d serving [%s]", bound, SERVICE_NAME)
     stop = threading.Event()

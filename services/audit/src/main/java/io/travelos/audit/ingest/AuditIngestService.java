@@ -2,6 +2,7 @@ package io.travelos.audit.ingest;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.trace.Span;
 import io.travelos.audit.store.AuditRepository;
 import io.travelos.common.tenant.TenantId;
 import io.travelos.events.EventCodec;
@@ -50,6 +51,12 @@ public class AuditIngestService {
       quarantined.increment();
       log.warn("quarantined {}-{}@{}: {}", topic, partition, offset, e.getMessage());
       return Outcome.QUARANTINED;
+    }
+    Span span = Span.current();
+    if (span.getSpanContext().isValid()) {
+      span.setAttribute("trip.id", event.correlationId());
+      span.setAttribute("tenant.id", event.tenantId());
+      span.setAttribute("event.type", event.eventType());
     }
     if (!repository.insertIfAbsent(event, topic, partition, offset, now)) {
       duplicates.increment();

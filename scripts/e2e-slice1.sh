@@ -140,5 +140,35 @@ curl -s "$AUDIT/api/v1/audit/trips/$TRIP3/decisions" -H "Authorization: Bearer $
 [ "$(curl -s -o /dev/null -w '%{http_code}' "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $(tok zoe)")" = 404 ] && pass "another tenant cannot see the trail" || fail "cross-tenant audit read"
 curl -s "$AUDIT/api/v1/audit/events?type=travel.order.confirmed&limit=5" -H "Authorization: Bearer $CAROL" | check 'assert len(d)>=3, len(d); print("  finance view: last %d confirmed orders, newest %s" % (len(d), d[0]["data"]["orderId"]))' && pass "auditor query works, tenant-scoped" || fail "auditor query"
 
+echo "== 8. one trace: the whole lifecycle of $TRIP3 under a single trace id"
+TEMPO=${TEMPO:-http://localhost:3200}
+Q=$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote("{ span.trip.id = \"%s\" }" % sys.argv[1]))' "$TRIP3")
+NOW=$(date +%s); BEST=""
+for i in $(seq 1 45); do
+  BEST=$(curl -s "$TEMPO/api/search?q=$Q&limit=20&start=$((NOW-3600))&end=$((NOW+60))" | python3 -c '
+import sys,json
+d=json.load(sys.stdin); traces=d.get("traces",[])
+# pick the trace with the most services; print "traceID services spans"
+best=None
+for t in traces:
+    tid=t["traceID"]
+    print(tid, len(t.get("serviceStats",{}) or {}), t.get("rootServiceName",""))
+' 2>/dev/null | sort -k2 -n -r | head -1)
+  [ -n "$BEST" ] && break; sleep 2
+done
+[ -n "$BEST" ] || fail "no trace tagged with $TRIP3 reached Tempo"
+TID=$(echo "$BEST" | awk '{print $1}')
+SERVICES=$(curl -s "$TEMPO/api/traces/$TID" | python3 -c '
+import sys,json
+d=json.load(sys.stdin); names=set(); spans=0
+for b in d.get("batches",[]):
+    for a in b.get("resource",{}).get("attributes",[]):
+        if a["key"]=="service.name": names.add(a["value"]["stringValue"])
+    for ss in b.get("scopeSpans",[]): spans+=len(ss.get("spans",[]))
+print(spans, ",".join(sorted(names)))')
+echo "  trace $TID: $(echo "$SERVICES" | awk '{print $1}') spans across [$(echo "$SERVICES" | awk '{print $2}')]"
+N=$(echo "$SERVICES" | awk '{print $2}' | tr ',' '\n' | grep -c .)
+[ "$N" -ge 5 ] && pass "one trace spans $N services (HTTP -> outbox -> Kafka -> Temporal -> gRPC -> Python -> audit)" || fail "trace covers only $N services"
+
 echo
-echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy, $TRIP3 from free text; audit ledger complete)"
+echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy, $TRIP3 from free text; audit ledger complete; one trace per trip)"

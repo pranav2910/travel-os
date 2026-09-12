@@ -13,6 +13,11 @@ dependencies {
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.kafka)
     implementation(libs.temporal.sdk)
+    // Workflow + activity spans, linked to the Kafka record that started the workflow, via
+    // Temporal's OpenTracing interceptors bridged onto OpenTelemetry.
+    implementation(libs.temporal.opentracing)
+    implementation(libs.opentelemetry.opentracing.shim)
+    implementation(libs.opentelemetry.api)
 
     testImplementation(libs.temporal.testing)
 }

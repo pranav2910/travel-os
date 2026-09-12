@@ -2,6 +2,11 @@ package io.travelos.spring.outbox;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.SpanKind;
+import io.opentelemetry.context.Context;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -9,6 +14,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -31,6 +38,7 @@ public final class OutboxPublisher {
   private final KafkaTemplate<String, String> kafka;
   private final OutboxProperties properties;
   private final Clock clock;
+  private final @Nullable OpenTelemetry otel;
   private final Counter published;
   private final Counter failed;
 
@@ -41,11 +49,23 @@ public final class OutboxPublisher {
       OutboxProperties properties,
       Clock clock,
       MeterRegistry meters) {
+    this(jdbc, tx, kafka, properties, clock, meters, null);
+  }
+
+  public OutboxPublisher(
+      JdbcClient jdbc,
+      TransactionTemplate tx,
+      KafkaTemplate<String, String> kafka,
+      OutboxProperties properties,
+      Clock clock,
+      MeterRegistry meters,
+      @Nullable OpenTelemetry otel) {
     this.jdbc = jdbc;
     this.tx = tx;
     this.kafka = kafka;
     this.properties = properties;
     this.clock = clock;
+    this.otel = otel;
     this.published = meters.counter("travelos.outbox.published");
     this.failed = meters.counter("travelos.outbox.failed");
     meters.gauge("travelos.outbox.backlog", this, OutboxPublisher::backlog);
@@ -67,7 +87,8 @@ public final class OutboxPublisher {
               List<Pending> batch =
                   jdbc.sql(
                           """
-                          SELECT event_id, topic, partition_key, payload::text AS payload
+                          SELECT event_id, topic, partition_key, payload::text AS payload,
+                                 trace_parent
                           FROM outbox
                           WHERE published_at IS NULL
                           ORDER BY created_at, event_id
@@ -95,9 +116,7 @@ public final class OutboxPublisher {
 
   private boolean send(Pending pending) {
     try {
-      kafka
-          .send(pending.topic(), pending.partitionKey(), pending.payload())
-          .get(properties.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
+      kafka.send(record(pending)).get(properties.sendTimeout().toMillis(), TimeUnit.MILLISECONDS);
       published.increment();
       return true;
     } catch (InterruptedException e) {
@@ -122,6 +141,36 @@ public final class OutboxPublisher {
     }
   }
 
+  /**
+   * The record, carrying the trace of the transaction that appended it. A PRODUCER span is opened
+   * as a child of that trace so the relay itself is visible; consumers continue from the header.
+   */
+  private ProducerRecord<String, String> record(Pending pending) {
+    ProducerRecord<String, String> record =
+        new ProducerRecord<>(pending.topic(), pending.partitionKey(), pending.payload());
+    if (otel == null) {
+      return record;
+    }
+    Context parent = TraceContexts.parent(otel, pending.traceParent());
+    Span span =
+        otel.getTracer("travelos.outbox")
+            .spanBuilder("outbox publish " + pending.topic())
+            .setParent(parent)
+            .setSpanKind(SpanKind.PRODUCER)
+            .setAttribute("messaging.system", "kafka")
+            .setAttribute("messaging.destination.name", pending.topic())
+            .setAttribute("messaging.message.id", pending.eventId())
+            .setAttribute("trip.id", pending.partitionKey())
+            .startSpan();
+    try {
+      TraceContexts.headers(otel, Context.current().with(span))
+          .forEach((k, v) -> record.headers().add(k, v.getBytes(StandardCharsets.UTF_8)));
+    } finally {
+      span.end();
+    }
+    return record;
+  }
+
   long backlog() {
     Long count =
         jdbc.sql("SELECT count(*) FROM outbox WHERE published_at IS NULL")
@@ -130,5 +179,10 @@ public final class OutboxPublisher {
     return count == null ? 0 : count;
   }
 
-  record Pending(String eventId, String topic, String partitionKey, String payload) {}
+  record Pending(
+      String eventId,
+      String topic,
+      String partitionKey,
+      String payload,
+      @Nullable String traceParent) {}
 }

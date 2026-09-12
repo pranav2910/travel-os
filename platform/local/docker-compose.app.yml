@@ -18,6 +18,8 @@ x-java: &java
 
 x-java-env: &java-env
   SPRING_PROFILES_ACTIVE: docker
+  TRACING_EXPORT_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
   KAFKA_BOOTSTRAP_SERVERS: kafka:29092
   TEMPORAL_ADDRESS: temporal:7233
   OIDC_ISSUER_URI: http://localhost:8180/realms/travelos
@@ -169,6 +171,7 @@ services:
     mem_limit: 384m
     environment:
       GRPC_PORT: 9083
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
     ports:
       - "9083:9083"
 
@@ -184,6 +187,7 @@ services:
     mem_limit: 384m
     environment:
       GRPC_PORT: 9087
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
       # fake by default; export ANTHROPIC_API_KEY (and optionally LLM_PROVIDER=anthropic) to use Claude.
       LLM_PROVIDER: ${LLM_PROVIDER:-fake}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}

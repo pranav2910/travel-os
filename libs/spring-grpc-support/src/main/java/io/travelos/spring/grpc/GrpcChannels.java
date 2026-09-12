@@ -2,20 +2,30 @@ package io.travelos.spring.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.micrometer.core.instrument.binder.grpc.ObservationGrpcClientInterceptor;
+import io.micrometer.observation.ObservationRegistry;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.DisposableBean;
 
 /** One lazily created, shared channel per configured client name. Closed with the context. */
 public final class GrpcChannels implements DisposableBean {
 
   private final GrpcClientProperties properties;
+  private final @Nullable ObservationRegistry observations;
   private final Map<String, ManagedChannel> channels = new ConcurrentHashMap<>();
 
   public GrpcChannels(GrpcClientProperties properties) {
+    this(properties, null);
+  }
+
+  /** With an observation registry every call is a client span and carries traceparent metadata. */
+  public GrpcChannels(GrpcClientProperties properties, @Nullable ObservationRegistry observations) {
     this.properties = properties;
+    this.observations = observations;
   }
 
   public ManagedChannel channel(String name) {
@@ -27,10 +37,14 @@ public final class GrpcChannels implements DisposableBean {
             throw new IllegalStateException(
                 "no gRPC client configured: set travelos.grpc.clients." + n + ".address");
           }
-          return ManagedChannelBuilder.forTarget(client.address())
-              .usePlaintext()
-              .intercept(new MdcClientInterceptor())
-              .build();
+          ManagedChannelBuilder<?> builder =
+              ManagedChannelBuilder.forTarget(client.address())
+                  .usePlaintext()
+                  .intercept(new MdcClientInterceptor());
+          if (observations != null) {
+            builder.intercept(new ObservationGrpcClientInterceptor(observations));
+          }
+          return builder.build();
         });
   }
 

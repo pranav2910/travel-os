@@ -45,16 +45,16 @@ fmt: ## apply code formatting
 	$(GRADLE) spotlessApply
 
 run: ## run one service against the local platform: make run SVC=travel-core
-	$(GRADLE) :services:$(SVC):bootRun
+	TRACING_EXPORT_ENABLED=true $(GRADLE) :services:$(SVC):bootRun
 
 run-worker: ## run the Temporal trip-planning worker
-	$(GRADLE) :workflows:trip-planning:bootRun
+	TRACING_EXPORT_ENABLED=true $(GRADLE) :workflows:trip-planning:bootRun
 
 run-optimization: ## run the Python optimization service (gRPC :9083)
-	cd intelligence/optimization && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && uv run --frozen python -m travelos_optimization.server
+	cd intelligence/optimization && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && OTEL_EXPORTER_OTLP_ENDPOINT=$${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317} uv run --frozen python -m travelos_optimization.server
 
 run-llm-gateway: ## run the LLM gateway (gRPC :9087). LLM_PROVIDER=fake for offline; anthropic when ANTHROPIC_API_KEY is set
-	cd intelligence/llm-gateway && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && uv run --frozen python -m travelos_llm_gateway.server
+	cd intelligence/llm-gateway && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && OTEL_EXPORTER_OTLP_ENDPOINT=$${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317} uv run --frozen python -m travelos_llm_gateway.server
 
 jars: ## build every runnable jar (5 services + the worker)
 	$(GRADLE) $(foreach s,$(JARS),:services:$(s):bootJar) :workflows:trip-planning:bootJar -q

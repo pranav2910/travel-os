@@ -12,6 +12,9 @@ dependencies {
     implementation(project(":libs:spring-grpc-support"))
     implementation(project(":libs:workflow-contracts"))
     implementation(libs.temporal.sdk)
+    implementation(libs.temporal.opentracing)
+    implementation(libs.opentelemetry.opentracing.shim)
+    implementation(libs.opentelemetry.api)
 
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)

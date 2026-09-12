@@ -12,6 +12,7 @@ dependencies {
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.spring.boot.starter.kafka)
+    implementation(libs.opentelemetry.api)
     runtimeOnly(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
 

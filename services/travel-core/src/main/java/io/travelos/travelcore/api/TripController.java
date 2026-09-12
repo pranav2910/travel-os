@@ -1,5 +1,6 @@
 package io.travelos.travelcore.api;
 
+import io.opentelemetry.api.trace.Span;
 import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
 import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
@@ -53,6 +54,8 @@ public class TripController {
       throw new ApiException.Unprocessable("INTENT_INVALID", e.getMessage());
     }
     Trip trip = trips.create(me, command, idempotencyKey);
+    Span.current().setAttribute("trip.id", trip.tripId());
+    Span.current().setAttribute("tenant.id", trip.tenantId().value());
     return ResponseEntity.accepted()
         .location(URI.create("/api/v1/trips/" + trip.tripId()))
         .body(TripResponse.from(trip));

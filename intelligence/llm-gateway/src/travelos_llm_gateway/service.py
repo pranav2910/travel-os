@@ -13,10 +13,11 @@ from datetime import UTC, datetime
 
 import grpc
 from google.protobuf import timestamp_pb2
+from opentelemetry import trace
 
 from travelos.common.v1 import common_pb2
 from travelos.llm.v1 import llm_pb2, llm_pb2_grpc
-from travelos_llm_gateway import explain, ids, intent
+from travelos_llm_gateway import explain, ids, intent, tracing
 from travelos_llm_gateway.budget import BudgetExceededError, TenantBudget
 from travelos_llm_gateway.providers import (
     ModelCallResult,
@@ -28,6 +29,7 @@ from travelos_llm_gateway.providers import (
 log = logging.getLogger(__name__)
 
 MAX_REQUEST_CHARS = 4000
+_TRACER = trace.get_tracer("travelos.llm-gateway")
 
 _TENANT = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}$")
 _PRINCIPAL = re.compile(r"^(human|service|agent)/[a-z0-9][a-z0-9-]*(/v[0-9]+)?$")
@@ -41,6 +43,7 @@ def require_context(ctx: common_pb2.RequestContext, context: grpc.ServicerContex
         context.abort(grpc.StatusCode.INVALID_ARGUMENT, "ctx.principal is required")
     if not ctx.correlation_id:
         context.abort(grpc.StatusCode.INVALID_ARGUMENT, "ctx.correlation_id is required")
+    tracing.tag_current_span(ctx.tenant_id, ctx.correlation_id, ctx.principal.id)
 
 
 class LlmGatewayService(llm_pb2_grpc.LlmGatewayServicer):
@@ -72,12 +75,16 @@ class LlmGatewayService(llm_pb2_grpc.LlmGatewayServicer):
         reference = _to_datetime(request.reference_time) or now
         started = time.monotonic()
         try:
-            outcome = self._provider.extract_intent(
-                request_text=text,
-                reference_time=reference,
-                timezone=request.timezone.strip() or "UTC",
-                home_airport=request.home_airport.strip().upper(),
-            )
+            with _TRACER.start_as_current_span(
+                "llm.extract_intent",
+                attributes={"llm.provider": self._provider.name, "request.chars": len(text)},
+            ):
+                outcome = self._provider.extract_intent(
+                    request_text=text,
+                    reference_time=reference,
+                    timezone=request.timezone.strip() or "UTC",
+                    home_airport=request.home_airport.strip().upper(),
+                )
         except ProviderRefusedError as e:
             log.warning(
                 "extract_intent tenant=%s trip=%s: model declined (%s)",
@@ -129,7 +136,10 @@ class LlmGatewayService(llm_pb2_grpc.LlmGatewayServicer):
         self._guard_budget(tenant, now, context)
         ev = explain.evidence(request)
         try:
-            outcome = self._provider.explain(ev)
+            with _TRACER.start_as_current_span(
+                "llm.explain_trip", attributes={"llm.provider": self._provider.name}
+            ):
+                outcome = self._provider.explain(ev)
         except ProviderError as e:
             self._abort_provider(e, context, "explain", tenant, request.trip_id)
         spent = self._budget.charge(tenant, now, outcome.call.cost_micros)

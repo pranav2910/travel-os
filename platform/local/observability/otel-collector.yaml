@@ -1,0 +1,26 @@
+# Receives OTLP from every service (Java over HTTP :4318, Python over gRPC :4317) and forwards
+# traces to Tempo. Metrics stay on Prometheus scrape endpoints for now.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo]
