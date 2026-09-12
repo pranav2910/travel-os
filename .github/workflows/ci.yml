@@ -102,4 +102,6 @@ jobs:
         with:
           version: v0.74.0
       - name: fmt, validate, tflint, trivy (no credentials, nothing applied)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # tflint --init fetches its ruleset from GitHub releases; anonymous calls are rate-limited
         run: make tf-check
