@@ -1,0 +1,7 @@
+# Accepted findings, each re-reviewed per environment:
+# AVD-AWS-0089 (LOW) S3 access logging: the audit and state buckets are written only by IAM roles this
+#   stack owns; CloudTrail data events cover access auditing without a second bucket per environment.
+AVD-AWS-0089
+# AVD-AWS-0343 (MEDIUM) RDS deletion protection: driven by var.aurora_deletion_protection, which is true in
+#   staging and prod (see terraform.tfvars); dev opts out so the environment can be torn down.
+AVD-AWS-0343

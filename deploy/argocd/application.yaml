@@ -1,0 +1,35 @@
+# Argo CD Application for one environment. Argo renders the umbrella chart from this repo at the
+# pinned revision; the image tag is the ONLY thing that changes between releases and it is a git
+# commit SHA. To release: bump global.image.tag in this file (or via `argocd app set`) and merge.
+# To roll back: revert that change, or `argocd app rollback travelos-<env> <history-id>`.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: travelos-dev
+  namespace: argocd
+  finalizers: [resources-finalizer.argocd.argoproj.io]
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/pranav2910/travel-os.git
+    targetRevision: main
+    path: deploy/helm/travelos
+    helm:
+      valueFiles: [values.yaml, values-eks.yaml]
+      parameters:
+        - name: global.image.tag
+          value: "0000000000000000000000000000000000000000" # replaced by the release pipeline with the git SHA
+        - name: global.image.registry
+          value: "<account-id>.dkr.ecr.<region>.amazonaws.com/travel-os" # from `terraform output ecr_repository_urls`
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: travelos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions: [CreateNamespace=true, ServerSideApply=true]
+    retry:
+      limit: 3
+      backoff: { duration: 30s, factor: 2, maxDuration: 5m }
+  revisionHistoryLimit: 10

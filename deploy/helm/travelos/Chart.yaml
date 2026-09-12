@@ -1,0 +1,39 @@
+apiVersion: v2
+name: travelos
+description: The travel-os platform - all eight services, each an instance of the travelos-service chart, plus the namespace's default-deny network policy.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+dependencies:
+  - name: travelos-service
+    alias: travel-core
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: policy
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: supplier-gateway
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: order
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: audit
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: trip-planning
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: optimization
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: llm-gateway
+    version: 0.1.0
+    repository: file://../travelos-service

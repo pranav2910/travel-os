@@ -1,0 +1,98 @@
+# EKS. Endpoints come from Terraform outputs (infrastructure/terraform/environments/<env>); the
+# image tag is pinned to a git sha by CD (Argo CD watches this file). Secrets arrive through
+# External Secrets Operator from AWS Secrets Manager via IRSA; nothing sensitive is here.
+global:
+  image:
+    registry: ghcr.io/pranav2910/travel-os
+    tag: ""                                   # set by CD to the tested sha
+  env:
+    KAFKA_BOOTSTRAP_SERVERS: ""               # terraform output msk_bootstrap_brokers
+    TEMPORAL_ADDRESS: temporal.travelos-infra:7233
+    OIDC_ISSUER_URI: ""                       # the enterprise IdP realm
+    OIDC_JWK_SET_URI: ""
+
+prodScale: &prodScale
+  replicaCount: 3
+  autoscaling: { enabled: true, minReplicas: 3, maxReplicas: 10 }
+  pdb: { enabled: true, minAvailable: 2 }
+  antiAffinity: hard
+  topologySpread: { enabled: true, maxSkew: 1, whenUnsatisfiable: DoNotSchedule }
+
+externalSecrets: &es
+  enabled: true
+  secretStoreRef: { name: aws-secrets-manager, kind: ClusterSecretStore }
+
+travel-core:
+  <<: *prodScale
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: ""          # terraform output irsa_role_arns["travel-core"]
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: TRAVEL_CORE_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/travel-core/db, property: password }
+  env:
+    TRAVEL_CORE_DB_URL: ""                    # jdbc:postgresql://<aurora writer endpoint>:5432/travel_core
+    TRAVEL_CORE_DB_USER: travel_core_app
+policy:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: POLICY_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/policy/db, property: password }
+supplier-gateway:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: SUPPLIER_GATEWAY_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/supplier-gateway/db, property: password }
+  networkPolicy:
+    extraEgress:                              # real supplier endpoints, allow-listed by CIDR/DNS policy
+      - to:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+              except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]
+        ports:
+          - port: 443
+order:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: ORDER_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/order/db, property: password }
+audit:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: AUDIT_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/audit/db, property: password }
+trip-planning:
+  <<: *prodScale
+  autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 6 }
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: PAYMENT_TOKEN
+        remoteRef: { key: travelos/ENV/trip-planning/payment, property: token }
+optimization:
+  <<: *prodScale
+llm-gateway:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: ANTHROPIC_API_KEY
+        remoteRef: { key: travelos/ENV/llm-gateway/anthropic, property: api_key }
+      - secretKey: LLM_PROVIDER
+        remoteRef: { key: travelos/ENV/llm-gateway/anthropic, property: provider }

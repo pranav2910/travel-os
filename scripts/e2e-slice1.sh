@@ -10,12 +10,40 @@
 # real broker). Exit code != 0 means Slice 1 is not working. Nothing is mocked.
 set -euo pipefail
 
+# E2E_BACKEND=compose (default) talks to the docker-compose stack; E2E_BACKEND=kind to the kind
+# cluster (ports 1xxxx, kubectl for broker/Temporal introspection). `make kind-e2e` sets it up.
+BACKEND=${E2E_BACKEND:-compose}
+if [ "$BACKEND" = kind ]; then
+  : "${KC:=http://localhost:18180}" "${CORE:=http://localhost:18081}" "${POLICY:=http://localhost:18082}"
+  : "${SUPPLIER:=http://localhost:18084}" "${ORDER:=http://localhost:18085}" "${WORKER:=http://localhost:18086}"
+  : "${AUDIT:=http://localhost:18088}" "${OPT_PORT:=19083}" "${LLM_PORT:=19087}" "${TEMPO:=http://localhost:13200}"
+fi
 KC=${KC:-http://localhost:8180}
 CORE=${CORE:-http://localhost:8081}
 POLICY=${POLICY:-http://localhost:8082}
+SUPPLIER=${SUPPLIER:-http://localhost:8084}
 ORDER=${ORDER:-http://localhost:8085}
+WORKER=${WORKER:-http://localhost:8086}
 AUDIT=${AUDIT:-http://localhost:8088}
+OPT_PORT=${OPT_PORT:-9083}
+LLM_PORT=${LLM_PORT:-9087}
+TEMPO=${TEMPO:-http://localhost:3200}
 COMPOSE="docker compose -f $(dirname "$0")/../platform/local/docker-compose.yml"
+
+kafka_consume() { # $@ topics -> raw records
+  if [ "$BACKEND" = kind ]; then
+    kubectl exec -n travelos-infra deploy/kafka -- bash -c "for t in $*; do /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic \$t --from-beginning --timeout-ms 4000 2>/dev/null; done"
+  else
+    $COMPOSE exec -T kafka bash -c "for t in $*; do /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic \$t --from-beginning --timeout-ms 4000 2>/dev/null; done"
+  fi
+}
+temporal_describe() { # $1 workflow id
+  if [ "$BACKEND" = kind ]; then
+    kubectl exec -n travelos-infra deploy/temporal -- temporal workflow describe --address 127.0.0.1:7233 --namespace travelos -w "$1" 2>/dev/null || true
+  else
+    $COMPOSE exec -T temporal temporal workflow describe --address temporal:7233 --namespace travelos -w "$1" 2>/dev/null || true
+  fi
+}
 SEED="$(dirname "$0")/../platform/local/seed/policies/acme-us-standard.json"
 
 pass() { printf '  \033[32mPASS\033[0m %s\n' "$*"; }
@@ -30,11 +58,11 @@ tok() {
 }
 
 echo "== 0. health"
-for svc in "$CORE" "$POLICY" "$ORDER" "$AUDIT" http://localhost:8084 http://localhost:8086; do
+for svc in "$CORE" "$POLICY" "$ORDER" "$AUDIT" "$SUPPLIER" "$WORKER"; do
   curl -sf "$svc/actuator/health/readiness" >/dev/null || fail "$svc not ready"
 done
-nc -z localhost 9083 || fail "optimization gRPC :9083 not listening"
-nc -z localhost 9087 || fail "llm-gateway gRPC :9087 not listening"
+nc -z localhost "$OPT_PORT" || fail "optimization gRPC :$OPT_PORT not listening"
+nc -z localhost "$LLM_PORT" || fail "llm-gateway gRPC :$LLM_PORT not listening"
 pass "all services ready"
 
 ALICE=$(tok alice); BOB=$(tok bob); CAROL=$(tok carol)
@@ -112,10 +140,10 @@ H=$(curl -s "$CORE/api/v1/trips/$TRIP2/history" -H "Authorization: Bearer $ALICE
 
 echo "== 5. durable coordination + the event trail"
 # Capture first: with pipefail, grep -q closing the pipe early would fail the pipeline via SIGPIPE.
-WF=$($COMPOSE exec -T temporal temporal workflow describe --address temporal:7233 --namespace travelos -w "$TRIP2" 2>/dev/null || true)
+WF=$(temporal_describe "$TRIP2")
 echo "$WF" | grep -E 'Status|Type' | head -3 | sed 's/^/  /'
 echo "$WF" | grep -qi 'completed' && pass "Temporal workflow $TRIP2 COMPLETED" || fail "workflow not completed"
-EVENTS=$($COMPOSE exec -T kafka bash -c "for t in travel.trip travel.policy travel.optimization travel.approval travel.order; do /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic \$t --from-beginning --timeout-ms 4000 2>/dev/null; done" | grep "$TRIP2" | python3 -c 'import sys,json,collections; c=collections.Counter(json.loads(l)["eventType"] for l in sys.stdin if l.strip()); print(dict(sorted(c.items())))')
+EVENTS=$(kafka_consume travel.trip travel.policy travel.optimization travel.approval travel.order | grep "$TRIP2" | python3 -c 'import sys,json,collections; c=collections.Counter(json.loads(l)["eventType"] for l in sys.stdin if l.strip()); print(dict(sorted(c.items())))')
 echo "  events for $TRIP2: $EVENTS"
 echo "$EVENTS" | grep -q "travel.trip.created" && echo "$EVENTS" | grep -q "travel.order.confirmed" && echo "$EVENTS" | grep -q "travel.trip.booked" && pass "created -> policy -> order.confirmed -> booked all on the broker" || fail "event trail incomplete"
 
@@ -129,7 +157,7 @@ trip_view "$TRIP3" | check 'i=d["intent"]; assert (i["origin"],i["destination"],
 trip_view "$TRIP3" | check 'assert d.get("explanation"), "no explanation stored"; print("  explanation:", d["explanation"][:160].replace("\n"," ") + ("..." if len(d["explanation"])>160 else ""))' && pass "explanation stored with the plan" || fail "no explanation"
 curl -s "$CORE/api/v1/trips/$TRIP3/history" -H "Authorization: Bearer $ALICE" | check 'assert any("intent extracted" in (h.get("reason") or "") for h in d), [h.get("reason") for h in d]' && pass "history records the extraction with the model name" || fail "history lacks the extraction entry"
 curl -s "$CORE/api/v1/trips/$TRIP3/decisions" -H "Authorization: Bearer $ALICE" | check 'assert d and d[0]["decisionType"]=="INTENT_EXTRACTION" and d[0]["call"]["callId"].startswith("llm_"), d; print("  ledger:", d[0]["result"], "by", d[0]["call"]["provider"], d[0]["call"]["model"], "prompt", d[0]["call"]["promptId"], "v%d" % d[0]["call"]["promptVersion"])' && pass "agent-decision ledger has the model-call evidence" || fail "ledger missing"
-INTENT_EVENTS=$($COMPOSE exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic travel.intent --from-beginning --timeout-ms 4000 2>/dev/null | grep "$TRIP3" | python3 -c 'import sys,json; print(sorted({json.loads(l)["eventType"] for l in sys.stdin if l.strip()}))')
+INTENT_EVENTS=$(kafka_consume travel.intent | grep "$TRIP3" | python3 -c 'import sys,json; print(sorted({json.loads(l)["eventType"] for l in sys.stdin if l.strip()}))')
 echo "  travel.intent events for $TRIP3: $INTENT_EVENTS"
 echo "$INTENT_EVENTS" | grep -q "travel.intent.detected" && pass "travel.intent.detected on the broker" || fail "no travel.intent.detected event"
 
@@ -141,7 +169,6 @@ curl -s "$AUDIT/api/v1/audit/trips/$TRIP3/decisions" -H "Authorization: Bearer $
 curl -s "$AUDIT/api/v1/audit/events?type=travel.order.confirmed&limit=5" -H "Authorization: Bearer $CAROL" | check 'assert len(d)>=3, len(d); print("  finance view: last %d confirmed orders, newest %s" % (len(d), d[0]["data"]["orderId"]))' && pass "auditor query works, tenant-scoped" || fail "auditor query"
 
 echo "== 8. one trace: the whole lifecycle of $TRIP3 under a single trace id"
-TEMPO=${TEMPO:-http://localhost:3200}
 Q=$(python3 -c 'import urllib.parse,sys; print(urllib.parse.quote("{ span.trip.id = \"%s\" }" % sys.argv[1]))' "$TRIP3")
 NOW=$(date +%s); BEST=""
 for i in $(seq 1 45); do

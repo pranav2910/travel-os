@@ -1,0 +1,11 @@
+output "cluster_name" { value = module.eks.cluster_name }
+output "cluster_endpoint" { value = module.eks.cluster_endpoint }
+output "aurora_writer_endpoint" { value = module.aurora.writer_endpoint }
+output "aurora_master_secret_arn" { value = module.aurora.master_user_secret_arn }
+output "msk_bootstrap_brokers" { value = module.msk.bootstrap_brokers_sasl_iam }
+output "redis_primary_endpoint" { value = var.enable_redis ? module.elasticache[0].primary_endpoint : null }
+output "irsa_role_arns" { value = module.irsa.role_arns }
+output "secret_arns" { value = module.secrets.secret_arns }
+output "ecr_repository_urls" { value = module.ecr.repository_urls }
+output "audit_bucket" { value = module.s3.audit_bucket_name }
+output "private_subnet_ids" { value = module.network.private_subnet_ids }

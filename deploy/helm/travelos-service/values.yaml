@@ -1,0 +1,109 @@
+# Defaults for every service. The umbrella chart (deploy/helm/travelos) overrides per service.
+name: ""                 # required: travel-core, policy, ... (set by the umbrella alias values)
+kind: java               # java (Spring Boot: HTTP actuator probes) | python (gRPC health probes)
+
+image:
+  registry: ""           # falls back to global.image.registry
+  repository: ""         # falls back to name
+  tag: ""                # falls back to global.image.tag; ALWAYS a git sha in real deployments
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+ports:
+  http: 0                # 0 = none
+  grpc: 0
+
+# Plain configuration. Secrets never go here: they arrive via secretRef / externalSecret.
+env: {}
+# Name of a Secret whose keys become environment variables (DB credentials, API keys).
+secretRef: ""
+# Extra env entries in Kubernetes form (valueFrom etc.).
+extraEnv: []
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    # No CPU limit on purpose: CPU throttling hurts JVM tail latency; requests + HPA govern CPU.
+    memory: 640Mi
+
+# JVM: container-aware heap from JAVA_TOOL_OPTIONS in the image; overridable here.
+javaToolOptions: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
+
+probes:
+  startup:
+    failureThreshold: 36   # 36 x 5s = 3 minutes for a cold JVM on a small node
+    periodSeconds: 5
+  liveness:
+    periodSeconds: 10
+    failureThreshold: 3
+  readiness:
+    periodSeconds: 5
+    failureThreshold: 3
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 0   # 0 = off
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Spread replicas across zones and nodes; soft so a small cluster still schedules.
+topologySpread:
+  enabled: true
+  maxSkew: 1
+  whenUnsatisfiable: ScheduleAnyway
+antiAffinity: soft        # soft | hard | none
+
+serviceAccount:
+  create: true
+  annotations: {}         # EKS: eks.amazonaws.com/role-arn from Terraform outputs
+  automountToken: false   # the services never talk to the Kubernetes API
+
+service:
+  type: ClusterIP
+  nodePorts:              # only used when type is NodePort (kind)
+    http: 0
+    grpc: 0
+
+networkPolicy:
+  enabled: true
+  # Who may reach the HTTP port. Default: in-cluster only; kind opens it for the host.
+  httpFrom: []
+  # Which apps (by `app` label) may reach the gRPC port.
+  grpcFromApps: []
+  # Which apps this service calls over gRPC (egress within the namespace).
+  grpcToApps: []
+  # Infra ports this service needs in the infra namespace.
+  infraPorts: [5432, 9092, 7233, 8180, 4317, 4318]
+  # Extra egress rules (e.g. llm-gateway to the public internet on 443).
+  extraEgress: []
+
+# AWS: pull the Secret from Secrets Manager with External Secrets Operator (installed cluster-wide).
+externalSecret:
+  enabled: false
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: ClusterSecretStore
+  refreshInterval: 1h
+  # - secretKey: TRAVEL_CORE_DB_PASSWORD
+  #   remoteRef: { key: travelos/dev/travel-core/db, property: password }
+  data: []
+
+terminationGracePeriodSeconds: 45
+podAnnotations: {}
+nodeSelector: {}
+tolerations: []
+
+global:
+  image:
+    registry: ghcr.io/pranav2910/travel-os
+    tag: ""
+  infraNamespace: travelos-infra
+  env: {}                 # env shared by every service (Kafka, Temporal, OIDC, tracing)

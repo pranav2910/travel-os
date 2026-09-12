@@ -1,0 +1,11 @@
+# Default deny, both directions, for every pod in the release namespace. Each service then opens
+# exactly what it needs in its own NetworkPolicy (travelos-service chart).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  labels:
+    app.kubernetes.io/part-of: travelos
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]

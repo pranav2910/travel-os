@@ -40,3 +40,9 @@ dist/
 
 # Local platform data
 platform/local/data/
+deploy/kind/.secrets.env
+deploy/helm/*/charts/
+deploy/helm/*/Chart.lock
+infrastructure/terraform/**/.terraform/
+infrastructure/terraform/**/backend.hcl
+infrastructure/terraform/**/*.tfplan

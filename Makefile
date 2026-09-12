@@ -11,7 +11,7 @@ COMPOSE := docker compose -f platform/local/docker-compose.yml
 STACK   := docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml
 JARS    := travel-core policy supplier-gateway order audit
 
-.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e kind-up kind-deploy kind-e2e kind-chaos kind-rollback-demo kind-down helm-lint tf-check
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -80,6 +80,42 @@ stack-logs: ## tail Docker stack logs (SVC=trip-planning to filter)
 
 stack-e2e: ## run the live end-to-end script against the Docker stack
 	bash scripts/e2e-slice1.sh
+
+# ---- Kubernetes (kind as the EKS stand-in) ----
+kind-up: ## create the kind cluster (3 zones, Calico, metrics-server, local registry)
+	deploy/kind/up.sh
+
+kind-deploy: ## build :<sha> images, push to the local registry, deploy infra + services with Helm
+	deploy/kind/deploy.sh
+
+kind-e2e: ## run the Slice 1 end-to-end script against the kind cluster
+	E2E_BACKEND=kind bash scripts/e2e-slice1.sh
+
+kind-chaos: ## kill pods mid-flight and prove no duplicate orders, no lost state, enforced NetworkPolicies
+	bash scripts/chaos-kind.sh
+
+kind-rollback-demo: ## deploy a stand-in "next" release then roll back to the previous revision
+	bash scripts/rollback-kind.sh
+
+kind-down: ## delete the kind cluster and the local registry
+	deploy/kind/down.sh
+
+helm-lint: ## lint + render + schema-check the charts for kind and EKS
+	helm dependency update deploy/helm/travelos >/dev/null
+	helm lint deploy/helm/travelos-service --set name=x --set global.image.tag=t
+	helm lint deploy/helm/travelos -f deploy/helm/travelos/values-kind.yaml --set global.image.tag=t
+	helm lint deploy/helm/travelos-infra
+	helm template travelos deploy/helm/travelos -n travelos -f deploy/helm/travelos/values-kind.yaml --set global.image.tag=t | kubeconform -strict -summary -skip ExternalSecret
+	helm template travelos deploy/helm/travelos -n travelos -f deploy/helm/travelos/values-eks.yaml --set global.image.tag=t | kubeconform -strict -summary -skip ExternalSecret
+	helm template travelos-infra deploy/helm/travelos-infra -n travelos-infra | kubeconform -strict -summary
+
+TF_ROOTS := bootstrap environments/dev environments/staging environments/prod
+tf-check: ## terraform fmt/validate + tflint + trivy for every root (no AWS credentials needed, nothing applied)
+	cd infrastructure/terraform && terraform fmt -check -recursive -diff
+	@for d in $(TF_ROOTS); do echo "== validate $$d"; (cd infrastructure/terraform/$$d && terraform init -backend=false -input=false >/dev/null && terraform validate) || exit 1; done
+	cd infrastructure/terraform && tflint --init >/dev/null
+	@for d in $(TF_ROOTS); do echo "== tflint $$d"; (cd infrastructure/terraform && tflint --config "$$(pwd)/.tflint.hcl" --chdir=$$d --call-module-type=all) || exit 1; done
+	cd infrastructure/terraform && trivy config --severity LOW,MEDIUM,HIGH,CRITICAL --exit-code 1 -q .
 
 seed-policy: ## publish the seed travel policy for tenant acme (policy service must be running on :8082)
 	@TOKEN=$$(curl -sf -X POST http://localhost:8180/realms/travelos/protocol/openid-connect/token -d client_id=travelos-dev-cli -d grant_type=password -d username=carol -d password=password | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])'); \

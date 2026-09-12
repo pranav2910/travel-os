@@ -1,0 +1,140 @@
+# Production defaults. Environment files (values-kind.yaml, values-eks.yaml) override endpoints,
+# scale and exposure. Secrets never appear here: every service reads its Secret by name.
+global:
+  image:
+    registry: ghcr.io/pranav2910/travel-os
+    tag: ""                                   # git sha, set at deploy time: --set global.image.tag=<sha>
+  infraNamespace: travelos-infra
+  env:
+    SPRING_PROFILES_ACTIVE: docker            # "not on a laptop": issuer/jwks split, see application-docker.yml
+    KAFKA_BOOTSTRAP_SERVERS: kafka.travelos-infra:9092
+    TEMPORAL_ADDRESS: temporal.travelos-infra:7233
+    OIDC_ISSUER_URI: http://localhost:8180/realms/travelos
+    OIDC_JWK_SET_URI: http://keycloak.travelos-infra:8180/realms/travelos/protocol/openid-connect/certs
+    TRACING_EXPORT_ENABLED: "true"
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector.travelos-infra:4318/v1/traces
+
+# Who may call HTTP APIs from outside the namespace. Production: the ingress controller only.
+httpIngressFrom: &httpFrom
+  - namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: ingress-nginx
+
+travel-core:
+  name: travel-core
+  ports: { http: 8081, grpc: 9081 }
+  secretRef: travel-core-secrets
+  env:
+    TRAVEL_CORE_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/travel_core
+    TRAVEL_CORE_DB_USER: travel_core_app
+  networkPolicy:
+    httpFrom: *httpFrom
+    grpcFromApps: [trip-planning]
+
+policy:
+  name: policy
+  ports: { http: 8082, grpc: 9082 }
+  secretRef: policy-secrets
+  env:
+    POLICY_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/policy
+    POLICY_DB_USER: policy_app
+  networkPolicy:
+    httpFrom: *httpFrom
+    grpcFromApps: [trip-planning]
+
+supplier-gateway:
+  name: supplier-gateway
+  ports: { http: 8084, grpc: 9084 }
+  secretRef: supplier-gateway-secrets
+  env:
+    SUPPLIER_GATEWAY_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/supplier_gateway
+    SUPPLIER_GATEWAY_DB_USER: supplier_gateway_app
+  networkPolicy:
+    httpFrom: *httpFrom
+    grpcFromApps: [trip-planning, order]
+    # Real supplier APIs live on the internet; the sandbox adapter needs nothing. Opened per env.
+    extraEgress: []
+
+order:
+  name: order
+  ports: { http: 8085, grpc: 9085 }
+  secretRef: order-secrets
+  env:
+    ORDER_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/orders
+    ORDER_DB_USER: orders_app
+    SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
+  networkPolicy:
+    httpFrom: *httpFrom
+    grpcFromApps: [trip-planning]
+    grpcToApps:
+      - { app: supplier-gateway, port: 9084 }
+
+audit:
+  name: audit
+  ports: { http: 8088 }
+  secretRef: audit-secrets
+  env:
+    AUDIT_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/audit
+    AUDIT_DB_USER: audit_app
+  networkPolicy:
+    httpFrom: *httpFrom
+
+trip-planning:
+  name: trip-planning
+  ports: { http: 8086 }
+  env:
+    TRAVEL_CORE_ADDRESS: travel-core:9081
+    POLICY_ADDRESS: policy:9082
+    OPTIMIZATION_ADDRESS: optimization:9083
+    SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
+    ORDER_ADDRESS: order:9085
+    LLM_GATEWAY_ADDRESS: llm-gateway:9087
+    DEFAULT_TIMEZONE: America/New_York
+  secretRef: trip-planning-secrets          # PAYMENT_TOKEN
+  autoscaling:
+    maxReplicas: 4
+  networkPolicy:
+    httpFrom: *httpFrom                     # actuator only
+    grpcToApps:
+      - { app: travel-core, port: 9081 }
+      - { app: policy, port: 9082 }
+      - { app: optimization, port: 9083 }
+      - { app: supplier-gateway, port: 9084 }
+      - { app: order, port: 9085 }
+      - { app: llm-gateway, port: 9087 }
+
+optimization:
+  name: optimization
+  kind: python
+  ports: { grpc: 9083 }
+  resources:
+    requests: { cpu: 200m, memory: 256Mi }
+    limits: { memory: 512Mi }
+  env:
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.travelos-infra:4317
+  networkPolicy:
+    grpcFromApps: [trip-planning]
+    infraPorts: [4317]
+
+llm-gateway:
+  name: llm-gateway
+  kind: python
+  ports: { grpc: 9087 }
+  secretRef: llm-gateway-secrets            # ANTHROPIC_API_KEY (optional), LLM_PROVIDER
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { memory: 384Mi }
+  env:
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.travelos-infra:4317
+    LLM_TENANT_DAILY_BUDGET_USD: "5"
+  networkPolicy:
+    grpcFromApps: [trip-planning]
+    infraPorts: [4317]
+    # The only service allowed to reach the internet: the model provider over TLS.
+    extraEgress:
+      - to:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+              except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]
+        ports:
+          - port: 443

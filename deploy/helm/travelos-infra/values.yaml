@@ -1,0 +1,40 @@
+# Secrets are referenced by name only; deploy/kind/secrets.sh creates them (never committed).
+postgres:
+  image: postgres:17.11
+  storage: 2Gi
+  superuserSecret: postgres-superuser        # key: password
+  appPasswordsSecret: postgres-app-passwords # keys: <SERVICE>_DB_PASSWORD
+  resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+kafka:
+  image: apache/kafka:4.3.1
+  heap: "-Xmx512m -Xms256m"
+  resources: { requests: { cpu: 200m, memory: 768Mi }, limits: { memory: 1Gi } }
+  initScriptConfigMap: kafka-init-script      # create-topics.sh from contracts/events/topics.yaml
+  partitions: 3
+temporal:
+  image: temporalio/auto-setup:1.29.7
+  uiImage: temporalio/ui:2.54.0
+  dbSecret: temporal-db                       # keys: POSTGRES_USER, POSTGRES_PWD
+  dynamicConfigConfigMap: temporal-dynamicconfig
+  resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+  ui: { enabled: true, nodePort: 30233 }
+keycloak:
+  image: keycloak/keycloak:26.7.3
+  adminSecret: keycloak-admin                 # key: KC_BOOTSTRAP_ADMIN_PASSWORD
+  realmConfigMap: keycloak-realm              # travelos-realm.json
+  resources: { requests: { cpu: 200m, memory: 512Mi }, limits: { memory: 1Gi } }
+  nodePort: 30180
+redis:
+  enabled: true
+  image: redis:8.8.2
+  resources: { requests: { cpu: 20m, memory: 32Mi }, limits: { memory: 64Mi } }
+observability:
+  enabled: true
+  collectorImage: otel/opentelemetry-collector-contrib:0.160.0
+  tempoImage: grafana/tempo:2.10.8
+  grafanaImage: grafana/grafana:13.2.1
+  collectorConfigMap: otel-collector-config
+  tempoConfigMap: tempo-config
+  grafanaDatasourcesConfigMap: grafana-datasources
+  tempoNodePort: 30200
+  grafanaNodePort: 30300

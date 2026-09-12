@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "svc.name" . }}-env
+  labels:
+    {{- include "svc.labels" . | nindent 4 }}
+data:
+  {{- range $k, $v := .Values.global.env }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+  {{- range $k, $v := .Values.env }}
+  {{ $k }}: {{ $v | quote }}
+  {{- end }}
+  {{- if .Values.ports.http }}
+  PORT: {{ .Values.ports.http | quote }}
+  {{- end }}
+  {{- if .Values.ports.grpc }}
+  GRPC_PORT: {{ .Values.ports.grpc | quote }}
+  {{- end }}
+  {{- if eq .Values.kind "java" }}
+  JAVA_TOOL_OPTIONS: {{ .Values.javaToolOptions | quote }}
+  {{- end }}

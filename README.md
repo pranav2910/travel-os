@@ -25,7 +25,11 @@ immutable by database trigger, assembled into a per-trip decision ledger that an
 evidence alone), and the **LLM gateway** (`intelligence/llm-gateway`): free
 text becomes a validated `TravelIntent`, every decision gets a plain-language explanation from its
 evidence, and every model call is ledgered with prompt version, tokens and cost. Slice 1 runs end to
-end on the live platform (`scripts/e2e-slice1.sh`: approval path, zero-approval path, free-text path).
+end on the live platform (`scripts/e2e-slice1.sh`: approval path, zero-approval path, free-text path),
+in Docker (`make stack-up`) and on Kubernetes (`make kind-deploy`; Helm charts, NetworkPolicies, HPA/PDB,
+chaos and rollback proven on `kind`). Terraform for the AWS target (VPC, EKS, Aurora, MSK, KMS, Secrets
+Manager, ECR, IRSA) validates clean for dev/staging/prod; applying it is the one step that needs an AWS
+account.
 
 **Supplier Gateway** (`services/supplier-gateway`): the only door to suppliers; a sandbox airline
 with deterministic inventory, expiring offers and supplier-side idempotent orders; per-adapter
@@ -53,8 +57,11 @@ published as a `travel.policy.*` event; explainability read API at `/api/v1/poli
 | ☑ retry-safe supplier calls (bounded retries, breaker, idempotent keys) | ☑ Kafka events (transactional outbox) | ◐ audit trail (decision + status history in each service; the Audit service that aggregates them is next) |
 | ☑ distributed tracing (one trace per trip across HTTP, outbox, Kafka, Temporal, gRPC, Python; Tempo + Grafana) | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
 | ☑ contract tests | ☑ E2E happy path (`scripts/e2e-slice1.sh` against the live platform) | ☑ failure-path tests (sold out, declined, repricing, compensation, timeouts, denials, unclear text, gateway outage) |
-| ☑ Docker images (8, layered, non-root; `make stack-up` runs the whole platform in Docker) | ☐ Terraform | ☐ EKS deployment |
-| ☑ CI pipeline | ◐ CD pipeline (images published to GHCR per commit; no cluster yet) | ☐ rollback |
+| ☑ Docker images (8, layered, non-root; `make stack-up` runs the whole platform in Docker) | ☑ Terraform (`infrastructure/terraform`: VPC/3 AZs, EKS + IRSA, Aurora, MSK, ElastiCache, KMS, Secrets Manager, S3, ECR; dev/staging/prod; fmt+validate+tflint+trivy clean, not applied) | ◐ EKS deployment (Helm charts for all 8 services deployed and proven on `kind` with probes, HPA, PDB, spread, NetworkPolicies, least-privilege SAs; `values-eks.yaml` + Argo CD app ready; a real cluster needs AWS credentials) |
+| ☑ CI pipeline (gradle, images, helm lint + kubeconform, terraform static checks) | ☑ CD pipeline (immutable `:<git-sha>` images; `make kind-deploy`; Argo CD Application for EKS) | ☑ rollback (`helm rollback` to the previous SHA, proven by `make kind-rollback-demo`; runbook in docs/runbooks/kubernetes.md) |
+
+Kubernetes proof on kind (`make kind-e2e`, `make kind-chaos`): the full Slice 1 flow, one trace across
+8 services; pods killed mid-workflow with exactly one order per trip; NetworkPolicies enforced.
 
 Roadmap after that: **Slice 2** autonomous disruption recovery · **Slice 3** hotel/ground/multi-city
 · **Slice 4** calendar/CRM/HRIS/expense integration (detect demand before a request exists) ·
@@ -113,6 +120,8 @@ make down        # stop; make nuke wipes data
 ```
 
 Ports, credentials and how to mint a dev token: [docs/runbooks/local-dev.md](docs/runbooks/local-dev.md).
+Kubernetes (kind today, EKS with the Terraform in `infrastructure/terraform`):
+[docs/runbooks/kubernetes.md](docs/runbooks/kubernetes.md) — `make kind-up kind-deploy kind-e2e kind-chaos`.
 
 ## Engineering rules
 

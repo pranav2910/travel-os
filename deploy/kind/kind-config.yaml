@@ -1,0 +1,39 @@
+# Three workers labelled as three zones so topology spread and anti-affinity are exercised for real.
+# Calico replaces kindnet so NetworkPolicies are enforced, not merely accepted.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: travelos
+networking:
+  disableDefaultCNI: true
+  podSubnet: 192.168.0.0/16
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry]
+      config_path = "/etc/containerd/certs.d"
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
+    # NodePort -> host. Host ports are 1xxxx so the docker-compose stack can coexist.
+    extraPortMappings:
+      - { containerPort: 30081, hostPort: 18081 }   # travel-core http
+      - { containerPort: 30181, hostPort: 19081 }   # travel-core grpc
+      - { containerPort: 30082, hostPort: 18082 }   # policy
+      - { containerPort: 30084, hostPort: 18084 }   # supplier-gateway
+      - { containerPort: 30085, hostPort: 18085 }   # order
+      - { containerPort: 30086, hostPort: 18086 }   # trip-planning worker (actuator)
+      - { containerPort: 30088, hostPort: 18088 }   # audit
+      - { containerPort: 30083, hostPort: 19083 }   # optimization grpc
+      - { containerPort: 30087, hostPort: 19087 }   # llm-gateway grpc
+      - { containerPort: 30180, hostPort: 18180 }   # keycloak
+      - { containerPort: 30200, hostPort: 13200 }   # tempo
+      - { containerPort: 30300, hostPort: 13000 }   # grafana
+      - { containerPort: 30233, hostPort: 18233 }   # temporal ui
+  - role: worker
+    image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
+    labels: { topology.kubernetes.io/zone: zone-a }
+  - role: worker
+    image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
+    labels: { topology.kubernetes.io/zone: zone-b }
+  - role: worker
+    image: kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0
+    labels: { topology.kubernetes.io/zone: zone-c }

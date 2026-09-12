@@ -1,0 +1,74 @@
+# Local Kubernetes (kind) as the EKS stand-in. One replica each, NodePorts for the host, images
+# from the local registry with immutable :<sha> tags. Same policies, probes and budgets as prod.
+global:
+  image:
+    registry: localhost:5001/travel-os
+  env:
+    # Tokens are minted from the host through kind's port mapping (18180 -> keycloak NodePort).
+    OIDC_ISSUER_URI: http://localhost:18180/realms/travelos
+
+# The host reaches NodePorts through the kind node, which SNATs: allow the node CIDR for HTTP/gRPC.
+hostAccess: &host
+  - ipBlock:
+      cidr: 0.0.0.0/0
+
+kindScale: &kindScale
+  replicaCount: 1
+  autoscaling: { enabled: true, minReplicas: 1, maxReplicas: 2 }
+  pdb: { enabled: true, minAvailable: 0 }   # single replica: never block node drains
+  topologySpread: { enabled: true, maxSkew: 1, whenUnsatisfiable: ScheduleAnyway }
+  antiAffinity: soft
+
+travel-core:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30081, grpc: 30181 } }
+  networkPolicy: { httpFrom: *host, grpcFromApps: [trip-planning], grpcFromOutside: true }
+policy:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30082 } }
+  networkPolicy: { httpFrom: *host, grpcFromApps: [trip-planning] }
+supplier-gateway:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30084 } }
+  networkPolicy: { httpFrom: *host, grpcFromApps: [trip-planning, order] }
+order:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30085 } }
+  networkPolicy:
+    httpFrom: *host
+    grpcFromApps: [trip-planning]
+    grpcToApps: [{ app: supplier-gateway, port: 9084 }]
+audit:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30088 } }
+  networkPolicy: { httpFrom: *host }
+trip-planning:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30086 } }
+  networkPolicy:
+    httpFrom: *host
+    grpcToApps:
+      - { app: travel-core, port: 9081 }
+      - { app: policy, port: 9082 }
+      - { app: optimization, port: 9083 }
+      - { app: supplier-gateway, port: 9084 }
+      - { app: order, port: 9085 }
+      - { app: llm-gateway, port: 9087 }
+optimization:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { grpc: 30083 } }
+  networkPolicy: { grpcFromApps: [trip-planning], grpcFromOutside: true, infraPorts: [4317] }
+llm-gateway:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { grpc: 30087 } }
+  networkPolicy:
+    grpcFromApps: [trip-planning]
+    grpcFromOutside: true
+    infraPorts: [4317]
+    extraEgress:
+      - to:
+          - ipBlock:
+              cidr: 0.0.0.0/0
+              except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]
+        ports:
+          - port: 443

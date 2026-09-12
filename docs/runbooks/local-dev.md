@@ -172,3 +172,8 @@ docker compose -f platform/local/docker-compose.yml exec postgres psql -U travel
   falls back to the keg path. Gradle also auto-provisions a JDK 21 if it finds none.
 - Kafka data is intentionally not persisted locally; `make up` recreates topics every time.
 - Keycloak runs in dev mode with no persistent volume: the realm is re-imported from `travelos-realm.json` on every start, so edits take effect with `make down && make up`. Anything created in the admin console is lost on restart — put it in the JSON instead.
+
+## Kubernetes
+
+The same platform on a local `kind` cluster (and the path to EKS): [kubernetes.md](kubernetes.md).
+`make kind-up && make kind-deploy && make kind-e2e`. Stop the compose stack first; both need the memory.

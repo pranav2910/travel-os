@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+data:
+  # docker-entrypoint-initdb.d runs this once, on first start of the volume. One database and one
+  # login role per service (ADR-0006); passwords come from the Secret, never from this file.
+  01-databases.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    role() { # name db password
+      psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+        -c "CREATE ROLE $1 LOGIN PASSWORD '$3';" \
+        -c "CREATE DATABASE $2 OWNER $1;" \
+        -c "REVOKE CONNECT ON DATABASE $2 FROM PUBLIC;"
+    }
+    psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+      -c "CREATE DATABASE temporal;" -c "CREATE DATABASE temporal_visibility;"
+    role enterprise_context_app enterprise_context "$ENTERPRISE_CONTEXT_DB_PASSWORD"
+    role travel_core_app        travel_core        "$TRAVEL_CORE_DB_PASSWORD"
+    role policy_app             policy             "$POLICY_DB_PASSWORD"
+    role supplier_gateway_app   supplier_gateway   "$SUPPLIER_GATEWAY_DB_PASSWORD"
+    role approval_app           approval           "$APPROVAL_DB_PASSWORD"
+    role orders_app             orders             "$ORDER_DB_PASSWORD"
+    role audit_app              audit              "$AUDIT_DB_PASSWORD"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  clusterIP: None
+  selector: { app: postgres }
+  ports: [{ name: pg, port: 5432 }]
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels: { app: postgres }
+  template:
+    metadata:
+      labels: { app: postgres }
+    spec:
+      enableServiceLinks: false
+      securityContext: { fsGroup: 999 }
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          args: ["-c", "max_connections=200", "-c", "shared_buffers=128MB"]
+          env:
+            - { name: POSTGRES_USER, value: travelos }
+            - { name: POSTGRES_DB, value: travelos }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ .Values.postgres.superuserSecret }}, key: password } }
+            - { name: PGDATA, value: /var/lib/postgresql/data/pgdata }
+          envFrom:
+            - secretRef: { name: {{ .Values.postgres.appPasswordsSecret }} }
+          ports: [{ containerPort: 5432, name: pg }]
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "travelos", "-d", "travelos"] }
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: ["pg_isready", "-U", "travelos", "-d", "travelos"] }
+            periodSeconds: 20
+          resources: {{- toYaml .Values.postgres.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+            - { name: init, mountPath: /docker-entrypoint-initdb.d }
+      volumes:
+        - name: init
+          configMap: { name: postgres-init, defaultMode: 0555 }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: {{ .Values.postgres.storage }} } }

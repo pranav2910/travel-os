@@ -1,0 +1,6 @@
+apiVersion: v2
+name: travelos-infra
+description: In-cluster stand-in for the managed platform (Aurora, MSK, ElastiCache, Temporal, IdP, tracing) so the whole stack runs on kind. Not for production - on EKS these are Terraform-managed AWS services.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

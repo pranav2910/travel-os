@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "svc.name" . }}
+  labels:
+    {{- include "svc.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "svc.selectorLabels" . | nindent 4 }}
+  ports:
+    {{- if .Values.ports.http }}
+    - name: http
+      port: {{ .Values.ports.http }}
+      targetPort: http
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePorts.http }}
+      nodePort: {{ .Values.service.nodePorts.http }}
+      {{- end }}
+    {{- end }}
+    {{- if .Values.ports.grpc }}
+    - name: grpc
+      port: {{ .Values.ports.grpc }}
+      targetPort: grpc
+      appProtocol: grpc
+      {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePorts.grpc }}
+      nodePort: {{ .Values.service.nodePorts.grpc }}
+      {{- end }}
+    {{- end }}

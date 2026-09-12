@@ -1,0 +1,6 @@
+apiVersion: v2
+name: travelos-service
+description: One travel-os service (Spring Boot or Python gRPC) with the production defaults every service gets - probes, resources, HPA, PDB, spread, non-root, NetworkPolicy, least-privilege ServiceAccount. Instantiated once per service by the travelos umbrella chart.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

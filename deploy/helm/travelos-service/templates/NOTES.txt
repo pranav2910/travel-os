@@ -1,0 +1,1 @@
+{{ include "svc.name" . }} -> {{ include "svc.image" . }}

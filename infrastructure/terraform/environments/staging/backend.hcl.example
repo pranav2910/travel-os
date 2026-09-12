@@ -1,0 +1,5 @@
+bucket         = "travelos-tfstate-<account-id>"
+key            = "travelos/<env>/terraform.tfstate"
+region         = "<region>"
+dynamodb_table = "travelos-tfstate-lock"
+encrypt        = true
