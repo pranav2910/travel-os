@@ -29,7 +29,7 @@ public class TripRepository {
       selected_bundle_id, optimization_run_id, policy_decision_id, approval_id, order_id,
       created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
       traveler_given_name, traveler_family_name, traveler_email, total_currency, total_minor,
-      failure_stage, failure_code
+      failure_stage, failure_code, explanation
       """;
 
   private final JdbcClient jdbc;
@@ -114,21 +114,37 @@ public class TripRepository {
   }
 
   /**
-   * Optimistic concurrency: writes status, evidence, total and failure fields only if nobody else
-   * moved the trip since we read it.
+   * Optimistic concurrency: writes status, intent, evidence, total, failure and explanation only if
+   * nobody else moved the trip since we read it.
    */
   public boolean update(Trip updated, long expectedVersion) {
     TripEvidence e = updated.evidence();
+    TravelIntent intent = updated.intent();
     int rows =
         jdbc.sql(
                 """
                 UPDATE trip SET status = :status, version = :version, updated_at = :updatedAt,
+                  origin = :origin, destination = :destination,
+                  earliest_departure = :earliestDeparture, arrival_deadline = :arrivalDeadline,
+                  return_after = :returnAfter, latest_return = :latestReturn, purpose = :purpose,
+                  hotel_required = :hotelRequired, travelers = :travelers,
                   selected_bundle_id = :bundle, optimization_run_id = :optimizationRun,
                   policy_decision_id = :policyDecision, approval_id = :approval, order_id = :orderId,
                   total_currency = :currency, total_minor = :totalMinor,
-                  failure_stage = :failureStage, failure_code = :failureCode
+                  failure_stage = :failureStage, failure_code = :failureCode,
+                  explanation = :explanation
                 WHERE tenant_id = :tenantId AND trip_id = :tripId AND version = :expectedVersion
                 """)
+            .param("origin", intent == null ? null : intent.origin())
+            .param("destination", intent == null ? null : intent.destination())
+            .param("earliestDeparture", ts(intent == null ? null : intent.earliestDeparture()))
+            .param("arrivalDeadline", ts(intent == null ? null : intent.arrivalDeadline()))
+            .param("returnAfter", ts(intent == null ? null : intent.returnAfter()))
+            .param("latestReturn", ts(intent == null ? null : intent.latestReturn()))
+            .param("purpose", intent == null ? null : intent.purpose())
+            .param("hotelRequired", intent != null && intent.hotelRequired())
+            .param("travelers", intent == null ? 1 : intent.travelers())
+            .param("explanation", updated.explanation())
             .param("status", updated.status().name())
             .param("version", updated.version())
             .param("updatedAt", ts(updated.updatedAt()))
@@ -244,7 +260,8 @@ public class TripRepository {
             rs.getString("traveler_email")),
         total,
         rs.getString("failure_stage"),
-        rs.getString("failure_code"));
+        rs.getString("failure_code"),
+        rs.getString("explanation"));
   }
 
   private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {

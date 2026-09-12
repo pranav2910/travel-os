@@ -1,0 +1,44 @@
+[project]
+name = "travelos-llm-gateway"
+version = "0.1.0"
+description = "LLM gateway: the only door to language models. Task-shaped, schema-bound, budgeted, evidenced."
+requires-python = ">=3.12"
+# Same grpc/protobuf line as intelligence/optimization so the generated stubs match across services.
+dependencies = [
+    "grpcio>=1.80,<1.81",
+    "grpcio-health-checking>=1.80,<1.81",
+    "grpcio-reflection>=1.80,<1.81",
+    "protobuf>=6.33.1,<7",
+    "anthropic>=1.5,<2",
+    "pydantic>=2.11,<3",
+]
+
+[dependency-groups]
+dev = [
+    "grpcio-tools>=1.80,<1.81",
+    "pytest>=9.1",
+    "ruff>=0.16",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/travelos_llm_gateway", "src/travelos"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["src/travelos"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "W"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["travelos", "travelos_llm_gateway"]

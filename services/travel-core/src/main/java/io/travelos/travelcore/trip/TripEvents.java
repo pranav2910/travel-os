@@ -115,6 +115,68 @@ final class TripEvents {
         type, 1, trip.tenantId(), trip.tripId(), null, PRODUCER, data, clock);
   }
 
+  static EventEnvelope intentDetected(
+      Trip trip, TripService.IntentExtraction x, Principal actor, Clock clock) {
+    TravelIntent i = trip.intent();
+    Map<String, Object> intent = new LinkedHashMap<>();
+    intent.put("origin", i.origin());
+    intent.put("destination", i.destination());
+    intent.put("earliestDeparture", i.earliestDeparture().toString());
+    intent.put("arrivalDeadline", i.arrivalDeadline().toString());
+    if (i.returnAfter() != null) {
+      intent.put("returnAfter", i.returnAfter().toString());
+      intent.put("latestReturn", i.latestReturn().toString());
+    }
+    if (i.purpose() != null && !i.purpose().isBlank()) {
+      intent.put("purpose", i.purpose());
+    }
+    intent.put("hotelRequired", i.hotelRequired());
+    intent.put("travelers", i.travelers());
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("method", "FREE_TEXT");
+    data.put("result", "EXTRACTED");
+    data.put("model", x.call().model().isBlank() ? "unknown" : x.call().model());
+    data.put("modelCallId", x.call().callId());
+    data.put("confidence", x.confidence());
+    data.put("assumptions", x.assumptions());
+    data.put("intent", intent);
+    data.put("detectedBy", actor.id());
+    return EventEnvelope.create(
+        "travel.intent.detected",
+        1,
+        trip.tenantId(),
+        trip.tripId(),
+        x.causationId(),
+        PRODUCER,
+        data,
+        clock);
+  }
+
+  static EventEnvelope intentRejected(
+      Trip trip, TripService.IntentExtraction x, Principal actor, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("method", "FREE_TEXT");
+    data.put("result", x.result());
+    data.put("model", x.call().model().isBlank() ? "unknown" : x.call().model());
+    data.put("modelCallId", x.call().callId());
+    data.put("missingFields", x.missingFields());
+    if (x.clarifyingQuestion() != null && !x.clarifyingQuestion().isBlank()) {
+      data.put("clarifyingQuestion", x.clarifyingQuestion());
+    }
+    data.put("detectedBy", actor.id());
+    return EventEnvelope.create(
+        "travel.intent.rejected",
+        1,
+        trip.tenantId(),
+        trip.tripId(),
+        x.causationId(),
+        PRODUCER,
+        data,
+        clock);
+  }
+
   private static Map<String, Object> money(@Nullable Money money) {
     Map<String, Object> m = new LinkedHashMap<>();
     m.put("currency", money == null ? "USD" : money.currency());

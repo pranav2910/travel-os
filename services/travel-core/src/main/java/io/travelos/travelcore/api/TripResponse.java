@@ -28,7 +28,8 @@ public record TripResponse(
     @Nullable MoneyView total,
     @Nullable ApprovalResponse approval,
     @Nullable String failureStage,
-    @Nullable String failureCode) {
+    @Nullable String failureCode,
+    @Nullable String explanation) {
 
   public record TravelerView(
       String travelerId, String givenName, String familyName, String email) {}
@@ -64,6 +65,7 @@ public record TripResponse(
                 trip.total().currency(), trip.total().amountMinor(), trip.total().toString()),
         approval == null ? null : ApprovalResponse.from(approval),
         trip.failureStage(),
-        trip.failureCode());
+        trip.failureCode(),
+        trip.explanation());
   }
 }

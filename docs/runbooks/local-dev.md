@@ -22,6 +22,7 @@ Docker Desktop needs ~3 GB for the platform; Java services run on the host.
 | Temporal | gRPC `localhost:7233`, namespace `travelos` | — |
 | Temporal UI | http://localhost:8233 | — |
 | Keycloak | http://localhost:8180 (realm `travelos`) | admin console `admin` / `admin` |
+| LLM gateway | gRPC `localhost:9087` (`make run-llm-gateway`) | `LLM_PROVIDER=fake` offline; set `ANTHROPIC_API_KEY` for `anthropic` (Claude Opus 5) |
 
 Service ports (HTTP 808x pairs with gRPC 908x): travel-core 8081 · policy 8082 / 9082 · optimization 8083 / 9083 · supplier-gateway 8084 / 9084 · order 8085 / 9085.
 
@@ -66,6 +67,21 @@ curl -s -X POST http://localhost:8081/api/v1/trips \
 ```
 
 Metrics: `curl -s localhost:8081/actuator/prometheus | grep travelos_outbox` — `backlog` should sit at 0.
+
+Free text instead of a structured intent (needs the worker and the LLM gateway running):
+
+```bash
+curl -s -X POST http://localhost:8081/api/v1/trips -H "Authorization: Bearer $TOKEN" \
+  -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' \
+  -d '{"request":"Fly BOS to SEA on 2026-10-06, back 2026-10-08. Hotel needed, purpose: customer meeting"}'
+# then: GET /api/v1/trips/{tripId}            -> intent frozen, explanation filled in after planning
+#       GET /api/v1/trips/{tripId}/decisions  -> the agent-decision ledger (model, prompt version, cost)
+```
+
+With the fake provider the text must contain IATA codes and ISO dates; with `ANTHROPIC_API_KEY`
+exported before `make run-llm-gateway`, natural phrasing ("Seattle before 9am next Tuesday, back
+Wednesday evening") works and relative dates resolve against `DEFAULT_TIMEZONE` (America/New_York).
+`LLM_TENANT_DAILY_BUDGET_USD` (default 5) caps model spend per tenant per day.
 
 Policy service: `make run SVC=policy`, then `make seed-policy` publishes
 `platform/local/seed/policies/acme-us-standard.json` for tenant acme as carol (TRAVEL_ADMIN).

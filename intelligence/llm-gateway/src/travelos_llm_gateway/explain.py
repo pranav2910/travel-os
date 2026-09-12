@@ -1,0 +1,106 @@
+"""Renders decision evidence to plain text for the explanation prompt (and the fake provider)."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from travelos.common.v1 import common_pb2
+from travelos.llm.v1 import llm_pb2
+from travelos.offer.v1 import offer_pb2
+from travelos.optimization.v1 import optimization_pb2
+from travelos_llm_gateway.providers import Evidence
+
+
+def money(m: common_pb2.Money) -> str:
+    if not m.currency:
+        return "n/a"
+    return f"{m.currency} {m.amount_minor / 100:.2f}"
+
+
+def _flight(s: offer_pb2.FlightSegment) -> str:
+    number = s.flight_number
+    if s.carrier and not number.startswith(s.carrier):
+        number = f"{s.carrier}{number}"
+    return f"{number} {s.origin}-{s.destination}"
+
+
+def _bundle_summary(b: offer_pb2.Bundle) -> str:
+    parts: list[str] = []
+    for o in b.offers:
+        if o.HasField("air"):
+            legs = [_flight(s) for s in o.air.outbound.segments]
+            back = [_flight(s) for s in o.air.inbound.segments]
+            desc = ", ".join(legs) or "flight"
+            if back:
+                desc += " / return " + ", ".join(back)
+            parts.append(f"{desc} via {o.provider}" if o.provider else desc)
+        elif o.HasField("hotel"):
+            parts.append(f"hotel {o.hotel.name} ({o.hotel.nights} nights)")
+        else:
+            parts.append(o.provider or "offer")
+    return "; ".join(parts) or b.bundle_id
+
+
+def _breakdown(rc: optimization_pb2.RankedCandidate) -> str:
+    b = rc.breakdown
+    return (
+        f"cost {b.cost:.0f}, time {b.time:.0f}, risk {b.risk:.0f}, "
+        f"preference {b.preference:.0f}, experience {b.experience:.0f}"
+    )
+
+
+def evidence(request: llm_pb2.ExplainTripRequest) -> Evidence:
+    i = request.intent
+    sel = request.selected
+    pd = request.policy_decision
+    route = f"{i.origin} to {i.destination}" if i.origin else "the trip"
+    ranking = sorted(request.ranking, key=lambda r: r.rank or 999)
+    chosen = next((r for r in ranking if r.bundle_id == sel.bundle_id), None)
+    runner_up = next((r for r in ranking if r.bundle_id != sel.bundle_id and r.feasible), None)
+    reasons = "; ".join(f"{r.code}: {r.message}" if r.message else r.code for r in pd.reasons)
+    facts: dict[str, Any] = {
+        "route": route,
+        "selected": _bundle_summary(sel),
+        "total": money(sel.total),
+        "searched": request.candidates_searched,
+        "permitted": request.candidates_permitted,
+        "policy": f"{pd.policy_id} v{pd.policy_version}" if pd.policy_id else "",
+        "outcome": _outcome_name(pd),
+        "reasons": reasons,
+        "requires_approval": pd.requires_approval,
+        "score": f"{chosen.score:.1f}" if chosen else "",
+        "breakdown": _breakdown(chosen) if chosen else "",
+    }
+    lines = [
+        f"Audience: {request.audience or 'TRAVELER'}",
+        f"Route: {route}",
+        f"Purpose: {i.purpose or 'not stated'}",
+        f"Round trip: {'yes' if i.HasField('return_after') else 'no'}; hotel: "
+        f"{'yes' if i.hotel_required else 'no'}",
+        f"Options searched: {request.candidates_searched}; permitted by policy: "
+        f"{request.candidates_permitted}",
+        f"Selected: {facts['selected']} at {facts['total']}",
+    ]
+    if chosen:
+        lines.append(f"Optimizer score: {chosen.score:.1f} of 100 ({_breakdown(chosen)})")
+    if runner_up:
+        lines.append(f"Runner-up: {runner_up.bundle_id} scored {runner_up.score:.1f}")
+    if pd.policy_id:
+        lines.append(f"Policy: {facts['policy']}, outcome {facts['outcome']}")
+        if reasons:
+            lines.append(f"Policy reasons: {reasons}")
+        lines.append(
+            "Approval: required from " + (pd.approvers[0].role if pd.approvers else "a manager")
+            if pd.requires_approval
+            else "Approval: not required"
+        )
+    return Evidence(audience=request.audience or "TRAVELER", text="\n".join(lines), facts=facts)
+
+
+def _outcome_name(pd) -> str:
+    from travelos.policy.v1 import policy_pb2
+
+    try:
+        return policy_pb2.Outcome.Name(pd.outcome)
+    except ValueError:
+        return str(pd.outcome)

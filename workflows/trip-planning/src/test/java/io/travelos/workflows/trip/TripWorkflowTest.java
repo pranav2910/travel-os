@@ -13,9 +13,15 @@ import com.google.protobuf.Timestamp;
 import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
+import io.temporal.failure.ApplicationFailure;
 import io.temporal.testing.TestWorkflowEnvironment;
 import io.temporal.worker.Worker;
+import io.travelos.contracts.common.v1.ModelCall;
 import io.travelos.contracts.common.v1.Money;
+import io.travelos.contracts.llm.v1.ExplainTripRequest;
+import io.travelos.contracts.llm.v1.ExplainTripResponse;
+import io.travelos.contracts.llm.v1.ExtractIntentRequest;
+import io.travelos.contracts.llm.v1.ExtractIntentResponse;
 import io.travelos.contracts.offer.v1.AirOffer;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
@@ -34,6 +40,7 @@ import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.policy.v1.ReasonCode;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
 import io.travelos.contracts.supplier.v1.SupplierError;
+import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.contracts.trip.v1.TravelerSnapshot;
@@ -93,6 +100,12 @@ class TripWorkflowTest {
     when(activities.optimize(any()))
         .thenAnswer(inv -> optimized(inv.getArgument(0), "bdl_" + OFFER_CHEAP.substring(4)));
     when(activities.createOrder(any())).thenReturn(order(OrderStatus.CONFIRMED, ""));
+    when(activities.explain(any()))
+        .thenReturn(
+            ExplainTripResponse.newBuilder().setExplanation("Chosen because cheapest.").build());
+    when(activities.extractIntent(any()))
+        .thenReturn(extracted(ExtractIntentResponse.Result.EXTRACTED));
+    when(activities.applyIntentExtraction(any())).thenReturn(trip(TripStatus.SUBMITTED, true));
   }
 
   @AfterEach
@@ -275,13 +288,107 @@ class TripWorkflowTest {
   }
 
   @Test
-  void aTripWithoutIntentWaitsForNobody() {
+  void freeTextIsUnderstoodBeforePlanning() {
     when(activities.loadTrip(anyString(), anyString()))
         .thenReturn(trip(TripStatus.SUBMITTED, false));
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+
+    TripWorkflow.Outcome outcome = result(start());
+
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    ArgumentCaptor<ExtractIntentRequest> extract =
+        ArgumentCaptor.forClass(ExtractIntentRequest.class);
+    verify(activities).extractIntent(extract.capture());
+    assertThat(extract.getValue().getRequestText()).contains("BOS to SEA");
+    assertThat(extract.getValue().getTimezone()).isEqualTo("America/New_York");
+    assertThat(extract.getValue().getReferenceTime().getSeconds()).isPositive();
+    assertThat(extract.getValue().getCtx().getPrincipal().getId())
+        .isEqualTo("agent/trip-planner/v1");
+    ArgumentCaptor<ApplyIntentExtractionRequest> apply =
+        ArgumentCaptor.forClass(ApplyIntentExtractionRequest.class);
+    verify(activities).applyIntentExtraction(apply.capture());
+    assertThat(apply.getValue().getResult()).isEqualTo("EXTRACTED");
+    assertThat(apply.getValue().getIntent().getDestination()).isEqualTo("SEA");
+    assertThat(apply.getValue().getCall().getCallId()).startsWith("llm_");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING, TripStatus.APPROVED, TripStatus.BOOKING, TripStatus.BOOKED);
+  }
+
+  @Test
+  void aTripWithNeitherIntentNorTextFailsWithoutCallingAnyone() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(trip(TripStatus.SUBMITTED, false).toBuilder().clearRequestText().build());
     TripWorkflow.Outcome outcome = result(start());
     assertThat(outcome.failureStage()).isEqualTo("INTENT");
     assertThat(outcome.failureCode()).isEqualTo("INTENT_REQUIRED");
+    verify(activities, never()).extractIntent(any());
     verify(activities, never()).search(any());
+  }
+
+  @Test
+  void unclearTextFailsWithTheClarifyingQuestionAndIsLedgered() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(trip(TripStatus.SUBMITTED, false));
+    when(activities.extractIntent(any()))
+        .thenReturn(
+            extracted(ExtractIntentResponse.Result.NEEDS_CLARIFICATION).toBuilder()
+                .clearIntent()
+                .addMissingFields("travel_date")
+                .setClarifyingQuestion("Which day do you need to be in Seattle?")
+                .build());
+    when(activities.applyIntentExtraction(any())).thenReturn(trip(TripStatus.SUBMITTED, false));
+
+    TripWorkflow.Outcome outcome = result(start());
+
+    assertThat(outcome.finalStatus()).isEqualTo("FAILED");
+    assertThat(outcome.failureStage()).isEqualTo("INTENT");
+    assertThat(outcome.failureCode()).isEqualTo("NEEDS_CLARIFICATION");
+    assertThat(transitions.getLast().getReason())
+        .isEqualTo("Which day do you need to be in Seattle?");
+    ArgumentCaptor<ApplyIntentExtractionRequest> apply =
+        ArgumentCaptor.forClass(ApplyIntentExtractionRequest.class);
+    verify(activities).applyIntentExtraction(apply.capture());
+    assertThat(apply.getValue().getResult()).isEqualTo("NEEDS_CLARIFICATION");
+    assertThat(apply.getValue().getMissingFieldsList()).containsExactly("travel_date");
+    verify(activities, never()).search(any());
+  }
+
+  @Test
+  void anUnreachableGatewayFailsTheTripAtIntentNotSilently() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(trip(TripStatus.SUBMITTED, false));
+    when(activities.extractIntent(any()))
+        .thenThrow(ApplicationFailure.newNonRetryableFailure("gateway down", "UNAVAILABLE"));
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.failureStage()).isEqualTo("INTENT");
+    assertThat(outcome.failureCode()).isEqualTo("ACTIVITY_UNAVAILABLE");
+    verify(activities, never()).search(any());
+  }
+
+  @Test
+  void theExplanationTravelsWithThePlan() {
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    result(start());
+    ArgumentCaptor<ExplainTripRequest> explain = ArgumentCaptor.forClass(ExplainTripRequest.class);
+    verify(activities).explain(explain.capture());
+    assertThat(explain.getValue().getSelected().getBundleId())
+        .isEqualTo("bdl_" + OFFER_CHEAP.substring(4));
+    assertThat(explain.getValue().getCandidatesSearched()).isEqualTo(3);
+    assertThat(explain.getValue().getCandidatesPermitted()).isEqualTo(2);
+    assertThat(explain.getValue().getPolicyDecision().getDecisionId()).startsWith("pd_");
+    assertThat(transitions.get(1).getTo()).isEqualTo(TripStatus.APPROVED);
+    assertThat(transitions.get(1).getExplanation()).isEqualTo("Chosen because cheapest.");
+  }
+
+  @Test
+  void narrationOutageNeverBlocksBooking() {
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    when(activities.explain(any()))
+        .thenThrow(ApplicationFailure.newNonRetryableFailure("budget", "RESOURCE_EXHAUSTED"));
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(transitions.get(1).getExplanation()).isEmpty();
   }
 
   @Test
@@ -335,6 +442,9 @@ class TripWorkflowTest {
                     .setGivenName("Alice")
                     .setFamilyName("Nguyen")
                     .setEmail("alice@acme.example"));
+    if (!withIntent) {
+      b.setRequestText("Fly BOS to SEA on 2026-10-06, back 2026-10-08, hotel needed");
+    }
     if (withIntent) {
       b.setIntent(
           TravelIntent.newBuilder()
@@ -347,6 +457,22 @@ class TripWorkflowTest {
               .setTravelers(1));
     }
     return b.build();
+  }
+
+  private static ExtractIntentResponse extracted(ExtractIntentResponse.Result result) {
+    return ExtractIntentResponse.newBuilder()
+        .setResult(result)
+        .setIntent(trip(TripStatus.SUBMITTED, true).getIntent())
+        .setConfidence(0.9)
+        .addAssumptions("earliest departure assumed 06:00 local")
+        .setCall(
+            ModelCall.newBuilder()
+                .setCallId("llm_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .setProvider("fake")
+                .setModel("fake-rules-v1")
+                .setPromptId("intent-extraction")
+                .setPromptVersion(1))
+        .build();
   }
 
   private static SearchAirResponse threeOffers() {

@@ -35,6 +35,8 @@ public final class TripPlanning {
   /** Where the workflow is, for the explainability API and the UI. */
   public enum Stage {
     LOADING,
+    /** Free text is being turned into a structured intent by the LLM gateway. */
+    UNDERSTANDING,
     SEARCHING,
     EVALUATING_POLICY,
     OPTIMIZING,

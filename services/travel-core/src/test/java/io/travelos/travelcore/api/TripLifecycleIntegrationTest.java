@@ -4,16 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+import com.google.protobuf.Timestamp;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.travelos.contracts.common.v1.ModelCall;
 import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
+import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
+import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.events.Topics;
@@ -114,7 +118,7 @@ class TripLifecycleIntegrationTest {
     props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
     props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
     consumer = new KafkaConsumer<>(props);
-    consumer.subscribe(List.of(Topics.TRIP, Topics.APPROVAL));
+    consumer.subscribe(List.of(Topics.TRIP, Topics.APPROVAL, Topics.INTENT));
   }
 
   @AfterAll
@@ -348,6 +352,107 @@ class TripLifecycleIntegrationTest {
 
   // ------------------------------------------------------------------ helpers
 
+  @Test
+  @org.junit.jupiter.api.Order(7)
+  void freeTextIntentIsFrozenOnceWithEvidenceAndLedgered() {
+    String trip =
+        createFreeText(TestTokens.alice(), "Fly BOS to SEA on 2026-10-06, back 2026-10-08");
+    assertThat(
+            core.getTrip(GetTripRequest.newBuilder().setCtx(ctx("acme")).setTripId(trip).build())
+                .hasIntent())
+        .isFalse();
+
+    ApplyIntentExtractionRequest extracted =
+        extraction(trip, "EXTRACTED", "llm_01ARZ3NDEKTSV4RRFFQ69G5FA7");
+    Trip frozen = core.applyIntentExtraction(extracted);
+    assertThat(frozen.getIntent().getOrigin()).isEqualTo("BOS");
+    assertThat(frozen.getIntent().getDestination()).isEqualTo("SEA");
+    assertThat(frozen.getVersion()).isEqualTo(1);
+    assertThat(frozen.getStatus()).isEqualTo(TripStatus.SUBMITTED);
+
+    // The same model call again (a retried activity): nothing changes, nothing is re-ledgered.
+    Trip again = core.applyIntentExtraction(extracted);
+    assertThat(again.getVersion()).isEqualTo(1);
+
+    // A different conclusion for a trip whose intent is frozen is a precondition failure.
+    ApplyIntentExtractionRequest other =
+        extraction(trip, "EXTRACTED", "llm_01ARZ3NDEKTSV4RRFFQ69G5FA8").toBuilder()
+            .setIntent(extracted.getIntent().toBuilder().setDestination("SFO"))
+            .build();
+    assertThatThrownBy(() -> core.applyIntentExtraction(other))
+        .isInstanceOf(StatusRuntimeException.class)
+        .satisfies(
+            e ->
+                assertThat(((StatusRuntimeException) e).getStatus().getCode())
+                    .isEqualTo(Status.Code.FAILED_PRECONDITION));
+
+    JsonNode view = json.readTree(get("/api/v1/trips/" + trip, TestTokens.alice()).getBody());
+    assertThat(view.get("intent").get("origin").asString()).isEqualTo("BOS");
+    JsonNode history =
+        json.readTree(get("/api/v1/trips/" + trip + "/history", TestTokens.alice()).getBody());
+    assertThat(history).hasSize(2);
+    assertThat(history.get(1).get("reason").asString())
+        .contains("intent extracted")
+        .contains("fake-rules-v1");
+    assertThat(history.get(1).get("actor").asString()).isEqualTo("agent/trip-planner/v1");
+
+    JsonNode ledger =
+        json.readTree(get("/api/v1/trips/" + trip + "/decisions", TestTokens.alice()).getBody());
+    assertThat(ledger).hasSize(1);
+    assertThat(ledger.get(0).get("decisionType").asString()).isEqualTo("INTENT_EXTRACTION");
+    assertThat(ledger.get(0).get("result").asString()).isEqualTo("EXTRACTED");
+    assertThat(ledger.get(0).get("call").get("callId").asString())
+        .isEqualTo("llm_01ARZ3NDEKTSV4RRFFQ69G5FA7");
+    assertThat(ledger.get(0).get("call").get("promptVersion").asInt()).isEqualTo(1);
+    assertThat(ledger.get(0).get("call").get("costMicros").asLong()).isEqualTo(11000);
+    assertThat(ledger.get(0).get("assumptions").get(0).asString()).contains("06:00");
+    // Another tenant sees nothing, not even the ledger.
+    assertThat(
+            get("/api/v1/trips/" + trip + "/decisions", TestTokens.zoe()).getStatusCode().value())
+        .isEqualTo(404);
+
+    ConsumerRecord<String, String> event = awaitEvent(trip, "travel.intent.detected");
+    assertThat(EventSchemas.violations(event.value())).isEmpty();
+    JsonNode data = json.readTree(event.value()).get("data");
+    assertThat(data.get("modelCallId").asString()).isEqualTo("llm_01ARZ3NDEKTSV4RRFFQ69G5FA7");
+    assertThat(data.get("intent").get("destination").asString()).isEqualTo("SEA");
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(8)
+  void unclearTextIsLedgeredAndPublishedButChangesNothing() {
+    String trip = createFreeText(TestTokens.alice(), "I need to be in Seattle sometime");
+    ApplyIntentExtractionRequest unclear =
+        extraction(trip, "NEEDS_CLARIFICATION", "llm_01ARZ3NDEKTSV4RRFFQ69G5FA9").toBuilder()
+            .clearIntent()
+            .addMissingFields("travel_date")
+            .setClarifyingQuestion("Which day do you need to be in Seattle?")
+            .build();
+    Trip unchanged = core.applyIntentExtraction(unclear);
+    assertThat(unchanged.hasIntent()).isFalse();
+    assertThat(unchanged.getVersion()).isZero();
+
+    JsonNode ledger =
+        json.readTree(get("/api/v1/trips/" + trip + "/decisions", TestTokens.alice()).getBody());
+    assertThat(ledger).hasSize(1);
+    assertThat(ledger.get(0).get("result").asString()).isEqualTo("NEEDS_CLARIFICATION");
+    assertThat(ledger.get(0).get("detail").get("clarifyingQuestion").asString())
+        .contains("Which day");
+
+    ConsumerRecord<String, String> event = awaitEvent(trip, "travel.intent.rejected");
+    assertThat(EventSchemas.violations(event.value())).isEmpty();
+    assertThat(json.readTree(event.value()).get("data").get("missingFields").get(0).asString())
+        .isEqualTo("travel_date");
+
+    // No evidence, no ledger entry: the call is refused, not silently accepted.
+    assertThatThrownBy(() -> core.applyIntentExtraction(unclear.toBuilder().clearCall().build()))
+        .isInstanceOf(StatusRuntimeException.class)
+        .satisfies(
+            e ->
+                assertThat(((StatusRuntimeException) e).getStatus().getCode())
+                    .isEqualTo(Status.Code.INVALID_ARGUMENT));
+  }
+
   private Trip transition(
       String trip,
       TripStatus to,
@@ -384,6 +489,68 @@ class TripLifecycleIntegrationTest {
             .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
             .header("Idempotency-Key", UUID.randomUUID().toString())
             .body("{\"intent\":" + INTENT + "}")
+            .retrieve()
+            .toEntity(String.class);
+    assertThat(created.getStatusCode().value()).isEqualTo(202);
+    return json.readTree(created.getBody()).get("tripId").asString();
+  }
+
+  private ApplyIntentExtractionRequest extraction(String trip, String result, String callId) {
+    return ApplyIntentExtractionRequest.newBuilder()
+        .setCtx(ctx("acme"))
+        .setTripId(trip)
+        .setResult(result)
+        .setIntent(
+            TravelIntent.newBuilder()
+                .setOrigin("BOS")
+                .setDestination("SEA")
+                .setEarliestDeparture(Timestamp.newBuilder().setSeconds(1_791_100_800L))
+                .setArrivalDeadline(Timestamp.newBuilder().setSeconds(1_791_162_000L))
+                .setReturnAfter(Timestamp.newBuilder().setSeconds(1_791_273_600L))
+                .setLatestReturn(Timestamp.newBuilder().setSeconds(1_791_338_340L))
+                .setHotelRequired(true)
+                .setTravelers(1))
+        .setConfidence(0.85)
+        .addAssumptions("earliest departure assumed 06:00 local on the travel day")
+        .setCall(
+            ModelCall.newBuilder()
+                .setCallId(callId)
+                .setProvider("fake")
+                .setModel("fake-rules-v1")
+                .setPromptId("intent-extraction")
+                .setPromptVersion(1)
+                .setInputTokens(1200)
+                .setOutputTokens(180)
+                .setCacheReadTokens(1000)
+                .setLatencyMs(420)
+                .setCostMicros(11000))
+        .build();
+  }
+
+  private ConsumerRecord<String, String> awaitEvent(String trip, String type) {
+    List<ConsumerRecord<String, String>> matches = new ArrayList<>();
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              consumer.poll(Duration.ofMillis(250)).forEach(received::add);
+              received.stream()
+                  .filter(r -> trip.equals(r.key()))
+                  .filter(r -> json.readTree(r.value()).get("eventType").asString().equals(type))
+                  .forEach(matches::add);
+              assertThat(matches).isNotEmpty();
+            });
+    return matches.getFirst();
+  }
+
+  private String createFreeText(String token, String text) {
+    ResponseEntity<String> created =
+        http.post()
+            .uri("/api/v1/trips")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+            .header("Idempotency-Key", UUID.randomUUID().toString())
+            .body("{\"request\":\"" + text + "\"}")
             .retrieve()
             .toEntity(String.class);
     assertThat(created.getStatusCode().value()).isEqualTo(202);

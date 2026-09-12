@@ -5,6 +5,11 @@ import io.grpc.StatusRuntimeException;
 import io.temporal.failure.ApplicationFailure;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
+import io.travelos.contracts.llm.v1.ExplainTripRequest;
+import io.travelos.contracts.llm.v1.ExplainTripResponse;
+import io.travelos.contracts.llm.v1.ExtractIntentRequest;
+import io.travelos.contracts.llm.v1.ExtractIntentResponse;
+import io.travelos.contracts.llm.v1.LlmGatewayGrpc;
 import io.travelos.contracts.optimization.v1.OptimizationServiceGrpc;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
@@ -17,6 +22,7 @@ import io.travelos.contracts.policy.v1.PolicyServiceGrpc;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
+import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
@@ -53,6 +59,21 @@ public class TripActivitiesImpl implements TripActivities {
   @Override
   public Trip transition(TransitionTripRequest request) {
     return call(() -> travelCore().transitionTrip(request));
+  }
+
+  @Override
+  public ExtractIntentResponse extractIntent(ExtractIntentRequest request) {
+    return call(() -> stub(LlmGatewayGrpc::newBlockingStub, "llm-gateway").extractIntent(request));
+  }
+
+  @Override
+  public Trip applyIntentExtraction(ApplyIntentExtractionRequest request) {
+    return call(() -> travelCore().applyIntentExtraction(request));
+  }
+
+  @Override
+  public ExplainTripResponse explain(ExplainTripRequest request) {
+    return call(() -> stub(LlmGatewayGrpc::newBlockingStub, "llm-gateway").explainTrip(request));
   }
 
   @Override

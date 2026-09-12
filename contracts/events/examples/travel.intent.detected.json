@@ -1,0 +1,31 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RN",
+  "eventType": "travel.intent.detected",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "producer": "travel-core",
+  "data": {
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "method": "FREE_TEXT",
+    "result": "EXTRACTED",
+    "model": "claude-opus-5",
+    "modelCallId": "llm_01K4Q0N7S6Z2X8G5H3J9M1P7RP",
+    "confidence": 0.92,
+    "assumptions": ["origin BOS taken from the traveler's home airport"],
+    "intent": {
+      "origin": "BOS",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-06T10:00:00Z",
+      "arrivalDeadline": "2026-10-06T16:00:00Z",
+      "returnAfter": "2026-10-07T20:00:00Z",
+      "latestReturn": "2026-10-08T06:00:00Z",
+      "purpose": "customer meeting",
+      "hotelRequired": true,
+      "travelers": 1
+    },
+    "detectedBy": "agent/intent-extractor/v1"
+  }
+}

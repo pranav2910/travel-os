@@ -41,6 +41,7 @@ class TemporalWorkerConfiguration {
     // The workflow reads the payment token through a side effect from a system property so the
     // deterministic code never touches Spring.
     System.setProperty("travelos.workflow.payment-token", properties.paymentToken());
+    System.setProperty("travelos.workflow.default-timezone", properties.defaultTimezone());
     WorkerFactory factory = WorkerFactory.newInstance(client);
     Worker worker = factory.newWorker(TripPlanning.TASK_QUEUE);
     worker.registerWorkflowImplementationTypes(TripWorkflowImpl.class);

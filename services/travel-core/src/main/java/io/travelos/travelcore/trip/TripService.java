@@ -14,7 +14,9 @@ import io.travelos.travelcore.approval.ApprovalSignaler;
 import io.travelos.workflows.TripPlanning;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,7 @@ public class TripService {
 
   private final TripRepository trips;
   private final ApprovalRepository approvals;
+  private final AgentDecisionRepository ledger;
   private final ApprovalSignaler signaler;
   private final Outbox outbox;
   private final Clock clock;
@@ -35,11 +38,13 @@ public class TripService {
   public TripService(
       TripRepository trips,
       ApprovalRepository approvals,
+      AgentDecisionRepository ledger,
       ApprovalSignaler signaler,
       Outbox outbox,
       Clock clock) {
     this.trips = trips;
     this.approvals = approvals;
+    this.ledger = ledger;
     this.signaler = signaler;
     this.outbox = outbox;
     this.clock = clock;
@@ -97,6 +102,7 @@ public class TripService {
             now,
             now,
             traveler,
+            null,
             null,
             null,
             null);
@@ -223,6 +229,9 @@ public class TripService {
     if (t.to() == TripStatus.FAILED) {
       next = next.withFailure(t.failureStage(), t.failureCode());
     }
+    if (t.explanation() != null && !t.explanation().isBlank()) {
+      next = next.withExplanation(t.explanation());
+    }
     if (!trips.update(next, trip.version())) {
       throw new IllegalStateException("trip " + trip.tripId() + " changed concurrently; retry");
     }
@@ -254,6 +263,97 @@ public class TripService {
     }
     return next;
   }
+
+  /**
+   * Records what intent extraction concluded. EXTRACTED freezes the intent on a SUBMITTED trip;
+   * every outcome is ledgered with its model-call evidence and published. Idempotent per model
+   * call: a retried activity finds its call already ledgered and changes nothing.
+   */
+  @Transactional
+  public Trip applyIntentExtraction(TenantId tenant, Principal actor, IntentExtraction x) {
+    Trip trip = getInternal(tenant, x.tripId());
+    if (x.call() == null || !Ids.isValid(IdPrefix.MODEL_CALL, x.call().callId())) {
+      throw new IllegalArgumentException("intent extraction needs model-call evidence (llm_ id)");
+    }
+    Instant now = clock.instant();
+    Map<String, Object> detail = new LinkedHashMap<>();
+    detail.put("method", "FREE_TEXT");
+    if (!x.missingFields().isEmpty()) {
+      detail.put("missingFields", x.missingFields());
+    }
+    if (x.clarifyingQuestion() != null && !x.clarifyingQuestion().isBlank()) {
+      detail.put("clarifyingQuestion", x.clarifyingQuestion());
+    }
+    boolean fresh =
+        ledger.insertIfAbsent(
+            new AgentDecision(
+                Ids.newId(IdPrefix.DECISION),
+                tenant,
+                trip.tripId(),
+                actor,
+                AgentDecision.INTENT_EXTRACTION,
+                x.result(),
+                x.confidence(),
+                x.assumptions(),
+                detail,
+                x.call(),
+                now));
+    if (!fresh) {
+      return trip;
+    }
+    if (!"EXTRACTED".equals(x.result())) {
+      outbox.append(TripEvents.intentRejected(trip, x, actor, clock));
+      return trip;
+    }
+    if (x.intent() == null) {
+      throw new IllegalArgumentException("EXTRACTED needs an intent");
+    }
+    if (trip.intent() != null) {
+      if (trip.intent().equals(x.intent())) {
+        return trip;
+      }
+      throw new IllegalStateException("trip " + trip.tripId() + " already has a frozen intent");
+    }
+    if (trip.status() != TripStatus.SUBMITTED) {
+      throw new IllegalStateException(
+          "intent can only be set on a SUBMITTED trip, not " + trip.status());
+    }
+    Trip next = trip.withIntent(x.intent(), now);
+    if (!trips.update(next, trip.version())) {
+      throw new IllegalStateException("trip " + trip.tripId() + " changed concurrently; retry");
+    }
+    trips.appendHistory(
+        trip,
+        trip.status(),
+        trip.status(),
+        String.format(
+            java.util.Locale.ROOT,
+            "intent extracted from free text by %s (confidence %.2f)",
+            x.call().model(),
+            x.confidence()),
+        actor,
+        now);
+    outbox.append(TripEvents.intentDetected(next, x, actor, clock));
+    return next;
+  }
+
+  @Transactional(readOnly = true)
+  public List<AgentDecision> agentDecisions(RequestPrincipal me, String tripId) {
+    Trip trip = get(me, tripId);
+    return ledger.listForTrip(trip.tenantId(), trip.tripId());
+  }
+
+  /** What the LLM gateway concluded, as relayed by the workflow. */
+  public record IntentExtraction(
+      String tripId,
+      String result,
+      @Nullable TravelIntent intent,
+      List<String> missingFields,
+      @Nullable String clarifyingQuestion,
+      List<String> assumptions,
+      double confidence,
+      AgentDecision.@Nullable ModelCallEvidence call,
+      @Nullable String causationId) {}
 
   /** A manager or travel admin (never the traveler) decides the pending approval. */
   @Transactional
@@ -347,5 +447,6 @@ public class TripService {
       @Nullable String approverRole,
       @Nullable String failureStage,
       @Nullable String failureCode,
-      @Nullable String causationId) {}
+      @Nullable String causationId,
+      @Nullable String explanation) {}
 }

@@ -34,12 +34,17 @@ travelos:
       order:
         address: ${ORDER_ADDRESS:localhost:9085}
         deadline: 60s
+      llm-gateway:
+        address: ${LLM_GATEWAY_ADDRESS:localhost:9087}
+        deadline: 60s
   workflow:
     # The machine identity every downstream call is made as. Scoped, never "*".
     principal: agent/trip-planner/v1
     approval-timeout: ${APPROVAL_TIMEOUT:PT48H}
     # Opaque token from the tenant's payment provider. Never a card number.
     payment-token: ${PAYMENT_TOKEN:tok_corp_visa_sandbox}
+    # Zone used to resolve relative dates in free-text requests until traveler profiles carry one.
+    default-timezone: ${DEFAULT_TIMEZONE:America/New_York}
 
 management:
   otlp:

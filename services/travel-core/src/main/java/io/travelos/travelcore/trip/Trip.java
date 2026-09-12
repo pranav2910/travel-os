@@ -24,75 +24,77 @@ public record Trip(
     TravelerSnapshot traveler,
     @Nullable Money total,
     @Nullable String failureStage,
-    @Nullable String failureCode) {
+    @Nullable String failureCode,
+    @Nullable String explanation) {
 
   public Trip withStatus(TripStatus next, Instant now) {
     if (!status.canTransitionTo(next)) {
       throw new IllegalStateException(
           "trip " + tripId + " cannot go from " + status + " to " + next);
     }
-    return new Trip(
-        tripId,
-        tenantId,
-        travelerId,
-        next,
-        source,
-        requestText,
-        intent,
-        evidence,
-        createdBy,
-        idempotencyKey,
-        requestFingerprint,
-        version + 1,
-        createdAt,
-        now,
-        traveler,
-        total,
-        failureStage,
-        failureCode);
+    return copy(
+        next, intent, evidence, version + 1, now, total, failureStage, failureCode, explanation);
+  }
+
+  /**
+   * Freezes the intent (a new version: the plan's inputs changed). Only meaningful on SUBMITTED.
+   */
+  public Trip withIntent(TravelIntent frozen, Instant now) {
+    return copy(
+        status, frozen, evidence, version + 1, now, total, failureStage, failureCode, explanation);
   }
 
   public Trip withEvidence(TripEvidence next, @Nullable Money newTotal) {
-    return new Trip(
-        tripId,
-        tenantId,
-        travelerId,
+    return copy(
         status,
-        source,
-        requestText,
         intent,
         next,
-        createdBy,
-        idempotencyKey,
-        requestFingerprint,
         version,
-        createdAt,
         updatedAt,
-        traveler,
         newTotal == null ? total : newTotal,
         failureStage,
-        failureCode);
+        failureCode,
+        explanation);
   }
 
   public Trip withFailure(String stage, String code) {
+    return copy(status, intent, evidence, version, updatedAt, total, stage, code, explanation);
+  }
+
+  public Trip withExplanation(@Nullable String narration) {
+    return copy(
+        status, intent, evidence, version, updatedAt, total, failureStage, failureCode, narration);
+  }
+
+  private Trip copy(
+      TripStatus newStatus,
+      @Nullable TravelIntent newIntent,
+      TripEvidence newEvidence,
+      long newVersion,
+      Instant newUpdatedAt,
+      @Nullable Money newTotal,
+      @Nullable String newFailureStage,
+      @Nullable String newFailureCode,
+      @Nullable String newExplanation) {
     return new Trip(
         tripId,
         tenantId,
         travelerId,
-        status,
+        newStatus,
         source,
         requestText,
-        intent,
-        evidence,
+        newIntent,
+        newEvidence,
         createdBy,
         idempotencyKey,
         requestFingerprint,
-        version,
+        newVersion,
         createdAt,
-        updatedAt,
+        newUpdatedAt,
         traveler,
-        total,
-        stage,
-        code);
+        newTotal,
+        newFailureStage,
+        newFailureCode,
+        newExplanation);
   }
 }

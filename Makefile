@@ -9,7 +9,7 @@ export JAVA_HOME
 GRADLE  := ./gradlew
 COMPOSE := docker compose -f platform/local/docker-compose.yml
 
-.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -50,6 +50,9 @@ run-worker: ## run the Temporal trip-planning worker
 
 run-optimization: ## run the Python optimization service (gRPC :9083)
 	cd intelligence/optimization && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && uv run --frozen python -m travelos_optimization.server
+
+run-llm-gateway: ## run the LLM gateway (gRPC :9087). LLM_PROVIDER=fake for offline; anthropic when ANTHROPIC_API_KEY is set
+	cd intelligence/llm-gateway && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && uv run --frozen python -m travelos_llm_gateway.server
 
 seed-policy: ## publish the seed travel policy for tenant acme (policy service must be running on :8082)
 	@TOKEN=$$(curl -sf -X POST http://localhost:8180/realms/travelos/protocol/openid-connect/token -d client_id=travelos-dev-cli -d grant_type=password -d username=carol -d password=password | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])'); \

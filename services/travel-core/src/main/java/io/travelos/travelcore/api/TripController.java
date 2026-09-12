@@ -3,6 +3,7 @@ package io.travelos.travelcore.api;
 import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
 import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
+import io.travelos.travelcore.trip.AgentDecision;
 import io.travelos.travelcore.trip.TravelIntent;
 import io.travelos.travelcore.trip.Trip;
 import io.travelos.travelcore.trip.TripRepository;
@@ -69,6 +70,13 @@ public class TripController {
   public List<TripResponse> listMine(
       @AuthenticationPrincipal RequestPrincipal me, @RequestParam(defaultValue = "50") int limit) {
     return trips.listMine(me, Math.clamp(limit, 1, 200)).stream().map(TripResponse::from).toList();
+  }
+
+  /** The agent-decision ledger: what a model concluded about this trip, with its evidence. */
+  @GetMapping("/{tripId}/decisions")
+  public List<AgentDecision> decisions(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    return trips.agentDecisions(me, tripId);
   }
 
   /** The audit trail of status changes: the first piece of the explainability API. */

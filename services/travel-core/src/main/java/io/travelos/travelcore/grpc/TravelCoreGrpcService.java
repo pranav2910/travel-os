@@ -4,6 +4,8 @@ import com.google.protobuf.Timestamp;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.travelos.common.money.Money;
+import io.travelos.contracts.common.v1.ModelCall;
+import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
@@ -13,6 +15,7 @@ import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.spring.grpc.RequestContexts;
 import io.travelos.spring.web.error.ApiException;
+import io.travelos.travelcore.trip.AgentDecision;
 import io.travelos.travelcore.trip.TripService;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
@@ -82,12 +85,88 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                   blankToNull(request.getApproverRole()),
                   blankToNull(request.getFailureStage()),
                   blankToNull(request.getFailureCode()),
-                  blankToNull(request.getCtx().getCausationId())));
+                  blankToNull(request.getCtx().getCausationId()),
+                  blankToNull(request.getExplanation())));
       observer.onNext(toProto(trip));
     } catch (ApiException.NotFound e) {
       throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();
     }
     observer.onCompleted();
+  }
+
+  @Override
+  public void applyIntentExtraction(
+      ApplyIntentExtractionRequest request, StreamObserver<Trip> observer) {
+    RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
+    io.travelos.travelcore.trip.TravelIntent intent;
+    try {
+      intent = request.hasIntent() ? fromProto(request.getIntent()) : null;
+    } catch (IllegalArgumentException e) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("intent: " + e.getMessage())
+          .asRuntimeException();
+    }
+    ModelCall c = request.getCall();
+    AgentDecision.ModelCallEvidence call =
+        request.hasCall()
+            ? new AgentDecision.ModelCallEvidence(
+                c.getCallId(),
+                c.getProvider(),
+                c.getModel(),
+                c.getPromptId(),
+                c.getPromptVersion(),
+                blankToNull(c.getProviderRequestId()),
+                c.getInputTokens(),
+                c.getOutputTokens(),
+                c.getCacheReadTokens(),
+                c.getLatencyMs(),
+                c.getCostMicros(),
+                c.hasCalledAt()
+                    ? Instant.ofEpochSecond(
+                        c.getCalledAt().getSeconds(), c.getCalledAt().getNanos())
+                    : null)
+            : null;
+    try {
+      io.travelos.travelcore.trip.Trip trip =
+          trips.applyIntentExtraction(
+              ctx.tenant(),
+              ctx.principal(),
+              new TripService.IntentExtraction(
+                  request.getTripId(),
+                  request.getResult(),
+                  intent,
+                  request.getMissingFieldsList(),
+                  blankToNull(request.getClarifyingQuestion()),
+                  request.getAssumptionsList(),
+                  request.getConfidence(),
+                  call,
+                  blankToNull(request.getCtx().getCausationId())));
+      observer.onNext(toProto(trip));
+    } catch (ApiException.NotFound e) {
+      throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();
+    } catch (IllegalArgumentException e) {
+      throw Status.INVALID_ARGUMENT.withDescription(e.getMessage()).asRuntimeException();
+    } catch (IllegalStateException e) {
+      throw Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException();
+    }
+    observer.onCompleted();
+  }
+
+  static io.travelos.travelcore.trip.TravelIntent fromProto(TravelIntent p) {
+    return new io.travelos.travelcore.trip.TravelIntent(
+        p.getOrigin(),
+        p.getDestination(),
+        instant(p.getEarliestDeparture()),
+        instant(p.getArrivalDeadline()),
+        p.hasReturnAfter() ? instant(p.getReturnAfter()) : null,
+        p.hasLatestReturn() ? instant(p.getLatestReturn()) : null,
+        blankToNull(p.getPurpose()),
+        p.getHotelRequired(),
+        p.getTravelers() == 0 ? 1 : p.getTravelers());
+  }
+
+  private static Instant instant(Timestamp ts) {
+    return Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
   }
 
   static Trip toProto(io.travelos.travelcore.trip.Trip t) {
@@ -108,6 +187,7 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
             .setRequestText(nullToEmpty(t.requestText()))
             .setFailureStage(nullToEmpty(t.failureStage()))
             .setFailureCode(nullToEmpty(t.failureCode()))
+            .setExplanation(nullToEmpty(t.explanation()))
             .setTraveler(
                 TravelerSnapshot.newBuilder()
                     .setTravelerId(t.traveler().travelerId())

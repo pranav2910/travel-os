@@ -41,3 +41,4 @@ include(":workflows:trip-planning")
 
 // Python services are wired into the same Gradle check so there is one gate.
 include(":intelligence:optimization")
+include(":intelligence:llm-gateway")

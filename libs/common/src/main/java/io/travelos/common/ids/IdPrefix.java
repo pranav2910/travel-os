@@ -18,7 +18,8 @@ public enum IdPrefix {
   DECISION("dec"),
   EVENT("evt"),
   COMMAND("cmd"),
-  WORKFLOW("wf");
+  WORKFLOW("wf"),
+  MODEL_CALL("llm");
 
   private final String prefix;
 

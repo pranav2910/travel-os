@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package travelos.llm.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+import "travelos/offer/v1/offer.proto";
+import "travelos/optimization/v1/optimization.proto";
+import "travelos/policy/v1/policy.proto";
+import "travelos/trip/v1/trip.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.llm.v1";
+option java_outer_classname = "LlmProto";
+
+// The ONLY door to language models (ADR-0003, ADR-0009). The API is task-shaped and schema-bound:
+// callers ask for an intent or an explanation, never for "a completion". Provider, model, prompt
+// version, budget and PII handling live behind this door. A model output is a proposal: the
+// gateway validates it, Travel Core validates it again, and policy still decides.
+service LlmGateway {
+  // Free text (untrusted) -> structured TravelIntent, or a clarifying question, or "not travel".
+  rpc ExtractIntent(ExtractIntentRequest) returns (ExtractIntentResponse);
+  // Narrates a decision from its evidence. Never a source of truth; the evidence is.
+  rpc ExplainTrip(ExplainTripRequest) returns (ExplainTripResponse);
+}
+
+message ExtractIntentRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  // Untrusted. The prompt treats it as data; anything that reads like an instruction is ignored.
+  string request_text = 3;
+  // "Now", so relative dates ("next Tuesday") resolve deterministically and in the audit trail.
+  google.protobuf.Timestamp reference_time = 4;
+  // IANA zone of the traveler, e.g. America/New_York.
+  string timezone = 5;
+  // Default origin when the text names none. Empty when unknown.
+  string home_airport = 6;
+}
+
+message ExtractIntentResponse {
+  enum Result {
+    RESULT_UNSPECIFIED = 0;
+    EXTRACTED = 1;
+    NEEDS_CLARIFICATION = 2;
+    NOT_A_TRAVEL_REQUEST = 3;
+  }
+  Result result = 1;
+  // Set only when result == EXTRACTED, and only after the gateway's own validation passed.
+  travelos.trip.v1.TravelIntent intent = 2;
+  // NEEDS_CLARIFICATION: what could not be determined.
+  repeated string missing_fields = 3;
+  // One short question to put to the traveler.
+  string clarifying_question = 4;
+  // Things the extractor assumed, e.g. "origin BOS taken from home airport".
+  repeated string assumptions = 5;
+  // 0..1 as reported by the model, after validation.
+  double confidence = 6;
+  travelos.common.v1.ModelCall call = 7;
+}
+
+message ExplainTripRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  // TRAVELER | MANAGER | FINANCE
+  string audience = 3;
+  travelos.trip.v1.TravelIntent intent = 4;
+  travelos.offer.v1.Bundle selected = 5;
+  repeated travelos.optimization.v1.RankedCandidate ranking = 6;
+  travelos.policy.v1.PolicyDecision policy_decision = 7;
+  int32 candidates_searched = 8;
+  int32 candidates_permitted = 9;
+}
+
+message ExplainTripResponse {
+  string explanation = 1;
+  travelos.common.v1.ModelCall call = 2;
+}

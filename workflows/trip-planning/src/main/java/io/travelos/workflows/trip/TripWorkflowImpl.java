@@ -1,5 +1,6 @@
 package io.travelos.workflows.trip;
 
+import com.google.protobuf.Timestamp;
 import io.temporal.activity.ActivityOptions;
 import io.temporal.common.RetryOptions;
 import io.temporal.failure.ActivityFailure;
@@ -10,6 +11,10 @@ import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
 import io.travelos.contracts.common.v1.TimeWindow;
+import io.travelos.contracts.llm.v1.ExplainTripRequest;
+import io.travelos.contracts.llm.v1.ExplainTripResponse;
+import io.travelos.contracts.llm.v1.ExtractIntentRequest;
+import io.travelos.contracts.llm.v1.ExtractIntentResponse;
 import io.travelos.contracts.offer.v1.Bundle;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.optimization.v1.ConstraintSet;
@@ -27,6 +32,7 @@ import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.supplier.v1.Passenger;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.contracts.trip.v1.Trip;
@@ -45,19 +51,23 @@ import org.slf4j.Logger;
  * The trip lifecycle as durable code:
  *
  * <pre>
- * load trip -> PLANNING -> search -> policy (filter DENY) -> optimize -> [AWAITING_APPROVAL ->
- * wait for a person] -> APPROVED -> BOOKING -> create order -> BOOKED
+ * load trip -> [understand free text -> freeze intent] -> PLANNING -> search -> policy (filter
+ * DENY) -> optimize -> [narrate] -> [AWAITING_APPROVAL -> wait for a person] -> APPROVED ->
+ * BOOKING -> create order -> BOOKED
  * </pre>
  *
  * Every step is an idempotent activity, so a worker dying mid-way resumes without side effects. The
- * LLM has no role here yet: intent is structured, policy is deterministic, optimization is a
- * solver, booking is a saga. Nothing here decides whether something is allowed; it asks.
+ * language model has exactly two bounded roles here (ADR-0009): turning free text into a structured
+ * intent that Travel Core validates and freezes, and narrating the decision from its evidence. It
+ * decides nothing: policy is deterministic, optimization is a solver, booking is a saga. Narration
+ * failing never blocks a trip.
  */
 public class TripWorkflowImpl implements TripWorkflow {
 
   private static final Logger log = Workflow.getLogger(TripWorkflowImpl.class);
 
   static final String PRINCIPAL = "agent/trip-planner/v1";
+  static final String DEFAULT_TIMEZONE = "America/New_York";
   static final Duration APPROVAL_TIMEOUT = Duration.ofHours(48);
 
   /** How often to re-read the trip while waiting, in case a signal was lost. */
@@ -74,6 +84,34 @@ public class TripWorkflowImpl implements TripWorkflow {
                       .setBackoffCoefficient(2.0)
                       .setMaximumInterval(Duration.ofSeconds(30))
                       .setMaximumAttempts(6)
+                      .build())
+              .build());
+
+  /** Model calls take longer and are worth fewer retries. */
+  private final TripActivities understanding =
+      Workflow.newActivityStub(
+          TripActivities.class,
+          ActivityOptions.newBuilder()
+              .setStartToCloseTimeout(Duration.ofSeconds(90))
+              .setRetryOptions(
+                  RetryOptions.newBuilder()
+                      .setInitialInterval(Duration.ofSeconds(2))
+                      .setBackoffCoefficient(2.0)
+                      .setMaximumInterval(Duration.ofSeconds(30))
+                      .setMaximumAttempts(4)
+                      .build())
+              .build());
+
+  /** Narration is optional: two tries, then the trip proceeds without it. */
+  private final TripActivities narration =
+      Workflow.newActivityStub(
+          TripActivities.class,
+          ActivityOptions.newBuilder()
+              .setStartToCloseTimeout(Duration.ofSeconds(60))
+              .setRetryOptions(
+                  RetryOptions.newBuilder()
+                      .setInitialInterval(Duration.ofSeconds(2))
+                      .setMaximumAttempts(2)
                       .build())
               .build());
 
@@ -115,13 +153,54 @@ public class TripWorkflowImpl implements TripWorkflow {
       }
       default -> {}
     }
-    if (!trip.hasIntent() || trip.getIntent().getOrigin().isBlank()) {
-      return fail(
-          tenant, tripId, "INTENT", "INTENT_REQUIRED", "the trip has no structured intent yet");
-    }
-    TravelIntent intent = trip.getIntent();
 
     try {
+      // ---- understand
+      if (!hasIntent(trip)) {
+        if (trip.getRequestText().isBlank()) {
+          return fail(
+              tenant,
+              tripId,
+              "INTENT",
+              "INTENT_REQUIRED",
+              "the trip has neither a structured intent nor a request text");
+        }
+        stage = TripPlanning.Stage.UNDERSTANDING;
+        ExtractIntentResponse extracted =
+            understanding.extractIntent(extractRequest(tenant, tripId, trip));
+        Trip applied = activities.applyIntentExtraction(applyRequest(tenant, tripId, extracted));
+        switch (extracted.getResult()) {
+          case EXTRACTED -> trip = applied;
+          case NEEDS_CLARIFICATION -> {
+            return fail(
+                tenant,
+                tripId,
+                "INTENT",
+                "NEEDS_CLARIFICATION",
+                extracted.getClarifyingQuestion().isBlank()
+                    ? "the request needs more detail before it can be planned"
+                    : extracted.getClarifyingQuestion());
+          }
+          default -> {
+            return fail(
+                tenant,
+                tripId,
+                "INTENT",
+                "NOT_A_TRAVEL_REQUEST",
+                "the request does not describe a trip");
+          }
+        }
+        if (!hasIntent(trip)) {
+          return fail(
+              tenant,
+              tripId,
+              "INTENT",
+              "INTENT_NOT_FROZEN",
+              "travel core did not accept the intent");
+        }
+      }
+      TravelIntent intent = trip.getIntent();
+
       transition(tenant, tripId, TripStatus.PLANNING, b -> b.setReason("planning started"));
 
       // ---- search
@@ -206,6 +285,18 @@ public class TripWorkflowImpl implements TripWorkflow {
       PolicyDecision selectedDecision = decisions.get(selected.getBundleId());
       Money total = selected.getTotal();
 
+      // ---- narrate (optional)
+      final String explanation =
+          explain(
+              tenant,
+              tripId,
+              intent,
+              selected,
+              optimized,
+              selectedDecision,
+              bundles.size(),
+              permitted.size());
+
       // ---- approval
       String approvalId = null;
       if (selectedDecision.getRequiresApproval()) {
@@ -219,13 +310,17 @@ public class TripWorkflowImpl implements TripWorkflow {
                 tenant,
                 tripId,
                 TripStatus.AWAITING_APPROVAL,
-                b ->
-                    b.setSelectedBundleId(selected.getBundleId())
-                        .setOptimizationRunId(optimized.getOptimizationRunId())
-                        .setPolicyDecisionId(selectedDecision.getDecisionId())
-                        .setTotal(total)
-                        .setApproverRole(role)
-                        .setReason(reasonSummary(selectedDecision)));
+                b -> {
+                  b.setSelectedBundleId(selected.getBundleId())
+                      .setOptimizationRunId(optimized.getOptimizationRunId())
+                      .setPolicyDecisionId(selectedDecision.getDecisionId())
+                      .setTotal(total)
+                      .setApproverRole(role)
+                      .setReason(reasonSummary(selectedDecision));
+                  if (explanation != null) {
+                    b.setExplanation(explanation);
+                  }
+                });
         approvalId = awaiting.getApprovalId();
         String verdict = awaitDecision(tenant, tripId);
         if (verdict == null) {
@@ -254,12 +349,16 @@ public class TripWorkflowImpl implements TripWorkflow {
             tenant,
             tripId,
             TripStatus.APPROVED,
-            b ->
-                b.setSelectedBundleId(selected.getBundleId())
-                    .setOptimizationRunId(optimized.getOptimizationRunId())
-                    .setPolicyDecisionId(selectedDecision.getDecisionId())
-                    .setTotal(total)
-                    .setReason("in policy, no approval required"));
+            b -> {
+              b.setSelectedBundleId(selected.getBundleId())
+                  .setOptimizationRunId(optimized.getOptimizationRunId())
+                  .setPolicyDecisionId(selectedDecision.getDecisionId())
+                  .setTotal(total)
+                  .setReason("in policy, no approval required");
+              if (explanation != null) {
+                b.setExplanation(explanation);
+              }
+            });
       }
 
       // ---- booking
@@ -329,6 +428,74 @@ public class TripWorkflowImpl implements TripWorkflow {
   }
 
   // ------------------------------------------------------------------ helpers
+
+  private static boolean hasIntent(Trip trip) {
+    return trip.hasIntent() && !trip.getIntent().getOrigin().isBlank();
+  }
+
+  private ExtractIntentRequest extractRequest(String tenant, String tripId, Trip trip) {
+    long now = Workflow.currentTimeMillis();
+    return ExtractIntentRequest.newBuilder()
+        .setCtx(ctx(tenant, tripId, ""))
+        .setTripId(tripId)
+        .setRequestText(trip.getRequestText())
+        .setReferenceTime(
+            Timestamp.newBuilder().setSeconds(now / 1000).setNanos((int) (now % 1000) * 1_000_000))
+        .setTimezone(defaultTimezone())
+        .build();
+  }
+
+  private ApplyIntentExtractionRequest applyRequest(
+      String tenant, String tripId, ExtractIntentResponse extracted) {
+    ApplyIntentExtractionRequest.Builder b =
+        ApplyIntentExtractionRequest.newBuilder()
+            .setCtx(ctx(tenant, tripId, ""))
+            .setTripId(tripId)
+            .setResult(extracted.getResult().name())
+            .addAllMissingFields(extracted.getMissingFieldsList())
+            .setClarifyingQuestion(extracted.getClarifyingQuestion())
+            .addAllAssumptions(extracted.getAssumptionsList())
+            .setConfidence(extracted.getConfidence());
+    if (extracted.hasIntent()) {
+      b.setIntent(extracted.getIntent());
+    }
+    if (extracted.hasCall()) {
+      b.setCall(extracted.getCall());
+    }
+    return b.build();
+  }
+
+  /** Best effort. The plan is the plan whether or not it gets a paragraph. */
+  private @Nullable String explain(
+      String tenant,
+      String tripId,
+      TravelIntent intent,
+      Bundle selected,
+      OptimizeTripResponse optimized,
+      PolicyDecision selectedDecision,
+      int searched,
+      int permitted) {
+    try {
+      ExplainTripResponse response =
+          narration.explain(
+              ExplainTripRequest.newBuilder()
+                  .setCtx(ctx(tenant, tripId, ""))
+                  .setTripId(tripId)
+                  .setAudience("TRAVELER")
+                  .setIntent(intent)
+                  .setSelected(selected)
+                  .addAllRanking(optimized.getRankingList())
+                  .setPolicyDecision(selectedDecision)
+                  .setCandidatesSearched(searched)
+                  .setCandidatesPermitted(permitted)
+                  .build());
+      return response.getExplanation().isBlank() ? null : response.getExplanation();
+    } catch (ActivityFailure e) {
+      log.warn(
+          "trip {}: explanation unavailable ({}); continuing without it", tripId, failureCode(e));
+      return null;
+    }
+  }
 
   /** Waits for the signal, re-reading the trip periodically so a lost signal only delays. */
   private @Nullable String awaitDecision(String tenant, String tripId) {
@@ -432,6 +599,12 @@ public class TripWorkflowImpl implements TripWorkflow {
         () -> System.getProperty("travelos.workflow.payment-token", "tok_corp_visa_sandbox"));
   }
 
+  private String defaultTimezone() {
+    return Workflow.sideEffect(
+        String.class,
+        () -> System.getProperty("travelos.workflow.default-timezone", DEFAULT_TIMEZONE));
+  }
+
   private static String denialSummary(EvaluateTripResponse policy) {
     Map<String, Integer> codes = new HashMap<>();
     for (CandidateDecision cd : policy.getCandidatesList()) {
@@ -459,6 +632,7 @@ public class TripWorkflowImpl implements TripWorkflow {
   private static String stageName(TripPlanning.Stage stage) {
     return switch (stage) {
       case LOADING -> "CONTEXT";
+      case UNDERSTANDING -> "INTENT";
       case SEARCHING -> "SEARCH";
       case EVALUATING_POLICY -> "POLICY";
       case OPTIMIZING -> "OPTIMIZATION";

@@ -20,6 +20,8 @@ SEED="$(dirname "$0")/../platform/local/seed/policies/acme-us-standard.json"
 pass() { printf '  \033[32mPASS\033[0m %s\n' "$*"; }
 fail() { printf '  \033[31mFAIL\033[0m %s\n' "$*"; exit 1; }
 json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
+# statements, not an expression: `check 'assert ...; print(...)'`
+check() { python3 -c "import sys,json; d=json.load(sys.stdin); $1"; }
 
 tok() {
   curl -sf -X POST "$KC/realms/travelos/protocol/openid-connect/token" -d client_id=travelos-dev-cli \
@@ -31,6 +33,7 @@ for svc in "$CORE" "$POLICY" "$ORDER" http://localhost:8084 http://localhost:808
   curl -sf "$svc/actuator/health/readiness" >/dev/null || fail "$svc not ready"
 done
 nc -z localhost 9083 || fail "optimization gRPC :9083 not listening"
+nc -z localhost 9087 || fail "llm-gateway gRPC :9087 not listening"
 pass "all services ready"
 
 ALICE=$(tok alice); BOB=$(tok bob); CAROL=$(tok carol)
@@ -115,5 +118,19 @@ EVENTS=$($COMPOSE exec -T kafka bash -c "for t in travel.trip travel.policy trav
 echo "  events for $TRIP2: $EVENTS"
 echo "$EVENTS" | grep -q "travel.trip.created" && echo "$EVENTS" | grep -q "travel.order.confirmed" && echo "$EVENTS" | grep -q "travel.trip.booked" && pass "created -> policy -> order.confirmed -> booked all on the broker" || fail "event trail incomplete"
 
+echo "== 6. free text: the LLM gateway understands the request, the ledger keeps the evidence"
+TRIP3=$(curl -s -X POST "$CORE/api/v1/trips" -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: e2e-$(date +%s%N)" \
+    -H 'Content-Type: application/json' -d '{"request":"Fly BOS to SEA on 2026-10-06, back 2026-10-08. Hotel needed, purpose: customer meeting","source":"WEB"}' \
+    | json 'd["tripId"]')
+echo "  created $TRIP3 from free text only"
+S3=$(wait_status "$TRIP3" BOOKED 120); [ "$S3" = BOOKED ] && pass "free-text trip BOOKED" || fail "free-text trip ended $S3: $(trip_view "$TRIP3" | json 'print(d.get("failureStage"), d.get("failureCode"))')"
+trip_view "$TRIP3" | check 'i=d["intent"]; assert (i["origin"],i["destination"],i["hotelRequired"])==("BOS","SEA",True), i; print("  intent frozen from text: BOS -> SEA, hotel, purpose=%r" % i.get("purpose"))' && pass "intent extracted from free text" || fail "intent not as expected"
+trip_view "$TRIP3" | check 'assert d.get("explanation"), "no explanation stored"; print("  explanation:", d["explanation"][:160].replace("\n"," ") + ("..." if len(d["explanation"])>160 else ""))' && pass "explanation stored with the plan" || fail "no explanation"
+curl -s "$CORE/api/v1/trips/$TRIP3/history" -H "Authorization: Bearer $ALICE" | check 'assert any("intent extracted" in (h.get("reason") or "") for h in d), [h.get("reason") for h in d]' && pass "history records the extraction with the model name" || fail "history lacks the extraction entry"
+curl -s "$CORE/api/v1/trips/$TRIP3/decisions" -H "Authorization: Bearer $ALICE" | check 'assert d and d[0]["decisionType"]=="INTENT_EXTRACTION" and d[0]["call"]["callId"].startswith("llm_"), d; print("  ledger:", d[0]["result"], "by", d[0]["call"]["provider"], d[0]["call"]["model"], "prompt", d[0]["call"]["promptId"], "v%d" % d[0]["call"]["promptVersion"])' && pass "agent-decision ledger has the model-call evidence" || fail "ledger missing"
+INTENT_EVENTS=$($COMPOSE exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic travel.intent --from-beginning --timeout-ms 4000 2>/dev/null | grep "$TRIP3" | python3 -c 'import sys,json; print(sorted({json.loads(l)["eventType"] for l in sys.stdin if l.strip()}))')
+echo "  travel.intent events for $TRIP3: $INTENT_EVENTS"
+echo "$INTENT_EVENTS" | grep -q "travel.intent.detected" && pass "travel.intent.detected on the broker" || fail "no travel.intent.detected event"
+
 echo
-echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy)"
+echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy, $TRIP3 from free text)"

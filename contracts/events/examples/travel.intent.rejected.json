@@ -1,0 +1,19 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RQ",
+  "eventType": "travel.intent.rejected",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "producer": "travel-core",
+  "data": {
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "method": "FREE_TEXT",
+    "result": "NEEDS_CLARIFICATION",
+    "model": "claude-opus-5",
+    "modelCallId": "llm_01K4Q0N7S6Z2X8G5H3J9M1P7RR",
+    "missingFields": ["travel_date"],
+    "clarifyingQuestion": "Which day do you need to be in Seattle?",
+    "detectedBy": "agent/intent-extractor/v1"
+  }
+}

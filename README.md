@@ -18,10 +18,12 @@ The agent is one component inside a reliable enterprise transaction system, not 
 round trip; the platform plans, governs, books and audits it end to end. Nothing else ships until
 every box below is checked, in a real deployment, with real tests.
 
-Built so far: contracts, shared libs, local platform, and **Travel Core** (`services/travel-core`):
-`POST /api/v1/trips` with mandatory `Idempotency-Key`, tenant-scoped reads, arranger rules,
-cancellation with optimistic locking, status history, and `travel.trip.*` events through a
-transactional outbox. Verified against the live platform with real Keycloak tokens.
+Built so far: contracts, shared libs, local platform, **Travel Core**, **Policy**, **Supplier
+Gateway** (sandbox adapter), **Order** (booking saga with compensation), **Optimization** (OR-Tools),
+the **Temporal trip-planning workflow**, and the **LLM gateway** (`intelligence/llm-gateway`): free
+text becomes a validated `TravelIntent`, every decision gets a plain-language explanation from its
+evidence, and every model call is ledgered with prompt version, tokens and cost. Slice 1 runs end to
+end on the live platform (`scripts/e2e-slice1.sh`: approval path, zero-approval path, free-text path).
 
 **Supplier Gateway** (`services/supplier-gateway`): the only door to suppliers; a sandbox airline
 with deterministic inventory, expiring offers and supplier-side idempotent orders; per-adapter
@@ -48,7 +50,7 @@ published as a `travel.policy.*` event; explainability read API at `/api/v1/poli
 | ☑ optimization engine (OR-Tools CP-SAT) | ☑ durable workflow (Temporal, resumable, signal-driven approvals) | ☑ booking idempotency (trips, orders, supplier orders) |
 | ☑ retry-safe supplier calls (bounded retries, breaker, idempotent keys) | ☑ Kafka events (transactional outbox) | ◐ audit trail (decision + status history in each service; the Audit service that aggregates them is next) |
 | ☐ distributed tracing | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
-| ☑ contract tests | ☑ E2E happy path (`scripts/e2e-slice1.sh` against the live platform) | ☑ failure-path tests (sold out, declined, repricing, compensation, timeouts, denials) |
+| ☑ contract tests | ☑ E2E happy path (`scripts/e2e-slice1.sh` against the live platform) | ☑ failure-path tests (sold out, declined, repricing, compensation, timeouts, denials, unclear text, gateway outage) |
 | ☐ Docker images | ☐ Terraform | ☐ EKS deployment |
 | ☑ CI pipeline | ☐ CD pipeline | ☐ rollback |
 

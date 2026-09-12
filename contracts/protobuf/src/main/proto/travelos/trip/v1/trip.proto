@@ -70,6 +70,9 @@ message Trip {
   string approval_status = 17;
   string failure_stage = 18;
   string failure_code = 19;
+  // Plain-language narration of the plan, produced from the decision evidence at planning time.
+  // Empty when the LLM gateway was unavailable: narration degrades, transactions do not.
+  string explanation = 20;
 }
 
 message TravelerSnapshot {
@@ -85,6 +88,9 @@ service TravelCoreService {
   rpc GetTrip(GetTripRequest) returns (Trip);
   // Idempotent: asking for the current status returns the trip unchanged.
   rpc TransitionTrip(TransitionTripRequest) returns (Trip);
+  // Records what intent extraction concluded. EXTRACTED freezes the intent on a SUBMITTED trip;
+  // every outcome lands in the agent-decision ledger with its model-call evidence.
+  rpc ApplyIntentExtraction(ApplyIntentExtractionRequest) returns (Trip);
 }
 
 message GetTripRequest {
@@ -111,4 +117,19 @@ message TransitionTripRequest {
   // FAILED: where and why. failure_code is a stable machine code.
   string failure_stage = 11;
   string failure_code = 12;
+  // AWAITING_APPROVAL / APPROVED: narration generated from the evidence, if any.
+  string explanation = 13;
+}
+
+message ApplyIntentExtractionRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  // EXTRACTED | NEEDS_CLARIFICATION | NOT_A_TRAVEL_REQUEST
+  string result = 3;
+  TravelIntent intent = 4;
+  repeated string missing_fields = 5;
+  string clarifying_question = 6;
+  repeated string assumptions = 7;
+  double confidence = 8;
+  travelos.common.v1.ModelCall call = 9;
 }
