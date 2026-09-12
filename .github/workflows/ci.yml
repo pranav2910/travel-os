@@ -98,7 +98,7 @@ jobs:
       - uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: v0.64.0
-      - uses: aquasecurity/setup-trivy@v0.2.5
+      - uses: aquasecurity/setup-trivy@v0.3.1
         with:
           version: v0.74.0
       - name: fmt, validate, tflint, trivy (no credentials, nothing applied)
