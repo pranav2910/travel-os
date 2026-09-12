@@ -13,7 +13,11 @@ build() { # name dockerfile args...
   local name="$1"; shift
   echo "== $REGISTRY/$name:$TAG"
   docker build -q -f "$1" "${@:2}" -t "$REGISTRY/$name:$TAG" . >/dev/null
-  [ "$PUSH" = "--push" ] && docker push -q "$REGISTRY/$name:$TAG" || true
+  if [ "$PUSH" = "--push" ]; then
+    # A failed push must fail the run: an image CI "published" but nobody can pull is worse than none.
+    docker push -q "$REGISTRY/$name:$TAG" >/dev/null
+    echo "   pushed $(docker inspect --format '{{index .RepoDigests 0}}' "$REGISTRY/$name:$TAG" 2>/dev/null || echo '(digest unavailable)')"
+  fi
 }
 
 for svc in travel-core policy supplier-gateway order audit; do
