@@ -104,6 +104,32 @@ Temporal UI: http://localhost:8233 (namespace `travelos`, workflow id = trip id)
 Kafka consumer group is `trip-planning-worker`; on a fresh group it replays history, which is safe
 (workflow id = trip id, already-terminal trips complete immediately).
 
+## Run the whole stack in Docker
+
+Every runnable component has an image (`docker/java.Dockerfile`, `docker/python.Dockerfile`), and
+`platform/local/docker-compose.app.yml` runs all eight next to the infrastructure on the same ports
+as running them on the host, so `scripts/e2e-slice1.sh` works unchanged.
+
+```bash
+make images       # jars + 8 images tagged ghcr.io/pranav2910/travel-os/<name>:local (~75s)
+make stack-up     # infra + services, waits until every container is healthy, creates topics
+make stack-e2e    # the live Slice 1 script against the containers
+make stack-logs SVC=trip-planning
+make stack-down   # or stack-nuke to drop the data volumes
+```
+
+Budget about 4 GB of Docker memory for the stack (each JVM is capped at 512 MB, each Python service
+at 384 MB). To use Claude inside the stack: `ANTHROPIC_API_KEY=... LLM_PROVIDER=anthropic make stack-up`.
+
+How tokens work across the network boundary: clients (you, the script) mint tokens through
+`http://localhost:8180`, so that is the token's issuer. Inside the network Keycloak is `keycloak:8180`.
+The `docker` Spring profile (`application-docker.yml` in each service) therefore validates the
+issuer `http://localhost:8180/realms/travelos` but fetches the signing keys from
+`http://keycloak:8180/...`. Change one without the other and every request is a 401.
+
+CI builds all eight images on every run and pushes them to GHCR (`:main` and `:<sha>`) on pushes to
+main, so `TAG=<sha> make stack-up` runs exactly what CI tested.
+
 ## Kafka
 
 ```bash

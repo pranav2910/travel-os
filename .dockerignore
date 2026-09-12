@@ -1,0 +1,16 @@
+# Only jars, Python sources, contracts and docker/ are needed in the build context.
+.git
+.gradle
+.kotlin
+**/build/classes
+**/build/tmp
+**/build/reports
+**/build/test-results
+**/build/resources
+**/build/generated
+**/.venv
+**/src/travelos
+**/__pycache__
+docs
+platform/local/data
+node_modules

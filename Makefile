@@ -8,8 +8,10 @@ export JAVA_HOME
 
 GRADLE  := ./gradlew
 COMPOSE := docker compose -f platform/local/docker-compose.yml
+STACK   := docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml
+JARS    := travel-core policy supplier-gateway order audit
 
-.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -53,6 +55,31 @@ run-optimization: ## run the Python optimization service (gRPC :9083)
 
 run-llm-gateway: ## run the LLM gateway (gRPC :9087). LLM_PROVIDER=fake for offline; anthropic when ANTHROPIC_API_KEY is set
 	cd intelligence/llm-gateway && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && uv run --frozen python -m travelos_llm_gateway.server
+
+jars: ## build every runnable jar (5 services + the worker)
+	$(GRADLE) $(foreach s,$(JARS),:services:$(s):bootJar) :workflows:trip-planning:bootJar -q
+
+images: jars ## build all 8 container images as ghcr.io/pranav2910/travel-os/<name>:local
+	scripts/build-images.sh local
+
+stack-up: ## run the WHOLE platform in Docker: infra + 8 services, wait healthy, create topics (needs `make images`)
+	$(STACK) up -d --wait
+	$(COMPOSE) run --rm kafka-init
+
+stack-down: ## stop the Docker stack (data kept)
+	$(STACK) down
+
+stack-nuke: ## stop the Docker stack and delete all data volumes
+	$(STACK) down -v --remove-orphans
+
+stack-ps: ## status of the Docker stack
+	$(STACK) ps
+
+stack-logs: ## tail Docker stack logs (SVC=trip-planning to filter)
+	$(STACK) logs -f $(SVC)
+
+stack-e2e: ## run the live end-to-end script against the Docker stack
+	bash scripts/e2e-slice1.sh
 
 seed-policy: ## publish the seed travel policy for tenant acme (policy service must be running on :8082)
 	@TOKEN=$$(curl -sf -X POST http://localhost:8180/realms/travelos/protocol/openid-connect/token -d client_id=travelos-dev-cli -d grant_type=password -d username=carol -d password=password | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])'); \

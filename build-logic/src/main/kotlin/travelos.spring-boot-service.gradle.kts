@@ -24,5 +24,6 @@ springBoot {
 }
 
 tasks.named<BootBuildImage>("bootBuildImage") {
-    imageName = "ghcr.io/travelos/${project.name}:${project.version}"
+    // Buildpacks alternative to docker/java.Dockerfile; same registry path as scripts/build-images.sh.
+    imageName = "ghcr.io/pranav2910/travel-os/${project.name}:${project.version}"
 }

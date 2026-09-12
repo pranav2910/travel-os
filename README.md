@@ -53,8 +53,8 @@ published as a `travel.policy.*` event; explainability read API at `/api/v1/poli
 | ☑ retry-safe supplier calls (bounded retries, breaker, idempotent keys) | ☑ Kafka events (transactional outbox) | ◐ audit trail (decision + status history in each service; the Audit service that aggregates them is next) |
 | ☐ distributed tracing | ☑ metrics (Prometheus, outbox gauges) | ☑ integration tests (Testcontainers) |
 | ☑ contract tests | ☑ E2E happy path (`scripts/e2e-slice1.sh` against the live platform) | ☑ failure-path tests (sold out, declined, repricing, compensation, timeouts, denials, unclear text, gateway outage) |
-| ☐ Docker images | ☐ Terraform | ☐ EKS deployment |
-| ☑ CI pipeline | ☐ CD pipeline | ☐ rollback |
+| ☑ Docker images (8, layered, non-root; `make stack-up` runs the whole platform in Docker) | ☐ Terraform | ☐ EKS deployment |
+| ☑ CI pipeline | ◐ CD pipeline (images published to GHCR per commit; no cluster yet) | ☐ rollback |
 
 Roadmap after that: **Slice 2** autonomous disruption recovery · **Slice 3** hotel/ground/multi-city
 · **Slice 4** calendar/CRM/HRIS/expense integration (detect demand before a request exists) ·

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Builds (and optionally pushes) every runnable image. One code path for `make images` and CI.
+#   scripts/build-images.sh [TAG] [--push]
+# Jars must exist (make jars). Images: ghcr.io/pranav2910/travel-os/<name>:<TAG>
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+TAG="${1:-local}"; PUSH="${2:-}"
+REGISTRY="${REGISTRY:-ghcr.io/pranav2910/travel-os}"
+VERSION="0.1.0-SNAPSHOT"
+
+build() { # name dockerfile args...
+  local name="$1"; shift
+  echo "== $REGISTRY/$name:$TAG"
+  docker build -q -f "$1" "${@:2}" -t "$REGISTRY/$name:$TAG" . >/dev/null
+  [ "$PUSH" = "--push" ] && docker push -q "$REGISTRY/$name:$TAG" || true
+}
+
+for svc in travel-core policy supplier-gateway order audit; do
+  build "$svc" docker/java.Dockerfile --build-arg "JAR=services/$svc/build/libs/$svc-$VERSION.jar"
+done
+build trip-planning docker/java.Dockerfile --build-arg "JAR=workflows/trip-planning/build/libs/trip-planning-$VERSION.jar"
+build optimization docker/python.Dockerfile --build-arg MODULE=optimization --build-arg ENTRY=travelos_optimization.server
+build llm-gateway docker/python.Dockerfile --build-arg MODULE=llm-gateway --build-arg ENTRY=travelos_llm_gateway.server
+
+echo; docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}' | grep -E "^$REGISTRY/" | grep -E "\s$TAG\s"

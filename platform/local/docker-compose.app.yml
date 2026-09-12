@@ -1,0 +1,192 @@
+# The application layer on top of docker-compose.yml: every runnable component as a container.
+#   make images     -> build ghcr.io/pranav2910/travel-os/<name>:local from the jars
+#   make stack-up   -> infra + all 8 services, wait until healthy, create topics
+#   make stack-e2e  -> scripts/e2e-slice1.sh against it (same ports as running on the host)
+# Java services run with the `docker` Spring profile: see application-docker.yml in each service.
+name: travelos
+
+x-java: &java
+  restart: unless-stopped
+  mem_limit: 512m
+  healthcheck: &java-health
+    interval: 10s
+    timeout: 5s
+    retries: 30
+    start_period: 60s
+    # eclipse-temurin has no curl; bash's /dev/tcp does the probe (sh is dash, so call bash explicitly).
+    test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/$${PORT} && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"status\":\"UP\"' <&3"]
+
+x-java-env: &java-env
+  SPRING_PROFILES_ACTIVE: docker
+  KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+  TEMPORAL_ADDRESS: temporal:7233
+  OIDC_ISSUER_URI: http://localhost:8180/realms/travelos
+  OIDC_JWK_SET_URI: http://keycloak:8180/realms/travelos/protocol/openid-connect/certs
+
+x-infra-ready: &infra-ready
+  postgres:
+    condition: service_healthy
+  kafka:
+    condition: service_healthy
+  keycloak:
+    condition: service_healthy
+
+services:
+  travel-core:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/travel-core:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/travel-core/build/libs/travel-core-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8081
+      GRPC_PORT: 9081
+      TRAVEL_CORE_DB_URL: jdbc:postgresql://postgres:5432/travel_core
+    ports:
+      - "8081:8081"
+      - "9081:9081"
+    depends_on:
+      <<: *infra-ready
+      temporal:
+        condition: service_healthy
+
+  policy:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/policy:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/policy/build/libs/policy-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8082
+      GRPC_PORT: 9082
+      POLICY_DB_URL: jdbc:postgresql://postgres:5432/policy
+    ports:
+      - "8082:8082"
+      - "9082:9082"
+    depends_on: *infra-ready
+
+  supplier-gateway:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/supplier-gateway:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/supplier-gateway/build/libs/supplier-gateway-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8084
+      GRPC_PORT: 9084
+      SUPPLIER_GATEWAY_DB_URL: jdbc:postgresql://postgres:5432/supplier_gateway
+    ports:
+      - "8084:8084"
+      - "9084:9084"
+    depends_on: *infra-ready
+
+  order:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/order:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/order/build/libs/order-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8085
+      GRPC_PORT: 9085
+      ORDER_DB_URL: jdbc:postgresql://postgres:5432/orders
+      SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
+    ports:
+      - "8085:8085"
+      - "9085:9085"
+    depends_on:
+      <<: *infra-ready
+      supplier-gateway:
+        condition: service_healthy
+
+  audit:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/audit:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/audit/build/libs/audit-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8088
+      AUDIT_DB_URL: jdbc:postgresql://postgres:5432/audit
+    ports:
+      - "8088:8088"
+    depends_on: *infra-ready
+
+  trip-planning:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/trip-planning:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: workflows/trip-planning/build/libs/trip-planning-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8086
+      TRAVEL_CORE_ADDRESS: travel-core:9081
+      POLICY_ADDRESS: policy:9082
+      OPTIMIZATION_ADDRESS: optimization:9083
+      SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
+      ORDER_ADDRESS: order:9085
+      LLM_GATEWAY_ADDRESS: llm-gateway:9087
+    ports:
+      - "8086:8086"
+    depends_on:
+      <<: *infra-ready
+      temporal:
+        condition: service_healthy
+      travel-core:
+        condition: service_healthy
+      policy:
+        condition: service_healthy
+      order:
+        condition: service_healthy
+
+  optimization:
+    image: ghcr.io/pranav2910/travel-os/optimization:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/python.Dockerfile
+      args:
+        MODULE: optimization
+        ENTRY: travelos_optimization.server
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      GRPC_PORT: 9083
+    ports:
+      - "9083:9083"
+
+  llm-gateway:
+    image: ghcr.io/pranav2910/travel-os/llm-gateway:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/python.Dockerfile
+      args:
+        MODULE: llm-gateway
+        ENTRY: travelos_llm_gateway.server
+    restart: unless-stopped
+    mem_limit: 384m
+    environment:
+      GRPC_PORT: 9087
+      # fake by default; export ANTHROPIC_API_KEY (and optionally LLM_PROVIDER=anthropic) to use Claude.
+      LLM_PROVIDER: ${LLM_PROVIDER:-fake}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_TENANT_DAILY_BUDGET_USD: ${LLM_TENANT_DAILY_BUDGET_USD:-5}
+    ports:
+      - "9087:9087"
