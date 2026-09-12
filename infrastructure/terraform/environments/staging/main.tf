@@ -115,4 +115,5 @@ module "irsa" {
   secrets_kms_key_arn = module.kms.key_arns["secrets"]
   secret_name_prefix  = module.secrets.secret_name_prefix
   audit_bucket_arn    = module.s3.audit_bucket_arn
+  msk_cluster_arn     = module.msk.cluster_arn
 }

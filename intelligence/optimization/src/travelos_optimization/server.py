@@ -13,7 +13,7 @@ from grpc_health.v1 import health, health_pb2, health_pb2_grpc
 from grpc_reflection.v1alpha import reflection
 
 from travelos.optimization.v1 import optimization_pb2, optimization_pb2_grpc
-from travelos_optimization import tracing
+from travelos_optimization import events, tracing
 from travelos_optimization.service import OptimizationService
 
 log = logging.getLogger("travelos.optimization")
@@ -22,12 +22,17 @@ SERVICE_NAME = optimization_pb2.DESCRIPTOR.services_by_name["OptimizationService
 
 
 def build_server(
-    port: int, max_workers: int = 8, interceptors: list[grpc.ServerInterceptor] | None = None
+    port: int,
+    max_workers: int = 8,
+    interceptors: list[grpc.ServerInterceptor] | None = None,
+    publisher: events.EventPublisher | None = None,
 ) -> tuple[grpc.Server, int]:
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=max_workers), interceptors=interceptors or []
     )
-    optimization_pb2_grpc.add_OptimizationServiceServicer_to_server(OptimizationService(), server)
+    optimization_pb2_grpc.add_OptimizationServiceServicer_to_server(
+        OptimizationService(publisher), server
+    )
     health_servicer = health.HealthServicer()
     health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
     reflection.enable_server_reflection(
@@ -46,7 +51,9 @@ def main() -> None:
     )
     port = int(os.environ.get("GRPC_PORT", "9083"))
     server, bound = build_server(
-        port, interceptors=tracing.configure("optimization", dict(os.environ))
+        port,
+        interceptors=tracing.configure("optimization", dict(os.environ)),
+        publisher=events.publisher_from_env(dict(os.environ)),
     )
     server.start()
     log.info("gRPC server listening on port %d serving [%s]", bound, SERVICE_NAME)

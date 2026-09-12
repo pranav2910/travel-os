@@ -5,6 +5,7 @@ plugins {
 description = "Trip-planning worker: the Temporal workflow that coordinates context, search, policy, optimization, approval and booking for one trip. Durable, resumable, explainable."
 
 dependencies {
+    implementation(project(":libs:spring-kafka-security"))
     implementation(project(":libs:common"))
     implementation(project(":libs:events"))
     implementation(project(":libs:spring-grpc-support"))

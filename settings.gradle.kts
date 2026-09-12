@@ -27,6 +27,7 @@ include(":libs:common")
 include(":libs:events")
 include(":libs:spring-web")
 include(":libs:spring-outbox")
+include(":libs:spring-kafka-security")
 include(":libs:spring-grpc-support")
 include(":libs:workflow-contracts")
 

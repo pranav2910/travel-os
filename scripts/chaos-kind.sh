@@ -71,8 +71,8 @@ if kubectl -n travelos run netprobe --image=busybox:1.37 --restart=Never --rm -i
 else
   pass "an arbitrary pod in the namespace cannot reach Postgres (default deny)"
 fi
-kubectl -n travelos exec deploy/travel-core -- bash -c 'exec 3<>/dev/tcp/postgres.travelos-infra/5432 && echo ok' >/dev/null 2>&1 && pass "travel-core can (its policy allows 5432 to the infra namespace)" || fail "travel-core cannot reach Postgres"
-if kubectl -n travelos exec deploy/policy -- bash -c 'exec 3<>/dev/tcp/order/9085 && echo ok' >/dev/null 2>&1; then
+kubectl -n travelos exec deploy/travel-core -- timeout 5 bash -c 'exec 3<>/dev/tcp/postgres.travelos-infra/5432 && echo ok' 2>/dev/null | grep -q ok && pass "travel-core can (its policy allows 5432 to the infra namespace)" || fail "travel-core cannot reach Postgres"
+if kubectl -n travelos exec deploy/policy -- timeout 5 bash -c 'exec 3<>/dev/tcp/order/9085 && echo ok' 2>/dev/null | grep -q ok; then   # Calico drops, so the connect hangs: bound it
   fail "policy could open a gRPC connection to order: egress allow-list is not enforced"
 else
   pass "policy cannot reach order (no rule allows it)"

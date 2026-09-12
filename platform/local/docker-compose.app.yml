@@ -2,7 +2,7 @@
 #   make images     -> build ghcr.io/pranav2910/travel-os/<name>:local from the jars
 #   make stack-up   -> infra + all 8 services, wait until healthy, create topics
 #   make stack-e2e  -> scripts/e2e-slice1.sh against it (same ports as running on the host)
-# Java services run with the `docker` Spring profile: see application-docker.yml in each service.
+# Java services run with the `container` Spring profile: see application-container.yml in each service.
 name: travelos
 
 x-java: &java
@@ -17,7 +17,7 @@ x-java: &java
     test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/$${PORT} && printf 'GET /actuator/health/readiness HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"status\":\"UP\"' <&3"]
 
 x-java-env: &java-env
-  SPRING_PROFILES_ACTIVE: docker
+  SPRING_PROFILES_ACTIVE: container
   TRACING_EXPORT_ENABLED: "true"
   OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://otel-collector:4318/v1/traces
   KAFKA_BOOTSTRAP_SERVERS: kafka:29092

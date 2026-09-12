@@ -5,6 +5,7 @@ plugins {
 description = "Audit: the append-only record of everything that happened, assembled per trip into the cross-service decision ledger. Consumes every travel.* topic; owns nothing transactional."
 
 dependencies {
+    implementation(project(":libs:spring-kafka-security"))
     implementation(project(":libs:common"))
     implementation(project(":libs:events"))
     implementation(project(":libs:spring-web"))

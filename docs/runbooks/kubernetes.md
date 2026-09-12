@@ -10,7 +10,7 @@ and the secret source differ. Nothing in Git contains a password, token or API k
 | App services | `deploy/helm/travelos` + `values-kind.yaml` | `deploy/helm/travelos` + `values-eks.yaml` |
 | Images | `localhost:5001/travel-os/<svc>:<git-sha>` | `<account>.dkr.ecr.<region>.amazonaws.com/travel-os/<svc>:<git-sha>` (immutable tags) |
 | Secrets | `deploy/kind/secrets.sh` writes random passwords to a git-ignored file and creates plain Secrets | External Secrets Operator syncs `travelos/<env>/<svc>/*` from Secrets Manager via IRSA |
-| Ingress | NodePorts mapped to `localhost:1xxxx` | AWS Load Balancer Controller / an ingress of your choice (not in this slice) |
+| Ingress | NodePorts mapped to `localhost:1xxxx` | one ALB (`templates/ingress.yaml`, class `alb`) fronting the four public REST APIs; AWS Load Balancer Controller installed from `deploy/helm/addons/` with its IRSA role from Terraform |
 
 ## Local Kubernetes (kind)
 
@@ -129,6 +129,14 @@ Temporal UI.
 8. **Verify**: `E2E_BACKEND=kind` with the host variables (`KC`, `CORE`, …) pointed at the
    cluster's ingress runs the same E2E suite.
 
-Kafka on MSK uses SASL/IAM over TLS; the services' Kafka clients are configured for PLAINTEXT
-today, so step 7 also needs `KAFKA_SECURITY_PROTOCOL=SASL_SSL` support (see the README's
-"architectural compromises"). Everything else in the charts is environment-agnostic.
+Kafka security is one switch shared by every client, Java and Python: `KAFKA_AUTH=none` (the
+stand-in broker on kind) or `KAFKA_AUTH=msk-iam` (`values-eks.yaml`): SASL_SSL with `AWS_MSK_IAM`,
+tokens signed by each pod's IRSA role (`libs/spring-kafka-security`, `intelligence/optimization/…/events.py`).
+Terraform grants producers `WriteData` on `travel.*` and consumers `ReadData` + their group, nothing
+more. A private CA can be trusted with `KAFKA_SSL_TRUSTSTORE_LOCATION` (Java) / `KAFKA_SSL_CA_LOCATION`
+(Python); MSK's Amazon-issued certificates need neither.
+
+Ingress: install the AWS Load Balancer Controller (`deploy/helm/addons/aws-load-balancer-controller.values.yaml`,
+role ARN from `terraform output irsa_role_arns`), put an ACM certificate ARN and host into the
+`ingress` block of `values-eks.yaml`, and point DNS at the ALB the controller creates. Narrow the
+`awsEgress`/`httpFromVpc` CIDRs in that file to `terraform output vpc_cidr`.

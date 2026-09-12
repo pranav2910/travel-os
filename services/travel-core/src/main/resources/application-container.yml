@@ -1,4 +1,4 @@
-# Active inside the Docker stack (platform/local/docker-compose.app.yml). Tokens are minted by
+# Active whenever the service runs in a container (docker compose app stack, kind, EKS): the `container` profile. Tokens are minted by
 # clients through http://localhost:8180, so that is their `iss`; the service validates that issuer
 # but fetches the signing keys over the compose network, where Keycloak is reachable as `keycloak`.
 spring:

@@ -1,0 +1,79 @@
+# The strongest proof the platform has: the full Slice 1 flow + chaos + NetworkPolicy enforcement
+# inside a real (kind) Kubernetes cluster. Too slow for every Java change, so it runs on merges that
+# touch deployment, infrastructure, workflows or scripts, nightly, and on demand.
+name: kind-e2e
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - deploy/**
+      - infrastructure/**
+      - workflows/**
+      - scripts/**
+      - docker/**
+      - contracts/**
+      - platform/local/**
+      - .github/workflows/kind-e2e.yml
+  schedule:
+    - cron: "0 6 * * *"   # nightly, 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: kind-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  kind:
+    name: slice 1 on kind (e2e + chaos)
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      KIND_VERSION: v0.31.0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+      - uses: azure/setup-helm@v4
+        with:
+          version: v4.0.0
+      - name: kind
+        run: |
+          curl -fsSL -o /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          chmod +x /usr/local/bin/kind
+          kind version; kubectl version --client; helm version; docker version --format '{{.Server.Version}}'
+      - name: cluster (3 zones, Calico, metrics-server, registry)
+        run: make kind-up
+      - name: secrets (random, never leave the runner)
+        run: deploy/kind/secrets.sh
+      - name: build :<sha> images, deploy infra + services
+        run: make kind-deploy
+      - name: slice 1 end-to-end
+        run: make kind-e2e
+      - name: chaos (pod kills mid-workflow, NetworkPolicy enforcement)
+        run: make kind-chaos
+      - name: diagnostics
+        if: failure()
+        run: |
+          mkdir -p diag
+          kubectl get pods -A -o wide > diag/pods.txt || true
+          kubectl get events -A --sort-by=.lastTimestamp > diag/events.txt || true
+          for ns in travelos travelos-infra; do
+            for p in $(kubectl -n $ns get pods -o name); do
+              kubectl -n $ns describe "$p" > "diag/${ns}-$(basename $p).describe.txt" || true
+              kubectl -n $ns logs "$p" --all-containers --tail=2000 > "diag/${ns}-$(basename $p).log" || true
+            done
+          done
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: kind-diagnostics
+          path: diag/

@@ -123,7 +123,7 @@ at 384 MB). To use Claude inside the stack: `ANTHROPIC_API_KEY=... LLM_PROVIDER=
 
 How tokens work across the network boundary: clients (you, the script) mint tokens through
 `http://localhost:8180`, so that is the token's issuer. Inside the network Keycloak is `keycloak:8180`.
-The `docker` Spring profile (`application-docker.yml` in each service) therefore validates the
+The `container` Spring profile (`application-container.yml` in each service) therefore validates the
 issuer `http://localhost:8180/realms/travelos` but fetches the signing keys from
 `http://keycloak:8180/...`. Change one without the other and every request is a 401.
 

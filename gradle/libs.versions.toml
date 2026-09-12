@@ -17,6 +17,7 @@ spotless = "8.10.2"
 google-java-format = "1.36.1"
 springdoc = "3.1.1"
 json-schema-validator = "3.0.7"
+aws-msk-iam-auth = "2.3.8"
 
 [libraries]
 # BOMs
@@ -68,6 +69,9 @@ opentelemetry-opentracing-shim = { module = "io.opentelemetry:opentelemetry-open
 micrometer-core = { module = "io.micrometer:micrometer-core" }
 micrometer-observation = { module = "io.micrometer:micrometer-observation" }
 micrometer-tracing-bridge-otel = { module = "io.micrometer:micrometer-tracing-bridge-otel" }
+
+# Kafka on Amazon MSK: SASL/IAM login module + callback handler
+aws-msk-iam-auth = { module = "software.amazon.msk:aws-msk-iam-auth", version.ref = "aws-msk-iam-auth" }
 
 # Resilience
 resilience4j-spring-boot = { module = "io.github.resilience4j:resilience4j-spring-boot4", version.ref = "resilience4j" }

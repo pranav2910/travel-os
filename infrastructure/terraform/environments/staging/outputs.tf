@@ -9,3 +9,5 @@ output "secret_arns" { value = module.secrets.secret_arns }
 output "ecr_repository_urls" { value = module.ecr.repository_urls }
 output "audit_bucket" { value = module.s3.audit_bucket_name }
 output "private_subnet_ids" { value = module.network.private_subnet_ids }
+output "vpc_cidr" { value = module.network.vpc_cidr }
+output "vpc_id" { value = module.network.vpc_id }

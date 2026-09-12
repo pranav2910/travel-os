@@ -145,7 +145,7 @@ echo "$WF" | grep -E 'Status|Type' | head -3 | sed 's/^/  /'
 echo "$WF" | grep -qi 'completed' && pass "Temporal workflow $TRIP2 COMPLETED" || fail "workflow not completed"
 EVENTS=$(kafka_consume travel.trip travel.policy travel.optimization travel.approval travel.order | grep "$TRIP2" | python3 -c 'import sys,json,collections; c=collections.Counter(json.loads(l)["eventType"] for l in sys.stdin if l.strip()); print(dict(sorted(c.items())))')
 echo "  events for $TRIP2: $EVENTS"
-echo "$EVENTS" | grep -q "travel.trip.created" && echo "$EVENTS" | grep -q "travel.order.confirmed" && echo "$EVENTS" | grep -q "travel.trip.booked" && pass "created -> policy -> order.confirmed -> booked all on the broker" || fail "event trail incomplete"
+echo "$EVENTS" | grep -q "travel.trip.created" && echo "$EVENTS" | grep -q "'travel.optimization.completed': 1" && echo "$EVENTS" | grep -q "travel.order.confirmed" && echo "$EVENTS" | grep -q "travel.trip.booked" && pass "created -> policy -> optimization.completed -> order.confirmed -> booked all on the broker" || fail "event trail incomplete (optimization.completed must appear exactly once)"
 
 echo "== 6. free text: the LLM gateway understands the request, the ledger keeps the evidence"
 TRIP3=$(curl -s -X POST "$CORE/api/v1/trips" -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: e2e-$(date +%s%N)" \
@@ -163,7 +163,7 @@ echo "$INTENT_EVENTS" | grep -q "travel.intent.detected" && pass "travel.intent.
 
 echo "== 7. the audit ledger: one place that answers why, across every service"
 for i in $(seq 1 30); do n=$(curl -s "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $ALICE" | json 'len(d.get("events",[]))' 2>/dev/null || echo 0); [ "${n:-0}" -ge 8 ] && break; sleep 1; done
-curl -s "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $ALICE" | check 't=[e["eventType"] for e in d["events"]]; print("  trail:", t); assert t[0]=="travel.trip.created" and "travel.intent.detected" in t and "travel.order.confirmed" in t and t[-1]=="travel.trip.booked", t' && pass "audit trail for $TRIP3 is complete and ordered" || fail "audit trail incomplete"
+curl -s "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $ALICE" | check 't=[e["eventType"] for e in d["events"]]; print("  trail:", t); assert t[0]=="travel.trip.created" and "travel.intent.detected" in t and t.count("travel.optimization.completed")==1 and t.index("travel.optimization.completed")<t.index("travel.order.created") and "travel.order.confirmed" in t and t[-1]=="travel.trip.booked", t' && pass "audit trail for $TRIP3 is complete and ordered" || fail "audit trail incomplete"
 curl -s "$AUDIT/api/v1/audit/trips/$TRIP3/decisions" -H "Authorization: Bearer $ALICE" | check 'assert d["status"]=="BOOKED" and d["intent"]["model"] and d["policy"]["outcome"] and d["order"]["status"]=="CONFIRMED", d; [print("   ", line) for line in d["narrative"]]' && pass "decision ledger assembled from the trail" || fail "ledger incomplete"
 [ "$(curl -s -o /dev/null -w '%{http_code}' "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $(tok zoe)")" = 404 ] && pass "another tenant cannot see the trail" || fail "cross-tenant audit read"
 curl -s "$AUDIT/api/v1/audit/events?type=travel.order.confirmed&limit=5" -H "Authorization: Bearer $CAROL" | check 'assert len(d)>=3, len(d); print("  finance view: last %d confirmed orders, newest %s" % (len(d), d[0]["data"]["orderId"]))' && pass "auditor query works, tenant-scoped" || fail "auditor query"

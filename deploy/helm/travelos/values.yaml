@@ -6,8 +6,9 @@ global:
     tag: ""                                   # git sha, set at deploy time: --set global.image.tag=<sha>
   infraNamespace: travelos-infra
   env:
-    SPRING_PROFILES_ACTIVE: docker            # "not on a laptop": issuer/jwks split, see application-docker.yml
+    SPRING_PROFILES_ACTIVE: container         # "not on a laptop": issuer/jwks split, see application-container.yml
     KAFKA_BOOTSTRAP_SERVERS: kafka.travelos-infra:9092
+    KAFKA_AUTH: none                          # none (stand-in broker) | msk-iam (SASL_SSL + IAM on Amazon MSK) | tls
     TEMPORAL_ADDRESS: temporal.travelos-infra:7233
     OIDC_ISSUER_URI: http://localhost:8180/realms/travelos
     OIDC_JWK_SET_URI: http://keycloak.travelos-infra:8180/realms/travelos/protocol/openid-connect/certs
@@ -114,7 +115,7 @@ optimization:
     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.travelos-infra:4317
   networkPolicy:
     grpcFromApps: [trip-planning]
-    infraPorts: [4317]
+    infraPorts: [4317, 9092]                # OTel collector + Kafka (travel.optimization.completed)
 
 llm-gateway:
   name: llm-gateway
@@ -138,3 +139,18 @@ llm-gateway:
               except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16]
         ports:
           - port: 443
+
+# North-south ingress for the public REST APIs. Off on kind (NodePorts); values-eks.yaml enables it
+# with the AWS Load Balancer Controller annotations. Routes are path-based: one host, four services.
+ingress:
+  enabled: false
+  className: alb
+  host: ""
+  annotations: {}
+  tls: { secretName: "" }
+  routes:
+    - { path: /api/v1/trips, service: travel-core, port: 8081 }
+    - { path: /api/v1/policies, service: policy, port: 8082 }
+    - { path: /api/v1/policy-decisions, service: policy, port: 8082 }
+    - { path: /api/v1/orders, service: order, port: 8085 }
+    - { path: /api/v1/audit, service: audit, port: 8088 }

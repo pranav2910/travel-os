@@ -11,7 +11,7 @@ import grpc
 from travelos.common.v1 import common_pb2
 from travelos.offer.v1 import offer_pb2
 from travelos.optimization.v1 import optimization_pb2, optimization_pb2_grpc
-from travelos_optimization import ids, solver, tracing
+from travelos_optimization import events, ids, solver, tracing
 from travelos_optimization.model import (
     UTC,
     Cabin,
@@ -117,6 +117,9 @@ def preferences(p: optimization_pb2.OptimizationPreferences) -> Preferences:
 
 
 class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
+    def __init__(self, publisher: events.EventPublisher | None = None) -> None:
+        self._publisher = publisher or events.NoopPublisher()
+
     def OptimizeTrip(self, request, context):  # noqa: N802 (gRPC naming)
         require_context(request.ctx, context)
         if not request.trip_id:
@@ -131,12 +134,13 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
 
         result = solver.optimize(candidates, k, p)
         run_id = ids.new_id("opt")
+        feasible = sum(1 for r in result.ranking if r.feasible)
         log.info(
             "optimized trip=%s tenant=%s candidates=%d feasible=%d selected=%s in %dms",
             request.trip_id,
             request.ctx.tenant_id,
             len(candidates),
-            sum(1 for r in result.ranking if r.feasible),
+            feasible,
             result.selected_bundle_id or "-",
             result.solve_time_ms,
         )
@@ -161,4 +165,40 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
                 infeasibility_reasons=list(r.infeasibility_reasons),
                 rank=r.rank,
             )
+        self._publish_completed(request, run_id, result, len(candidates), feasible, context)
         return response
+
+    def _publish_completed(self, request, run_id, result, evaluated, feasible, context):
+        """travel.optimization.completed: the run is a domain fact, not just a return value."""
+        data = {
+            "optimizationRunId": run_id,
+            "tripId": request.trip_id,
+            "candidatesEvaluated": evaluated,
+            "feasibleCandidates": feasible,
+            "solver": result.solver,
+            "solveTimeMs": int(result.solve_time_ms),
+        }
+        if result.selected_bundle_id:
+            data["selectedBundleId"] = result.selected_bundle_id
+            selected = next(
+                (r for r in result.ranking if r.bundle_id == result.selected_bundle_id), None
+            )
+            if selected is not None:
+                data["selectedScore"] = round(float(selected.score), 3)
+        event = events.envelope(
+            "travel.optimization.completed",
+            request.ctx.tenant_id,
+            request.ctx.correlation_id,
+            data,
+            causation_id=request.ctx.causation_id or request.ctx.idempotency_key or None,
+        )
+        try:
+            self._publisher.publish(event)
+        except Exception as e:  # noqa: BLE001 — any publish failure means the run is not on record
+            log.error(
+                "optimization run %s completed but its event was not published: %s", run_id, e
+            )
+            context.abort(
+                grpc.StatusCode.UNAVAILABLE,
+                f"OPTIMIZATION_EVENT_NOT_PUBLISHED: {e}",
+            )

@@ -14,3 +14,7 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+variable "msk_cluster_arn" {
+  description = "MSK cluster the services publish to / consume from with SASL/IAM."
+  type        = string
+}

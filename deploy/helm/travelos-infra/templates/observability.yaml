@@ -63,13 +63,15 @@ spec:
         - name: tempo
           image: {{ .Values.observability.tempoImage }}
           args: ["-config.file=/etc/tempo/tempo.yaml"]
+          env:
+            - { name: GOMEMLIMIT, value: "600MiB" }   # Go GC works to stay under the limit; WAL replay after a restart is the peak
           ports:
             - { containerPort: 3200 }
             - { containerPort: 4317 }
           readinessProbe:
             httpGet: { path: /ready, port: 3200 }
             periodSeconds: 10
-          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { memory: 384Mi } }
+          resources: { requests: { cpu: 50m, memory: 256Mi }, limits: { memory: 768Mi } }
           volumeMounts:
             - { name: config, mountPath: /etc/tempo }
             - { name: data, mountPath: /var/tempo }

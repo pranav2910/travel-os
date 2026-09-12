@@ -57,7 +57,7 @@ trip-planning:
 optimization:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { grpc: 30083 } }
-  networkPolicy: { grpcFromApps: [trip-planning], grpcFromOutside: true, infraPorts: [4317] }
+  networkPolicy: { grpcFromApps: [trip-planning], grpcFromOutside: true, infraPorts: [4317, 9092] }
 llm-gateway:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { grpc: 30087 } }
