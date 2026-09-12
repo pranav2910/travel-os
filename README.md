@@ -20,7 +20,9 @@ every box below is checked, in a real deployment, with real tests.
 
 Built so far: contracts, shared libs, local platform, **Travel Core**, **Policy**, **Supplier
 Gateway** (sandbox adapter), **Order** (booking saga with compensation), **Optimization** (OR-Tools),
-the **Temporal trip-planning workflow**, and the **LLM gateway** (`intelligence/llm-gateway`): free
+the **Temporal trip-planning workflow**, the **Audit service** (every `travel.*` event, stored once,
+immutable by database trigger, assembled into a per-trip decision ledger that answers "why" from
+evidence alone), and the **LLM gateway** (`intelligence/llm-gateway`): free
 text becomes a validated `TravelIntent`, every decision gets a plain-language explanation from its
 evidence, and every model call is ledgered with prompt version, tokens and cost. Slice 1 runs end to
 end on the live platform (`scripts/e2e-slice1.sh`: approval path, zero-approval path, free-text path).

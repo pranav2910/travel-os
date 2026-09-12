@@ -14,6 +14,7 @@ KC=${KC:-http://localhost:8180}
 CORE=${CORE:-http://localhost:8081}
 POLICY=${POLICY:-http://localhost:8082}
 ORDER=${ORDER:-http://localhost:8085}
+AUDIT=${AUDIT:-http://localhost:8088}
 COMPOSE="docker compose -f $(dirname "$0")/../platform/local/docker-compose.yml"
 SEED="$(dirname "$0")/../platform/local/seed/policies/acme-us-standard.json"
 
@@ -29,7 +30,7 @@ tok() {
 }
 
 echo "== 0. health"
-for svc in "$CORE" "$POLICY" "$ORDER" http://localhost:8084 http://localhost:8086; do
+for svc in "$CORE" "$POLICY" "$ORDER" "$AUDIT" http://localhost:8084 http://localhost:8086; do
   curl -sf "$svc/actuator/health/readiness" >/dev/null || fail "$svc not ready"
 done
 nc -z localhost 9083 || fail "optimization gRPC :9083 not listening"
@@ -132,5 +133,12 @@ INTENT_EVENTS=$($COMPOSE exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh 
 echo "  travel.intent events for $TRIP3: $INTENT_EVENTS"
 echo "$INTENT_EVENTS" | grep -q "travel.intent.detected" && pass "travel.intent.detected on the broker" || fail "no travel.intent.detected event"
 
+echo "== 7. the audit ledger: one place that answers why, across every service"
+for i in $(seq 1 30); do n=$(curl -s "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $ALICE" | json 'len(d.get("events",[]))' 2>/dev/null || echo 0); [ "${n:-0}" -ge 8 ] && break; sleep 1; done
+curl -s "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $ALICE" | check 't=[e["eventType"] for e in d["events"]]; print("  trail:", t); assert t[0]=="travel.trip.created" and "travel.intent.detected" in t and "travel.order.confirmed" in t and t[-1]=="travel.trip.booked", t' && pass "audit trail for $TRIP3 is complete and ordered" || fail "audit trail incomplete"
+curl -s "$AUDIT/api/v1/audit/trips/$TRIP3/decisions" -H "Authorization: Bearer $ALICE" | check 'assert d["status"]=="BOOKED" and d["intent"]["model"] and d["policy"]["outcome"] and d["order"]["status"]=="CONFIRMED", d; [print("   ", line) for line in d["narrative"]]' && pass "decision ledger assembled from the trail" || fail "ledger incomplete"
+[ "$(curl -s -o /dev/null -w '%{http_code}' "$AUDIT/api/v1/audit/trips/$TRIP3" -H "Authorization: Bearer $(tok zoe)")" = 404 ] && pass "another tenant cannot see the trail" || fail "cross-tenant audit read"
+curl -s "$AUDIT/api/v1/audit/events?type=travel.order.confirmed&limit=5" -H "Authorization: Bearer $CAROL" | check 'assert len(d)>=3, len(d); print("  finance view: last %d confirmed orders, newest %s" % (len(d), d[0]["data"]["orderId"]))' && pass "auditor query works, tenant-scoped" || fail "auditor query"
+
 echo
-echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy, $TRIP3 from free text)"
+echo "Slice 1 happy path: PASS ($TRIP1 via approval, $TRIP2 in policy, $TRIP3 from free text; audit ledger complete)"

@@ -23,6 +23,7 @@ Docker Desktop needs ~3 GB for the platform; Java services run on the host.
 | Temporal UI | http://localhost:8233 | — |
 | Keycloak | http://localhost:8180 (realm `travelos`) | admin console `admin` / `admin` |
 | LLM gateway | gRPC `localhost:9087` (`make run-llm-gateway`) | `LLM_PROVIDER=fake` offline; set `ANTHROPIC_API_KEY` for `anthropic` (Claude Opus 5) |
+| Audit | http://localhost:8088 (`make run SVC=audit`) | consumer group `audit` on every `travel.*` topic; `GET /api/v1/audit/trips/{id}`, `/decisions`, `/events?type=` (TRAVEL_ADMIN/FINANCE) |
 
 Service ports (HTTP 808x pairs with gRPC 908x): travel-core 8081 · policy 8082 / 9082 · optimization 8083 / 9083 · supplier-gateway 8084 / 9084 · order 8085 / 9085.
 

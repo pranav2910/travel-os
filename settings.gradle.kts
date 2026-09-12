@@ -35,6 +35,7 @@ include(":services:travel-core")
 include(":services:policy")
 include(":services:supplier-gateway")
 include(":services:order")
+include(":services:audit")
 
 // Temporal workflows: durable coordination of the trip lifecycle.
 include(":workflows:trip-planning")

@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: audit
+  datasource:
+    # The audit_app role can reach ONLY the audit database (ADR-0006).
+    url: ${AUDIT_DB_URL:jdbc:postgresql://localhost:5432/audit}
+    username: ${AUDIT_DB_USER:audit_app}
+    password: ${AUDIT_DB_PASSWORD:audit-dev}
+    hikari:
+      maximum-pool-size: ${AUDIT_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+      validation-timeout: 2000
+  flyway:
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: audit
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        # Pattern subscription: pick up newly created topics within this window.
+        metadata.max.age.ms: 30000
+    listener:
+      # Commit after each record is durably stored: at-least-once, deduped by event id.
+      ack-mode: record
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8088}
+  shutdown: graceful
+
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] "
