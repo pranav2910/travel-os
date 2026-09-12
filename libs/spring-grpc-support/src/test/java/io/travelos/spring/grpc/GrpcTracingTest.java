@@ -1,6 +1,7 @@
 package io.travelos.spring.grpc;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
@@ -32,6 +33,7 @@ import io.travelos.contracts.common.v1.RequestContext;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
 import io.travelos.contracts.trip.v1.Trip;
+import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -120,6 +122,8 @@ class GrpcTracingTest {
       root.end();
     }
 
+    // The client span ends on the transport thread after the blocking call returns: wait for it.
+    await().atMost(Duration.ofSeconds(10)).until(() -> exporter.getFinishedSpanItems().size() >= 3);
     List<SpanData> spans = exporter.getFinishedSpanItems();
     assertThat(spans).hasSize(3);
     SpanData client =

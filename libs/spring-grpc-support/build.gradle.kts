@@ -25,4 +25,5 @@ dependencies {
     testImplementation(libs.micrometer.tracing.bridge.otel)
     testImplementation(libs.opentelemetry.sdk)
     testImplementation(libs.opentelemetry.sdk.testing)
+    testImplementation(libs.awaitility)
 }
