@@ -10,6 +10,7 @@ import io.travelos.contracts.supplier.v1.PriceOfferRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.supplier.notification.SupplierNotification;
 
 /**
  * What every air adapter implements, in OUR normalized vocabulary. An NDC or GDS adapter maps its
@@ -32,6 +33,22 @@ public interface AirSupplier {
   ChangeOrderResponse changeOrder(ChangeOrderRequest request);
 
   CancelOrderResponse cancelOrder(CancelOrderRequest request);
+
+  /**
+   * Turn a raw supplier notice (the vendor's webhook body) into our normalized notification. Pure:
+   * no side effects, so it can be called again for a redelivered webhook.
+   */
+  default SupplierNotification normalizeNotification(String rawPayload) {
+    throw new SupplierException(
+        "NOTIFICATIONS_NOT_SUPPORTED", provider() + " does not deliver notices", false);
+  }
+
+  /**
+   * Called exactly once per new notice, inside the gateway's transaction. A real adapter has
+   * nothing to do (the airline already changed its own inventory); the sandbox uses it to become
+   * the airline that cancelled the flight and priced the reaccommodation.
+   */
+  default void applyNotification(SupplierNotification notice, String rawPayload) {}
 
   final class SupplierException extends RuntimeException {
     private final String code;

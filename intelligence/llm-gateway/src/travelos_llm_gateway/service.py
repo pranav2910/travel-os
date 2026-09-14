@@ -157,6 +157,40 @@ class LlmGatewayService(llm_pb2_grpc.LlmGatewayServicer):
             explanation=outcome.explanation, call=_model_call(outcome.call, now)
         )
 
+    def ExplainDisruption(self, request, context):  # noqa: N802
+        require_context(request.ctx, context)
+        tenant = request.ctx.tenant_id
+        now = self._clock()
+        self._guard_budget(tenant, now, context)
+        ev = explain.disruption_evidence(request)
+        try:
+            with _TRACER.start_as_current_span(
+                "llm.explain_disruption",
+                attributes={
+                    "llm.provider": self._provider.name,
+                    "disruption.id": request.disruption_id,
+                },
+            ):
+                outcome = self._provider.explain(ev)
+        except ProviderError as e:
+            self._abort_provider(e, context, "explain_disruption", tenant, request.trip_id)
+        spent = self._budget.charge(tenant, now, outcome.call.cost_micros)
+        log.info(
+            "explain_disruption tenant=%s trip=%s disruption=%s model=%s tokens=%d/%d "
+            "cost_micros=%d spent_today_micros=%d",
+            tenant,
+            request.trip_id,
+            request.disruption_id,
+            outcome.call.model,
+            outcome.call.input_tokens,
+            outcome.call.output_tokens,
+            outcome.call.cost_micros,
+            spent,
+        )
+        return llm_pb2.ExplainDisruptionResponse(
+            explanation=outcome.explanation, call=_model_call(outcome.call, now)
+        )
+
     # ------------------------------------------------------------------ helpers
 
     def _guard_budget(self, tenant: str, now: datetime, context: grpc.ServicerContext) -> None:

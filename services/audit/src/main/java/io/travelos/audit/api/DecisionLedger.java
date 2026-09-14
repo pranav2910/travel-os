@@ -26,6 +26,7 @@ public record DecisionLedger(
     @Nullable Map<String, Object> approval,
     @Nullable Map<String, Object> order,
     @Nullable Map<String, Object> failure,
+    List<Map<String, Object>> disruptions,
     List<String> narrative,
     int eventCount) {
 
@@ -41,9 +42,13 @@ public record DecisionLedger(
     int policyEvaluated = 0;
     int policyViolations = 0;
     Map<String, Map<String, Object>> policyByBundle = new LinkedHashMap<>();
+    Map<String, Map<String, Object>> disruptionsById = new LinkedHashMap<>();
 
     for (AuditRecord r : trail) {
       Map<String, Object> d = r.data();
+      if (r.eventType().startsWith("travel.disruption.") || d.get("disruptionId") != null) {
+        recovery(disruptionsById, r);
+      }
       switch (r.eventType()) {
         case "travel.intent.detected" -> {
           intent = new LinkedHashMap<>(d);
@@ -208,6 +213,10 @@ public record DecisionLedger(
               + (failure.get("message") == null ? "" : " (" + failure.get("message") + ")")
               + ".");
     }
+    List<Map<String, Object>> disruptions = new ArrayList<>(disruptionsById.values());
+    for (Map<String, Object> x : disruptions) {
+      narrative.addAll(recoveryNarrative(x));
+    }
     return new DecisionLedger(
         tripId,
         travelerId,
@@ -219,8 +228,149 @@ public record DecisionLedger(
         approval,
         order,
         failure,
+        disruptions,
         narrative,
         trail.size());
+  }
+
+  /** One map per disruption: what was detected, decided, approved, changed and how it ended. */
+  private static void recovery(Map<String, Map<String, Object>> byId, AuditRecord r) {
+    Map<String, Object> d = r.data();
+    String id = String.valueOf(d.get("disruptionId"));
+    Map<String, Object> x = byId.computeIfAbsent(id, k -> new LinkedHashMap<>());
+    x.putIfAbsent("disruptionId", id);
+    switch (r.eventType()) {
+      case "travel.disruption.detected" -> {
+        x.put("detected", d);
+        x.put("detectedAt", r.occurredAt().toString());
+        x.put("status", "DETECTED");
+      }
+      case "travel.disruption.impact-confirmed" -> {
+        x.put("impact", d);
+        x.put("status", "IMPACT_CONFIRMED");
+      }
+      case "travel.disruption.recovery-started" -> x.put("status", "SEARCHING_ALTERNATIVES");
+      case "travel.disruption.decision-ready" -> {
+        x.put("decision", d);
+        x.put("status", "DECISION_READY");
+      }
+      case "travel.disruption.approval-required" -> {
+        x.put("approval", new LinkedHashMap<>(d));
+        x.put("status", "HUMAN_REQUIRED");
+      }
+      case "travel.approval.approved", "travel.approval.rejected" -> {
+        @SuppressWarnings("unchecked")
+        Map<String, Object> approval =
+            x.get("approval") instanceof Map<?, ?> m
+                ? (Map<String, Object>) m
+                : new LinkedHashMap<>();
+        approval.putAll(d);
+        approval.put("status", r.eventType().endsWith("approved") ? "APPROVED" : "REJECTED");
+        x.put("approval", approval);
+      }
+      case "travel.order.change-requested" -> x.put("status", "CHANGING");
+      case "travel.order.changed" -> x.put("change", d);
+      case "travel.disruption.resolved" -> {
+        x.put("resolution", d);
+        x.put("status", "RESOLVED");
+        x.put("resolvedAt", r.occurredAt().toString());
+      }
+      case "travel.disruption.recovery-failed" -> {
+        x.put("failure", d);
+        x.put("status", String.valueOf(d.getOrDefault("status", "FAILED")));
+      }
+      default -> {}
+    }
+  }
+
+  private static List<String> recoveryNarrative(Map<String, Object> x) {
+    List<String> lines = new ArrayList<>();
+    Map<?, ?> detected = x.get("detected") instanceof Map<?, ?> m ? m : Map.of();
+    Map<?, ?> affected = detected.get("affected") instanceof Map<?, ?> m ? m : Map.of();
+    lines.add(
+        String.format(
+            Locale.ROOT,
+            "Disruption %s: %s reported %s on %s %s-%s%s.",
+            x.get("disruptionId"),
+            str(detected, "supplier", "the supplier"),
+            str(detected, "type", "a disruption"),
+            str(affected, "flightNumber", "the flight"),
+            str(affected, "origin", "?"),
+            str(affected, "destination", "?"),
+            detected.get("reason") == null ? "" : " (\"" + detected.get("reason") + "\")"));
+    if (x.get("decision") instanceof Map<?, ?> dec) {
+      lines.add(
+          String.format(
+              Locale.ROOT,
+              "%s alternatives were searched, %s permitted by policy, %s feasible; the optimizer chose %s at %s versus the original, and policy's verdict on changing the order was %s.",
+              str(dec, "candidatesSearched", "?"),
+              str(dec, "candidatesPermitted", "?"),
+              str(dec, "candidatesFeasible", "?"),
+              str(dec, "selectedBundleId", "?"),
+              signedMoney(dec.get("incrementalCost")),
+              str(dec, "autonomyOutcome", "?")));
+    }
+    if (x.get("approval") instanceof Map<?, ?> a) {
+      String status = String.valueOf(str(a, "status", "PENDING"));
+      lines.add(
+          "PENDING".equals(status)
+              ? "Approval is pending with role " + str(a, "role", "MANAGER") + "."
+              : "The change was "
+                  + status.toLowerCase(Locale.ROOT)
+                  + " by "
+                  + str(a, "decidedBy", "a person")
+                  + ".");
+    }
+    if (x.get("change") instanceof Map<?, ?> c) {
+      lines.add(
+          String.format(
+              Locale.ROOT,
+              "Order %s was changed by %s for %s (%s%s).",
+              str(c, "orderId", "?"),
+              str(c, "changedBy", "?"),
+              signedMoney(c.get("incrementalCost")),
+              str(c, "externalOrderId", "supplier reference unknown"),
+              c.get("recordLocator") == null ? "" : ", locator " + c.get("recordLocator")));
+    }
+    if (x.get("resolution") instanceof Map<?, ?> res) {
+      lines.add(
+          String.format(
+              Locale.ROOT,
+              "The disruption was resolved %s in %s ms.",
+              "ALLOW".equals(res.get("autonomyOutcome")) ? "autonomously" : "after human approval",
+              str(res, "durationMs", "?")));
+    } else if (x.get("failure") instanceof Map<?, ?> f) {
+      lines.add(
+          String.format(
+              Locale.ROOT,
+              "The recovery ended %s at %s: %s.",
+              str(f, "status", "FAILED"),
+              str(f, "stage", "?"),
+              str(f, "reasonCode", "?")));
+    }
+    return lines;
+  }
+
+  private static Object str(Map<?, ?> m, String key, String fallback) {
+    Object v = m.get(key);
+    return v == null ? fallback : v;
+  }
+
+  private static String signedMoney(@Nullable Object m) {
+    if (m instanceof Map<?, ?> map
+        && map.get("currency") != null
+        && map.get("amountMinor") != null) {
+      long minor = ((Number) map.get("amountMinor")).longValue();
+      String sign = minor < 0 ? "-" : "+";
+      return String.format(
+          Locale.ROOT,
+          "%s%s %d.%02d",
+          sign,
+          map.get("currency"),
+          Math.abs(minor) / 100,
+          Math.abs(minor) % 100);
+    }
+    return "n/a";
   }
 
   private static String assumptions(Map<String, Object> intent) {

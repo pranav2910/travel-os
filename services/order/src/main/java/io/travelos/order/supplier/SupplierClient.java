@@ -4,6 +4,8 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
+import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
+import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
@@ -57,6 +59,11 @@ public class SupplierClient {
 
   public CancelOrderResponse cancelOrder(CancelOrderRequest request) {
     return withRetry("CancelOrder", () -> stub().cancelOrder(request));
+  }
+
+  /** Safe to retry: the supplier is idempotent by ctx.idempotency_key. */
+  public ChangeOrderResponse changeOrder(ChangeOrderRequest request) {
+    return withRetry("ChangeOrder", () -> stub().changeOrder(request));
   }
 
   private SupplierGatewayGrpc.SupplierGatewayBlockingStub stub() {

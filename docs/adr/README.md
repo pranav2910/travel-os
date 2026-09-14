@@ -14,3 +14,4 @@ Short, numbered, immutable once accepted (supersede with a new one). The frozen 
 | [0007](0007-money-in-minor-units.md) | Money is (ISO currency, integer minor units); no floating point, no implicit FX |
 | [0008](0008-ids-are-prefixed-ulids.md) | Ids are `<prefix>_<ULID>`; tenant ids are slugs, not UUIDs |
 | [0009](0009-llm-gateway-task-shaped-and-evidenced.md) | One LLM gateway; task-shaped calls; every call leaves evidence; narration degrades, transactions do not |
+| [0010](0010-disruption-recovery-is-the-same-machine-with-a-second-trigger.md) | Disruption recovery reuses the planning machine: gateway-normalized notices, a Disruption aggregate with immutable decision/outcome records, a recovery workflow that asks policy `order.change`, one idempotent order change |

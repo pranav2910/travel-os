@@ -8,6 +8,7 @@ import io.travelos.contracts.offer.v1.FlightSegment;
 import io.travelos.contracts.offer.v1.Journey;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
+import io.travelos.supplier.AirSupplier.SupplierException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,7 +16,9 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Deterministic synthetic airline inventory. The same route, dates and cabin always produce the
@@ -70,15 +73,154 @@ final class SandboxInventory {
       LocalDate outboundDate,
       LocalDate inboundDate,
       Set<Cabin> cabins) {
+    return schedules(origin, destination, outboundDate, inboundDate, cabins, null);
+  }
+
+  /**
+   * Same, with the airline's reaccommodation applied when it has cancelled a flight on this route
+   * and date: the cancelled slot is gone and the survivors carry reaccommodation fares. Slots are
+   * numbered per cabin, so (cabin, slot) identifies a schedule whatever set of cabins was asked
+   * for.
+   */
+  static List<Schedule> schedules(
+      String origin,
+      String destination,
+      LocalDate outboundDate,
+      LocalDate inboundDate,
+      Set<Cabin> cabins,
+      @Nullable SandboxReaccommodation reaccommodation) {
+    return schedules(origin, destination, outboundDate, inboundDate, cabins, reaccommodation, true);
+  }
+
+  /**
+   * @param reprice whether the caller is the disrupted trip (sees reaccommodation fares); anyone
+   *     else only sees the cancelled flight gone
+   */
+  static List<Schedule> schedules(
+      String origin,
+      String destination,
+      LocalDate outboundDate,
+      LocalDate inboundDate,
+      Set<Cabin> cabins,
+      @Nullable SandboxReaccommodation reaccommodation,
+      boolean reprice) {
+    List<Schedule> result = new ArrayList<>();
+    for (Cabin cabin : cabins.isEmpty() ? Set.of(Cabin.ECONOMY) : cabins) {
+      if (cabin == Cabin.CABIN_UNSPECIFIED || cabin == Cabin.UNRECOGNIZED) {
+        continue;
+      }
+      List<Schedule> generated = generate(origin, destination, outboundDate, inboundDate, cabin);
+      if (reaccommodation == null) {
+        result.addAll(generated);
+        continue;
+      }
+      boolean repriced = reprice && reaccommodation.cabin().equals(cabin.name());
+      int rank = 0;
+      for (Schedule s : generated) {
+        if (s.outbound().getFirst().flightNumber().equals(reaccommodation.cancelledFlight())) {
+          continue; // a cancelled flight is gone in every cabin and on every itinerary that used it
+        }
+        if (!repriced) {
+          result.add(
+              s); // other cabins keep their fares; only the disrupted cabin is reaccommodated
+          continue;
+        }
+        boolean nonstop = s.outbound().size() == 1;
+        long fare = reaccommodation.fareFor(nonstop, s.fareMinor(), nonstop ? 0 : rank++);
+        result.add(
+            new Schedule(
+                s.slot(),
+                s.carrier(),
+                s.cabin(),
+                s.outbound(),
+                s.inbound(),
+                fare,
+                s.refundable(),
+                s.seatsRemaining()));
+      }
+    }
+    return result;
+  }
+
+  /**
+   * The sandbox airline's reaccommodation after cancelling {@code cancelledSlot}: the replacement
+   * it offers is the same carrier's next nonstop departure (or the next nonstop of any carrier, or
+   * the next departure of any kind), priced at the original fare plus the delta the notice
+   * specified.
+   */
+  static SandboxReaccommodation reaccommodate(
+      String tenantId,
+      String correlationId,
+      SandboxOfferId cancelled,
+      Cabin cabin,
+      long deltaMinor) {
+    List<Schedule> all =
+        generate(
+            cancelled.origin(),
+            cancelled.destination(),
+            cancelled.outboundDate(),
+            cancelled.inboundDate(),
+            cabin);
+    Schedule gone =
+        all.stream()
+            .filter(s -> s.slot() == cancelled.slot())
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new SupplierException("OFFER_UNKNOWN", "cancelled slot does not exist", false));
+    Instant departure = gone.outbound().getFirst().departure();
+    String flight = gone.outbound().getFirst().flightNumber();
+    java.util.Comparator<Schedule> byDeparture =
+        java.util.Comparator.comparing((Schedule s) -> s.outbound().getFirst().departure())
+            .thenComparingInt(Schedule::slot);
+    List<Schedule> survivors =
+        all.stream()
+            .filter(s -> s.slot() != gone.slot())
+            .filter(s -> !s.outbound().getFirst().flightNumber().equals(flight))
+            .toList();
+    Optional<Schedule> replacement =
+        survivors.stream()
+            .filter(s -> s.outbound().size() == 1)
+            .filter(s -> s.carrier().equals(gone.carrier()))
+            .filter(s -> !s.outbound().getFirst().departure().isBefore(departure))
+            .min(byDeparture);
+    if (replacement.isEmpty()) {
+      replacement =
+          survivors.stream()
+              .filter(s -> s.outbound().size() == 1)
+              .filter(s -> !s.outbound().getFirst().departure().isBefore(departure))
+              .min(byDeparture);
+    }
+    if (replacement.isEmpty()) {
+      replacement = survivors.stream().min(byDeparture);
+    }
+    return new SandboxReaccommodation(
+        tenantId,
+        correlationId,
+        cancelled.origin(),
+        cancelled.destination(),
+        cancelled.outboundDate(),
+        cancelled.inboundDate(),
+        cabin.name(),
+        gone.slot(),
+        flight,
+        replacement.orElseThrow().slot(),
+        gone.fareMinor(),
+        deltaMinor);
+  }
+
+  private static List<Schedule> generate(
+      String origin,
+      String destination,
+      LocalDate outboundDate,
+      LocalDate inboundDate,
+      Cabin cabin) {
     long seed = seed(origin, destination);
     int nonstopMinutes = 180 + (int) (seed % 6) * 30 + routeBonus(origin, destination);
     long baseFare = 28000 + (seed % 40) * 1000; // USD 280..670 base economy round-trip-ish
     List<Schedule> result = new ArrayList<>();
     int slot = 0;
-    for (Cabin cabin : cabins.isEmpty() ? Set.of(Cabin.ECONOMY) : cabins) {
-      if (cabin == Cabin.CABIN_UNSPECIFIED || cabin == Cabin.UNRECOGNIZED) {
-        continue;
-      }
+    {
       for (int c = 0; c < CARRIERS.length; c++) {
         String carrier = CARRIERS[c];
         for (int d = 0; d < 3; d++) {

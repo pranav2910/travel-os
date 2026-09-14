@@ -2,21 +2,28 @@ package io.travelos.supplier;
 
 import java.time.Duration;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Per-adapter protection settings, keyed by provider id. */
-@ConfigurationProperties(prefix = "travelos.suppliers")
-public record SupplierProperties(Map<String, Adapter> adapters) {
+@ConfigurationProperties(prefix = "travelos")
+public record SupplierProperties(Map<String, Adapter> suppliers) {
 
   public SupplierProperties {
-    adapters = adapters == null ? Map.of() : Map.copyOf(adapters);
+    suppliers = suppliers == null ? Map.of() : Map.copyOf(suppliers);
   }
 
+  /** Settings for one adapter (travelos.suppliers.<provider>.*), defaults when unconfigured. */
   public Adapter adapter(String provider) {
-    return adapters.getOrDefault(provider, new Adapter(null, null));
+    return suppliers.getOrDefault(provider, new Adapter(null, null, null));
   }
 
-  public record Adapter(Integer rateLimitPerSecond, CircuitBreaker circuitBreaker) {
+  /**
+   * @param webhookSecret shared secret the supplier signs its notices with (HMAC-SHA256). Null =
+   *     this supplier sends no notices, and its webhook path answers 403.
+   */
+  public record Adapter(
+      Integer rateLimitPerSecond, CircuitBreaker circuitBreaker, @Nullable String webhookSecret) {
     public Adapter {
       rateLimitPerSecond = rateLimitPerSecond == null ? 20 : rateLimitPerSecond;
       circuitBreaker =

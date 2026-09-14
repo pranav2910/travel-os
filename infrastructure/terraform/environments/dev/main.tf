@@ -18,9 +18,10 @@ locals {
     supplier-gateway   = "supplier_gateway"
     order              = "orders"
     audit              = "audit"
+    disruption         = "disruption"
     enterprise-context = "enterprise_context"
   }
-  services = ["travel-core", "policy", "supplier-gateway", "order", "audit", "trip-planning", "optimization", "llm-gateway"]
+  services = ["travel-core", "policy", "supplier-gateway", "order", "audit", "disruption", "trip-planning", "optimization", "llm-gateway"]
 }
 
 module "network" {

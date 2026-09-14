@@ -14,14 +14,19 @@ import io.travelos.contracts.offer.v1.Bundle;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
 import io.travelos.contracts.order.v1.CancelOrderCommand;
+import io.travelos.contracts.order.v1.ChangeOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
+import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
+import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferResponse;
 import io.travelos.order.events.OrderEvents;
+import io.travelos.order.store.OrderChangeRecord;
+import io.travelos.order.store.OrderChangeRepository;
 import io.travelos.order.store.OrderRecord;
 import io.travelos.order.store.OrderRecord.Item;
 import io.travelos.order.store.OrderRecord.ItemStatus;
@@ -54,6 +59,7 @@ public class OrderService {
   private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
   private final OrderRepository orders;
+  private final OrderChangeRepository changes;
   private final SupplierClient suppliers;
   private final Outbox outbox;
   private final TransactionTemplate tx;
@@ -61,11 +67,13 @@ public class OrderService {
 
   public OrderService(
       OrderRepository orders,
+      OrderChangeRepository changes,
       SupplierClient suppliers,
       Outbox outbox,
       TransactionTemplate tx,
       Clock clock) {
     this.orders = orders;
+    this.changes = changes;
     this.suppliers = suppliers;
     this.outbox = outbox;
     this.tx = tx;
@@ -385,6 +393,296 @@ public class OrderService {
                   clock));
           return cancelled;
         });
+  }
+
+  /** Impacted-trip detection for the Disruption service. 404 when the reference is not ours. */
+  public OrderRecord findByExternalRef(TenantId tenant, String supplier, String externalOrderId) {
+    return orders
+        .findByExternalRef(tenant, supplier, externalOrderId)
+        .orElseThrow(
+            () ->
+                Status.NOT_FOUND
+                    .withDescription("no order for " + supplier + " reference " + externalOrderId)
+                    .asRuntimeException());
+  }
+
+  public List<OrderChangeRecord> changesOf(TenantId tenant, String orderId) {
+    return changes.byOrder(tenant, orderId);
+  }
+
+  /**
+   * The change saga (disruption recovery). Idempotent by ctx.idempotency_key: a retry after a crash
+   * finds the PENDING change and resumes it — the supplier is called again with the SAME
+   * supplier-side key, so it reissues once whatever we saw of its first answer. An APPLIED or
+   * FAILED change is final for that key: the order is returned as it is.
+   */
+  public OrderRecord change(ChangeOrderCommand command) {
+    RequestContexts.Validated ctx = RequestContexts.require(command.getCtx());
+    String key = command.getCtx().getIdempotencyKey();
+    if (key.isBlank()) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("ctx.idempotency_key is required")
+          .asRuntimeException();
+    }
+    try {
+      IdempotencyKey.parse(key);
+    } catch (IllegalArgumentException e) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("ctx.idempotency_key: " + e.getMessage())
+          .asRuntimeException();
+    }
+    if (command.getOrderId().isBlank() || !command.hasReplacement()) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("order_id and replacement are required")
+          .asRuntimeException();
+    }
+    Bundle replacement = command.getReplacement();
+    if (replacement.getOffersCount() != 1 || replacement.getOffers(0).getType() != OfferType.AIR) {
+      throw Status.FAILED_PRECONDITION
+          .withDescription("UNSUPPORTED_CHANGE: a change replaces exactly one AIR item")
+          .asRuntimeException();
+    }
+    if (command.getPassengersCount() == 0) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("at least one passenger is required")
+          .asRuntimeException();
+    }
+    OrderRecord order = get(ctx.tenant(), command.getOrderId());
+
+    Optional<OrderChangeRecord> existing = changes.findByIdempotencyKey(ctx.tenant(), key);
+    OrderChangeRecord change;
+    if (existing.isPresent()) {
+      change = existing.get();
+      if (!change.orderId().equals(order.orderId())) {
+        throw Status.FAILED_PRECONDITION
+            .withDescription(
+                "IDEMPOTENCY_KEY_REUSED: key already used for order " + change.orderId())
+            .asRuntimeException();
+      }
+      if (change.status() != OrderChangeRecord.Status.PENDING) {
+        return order;
+      }
+      log.info("resuming change {} for order {}", change.changeId(), order.orderId());
+    } else {
+      if (order.status() != OrderStatus.CONFIRMED && order.status() != OrderStatus.CHANGED) {
+        throw Status.FAILED_PRECONDITION
+            .withDescription("ORDER_NOT_CHANGEABLE: status " + order.status())
+            .asRuntimeException();
+      }
+      String currentOffer =
+          order.items().stream()
+              .filter(i -> i.status() == ItemStatus.CONFIRMED)
+              .map(Item::providerOfferId)
+              .reduce((a, b) -> b)
+              .orElse("");
+      if (order.bundleId().equals(replacement.getBundleId())
+          || currentOffer.equals(replacement.getOffers(0).getProviderOfferId())) {
+        throw Status.FAILED_PRECONDITION
+            .withDescription("SAME_ITINERARY: the replacement is the current itinerary")
+            .asRuntimeException();
+      }
+      OrderRecord current = order;
+      change = tx.execute(status -> requestChange(ctx, command, current, key));
+    }
+    return applyChange(ctx, command, change);
+  }
+
+  private OrderChangeRecord requestChange(
+      RequestContexts.Validated ctx, ChangeOrderCommand command, OrderRecord order, String key) {
+    Instant now = clock.instant();
+    Offer offer = command.getReplacement().getOffers(0);
+    OrderChangeRecord change =
+        new OrderChangeRecord(
+            Ids.newId(IdPrefix.ORDER_CHANGE),
+            order.orderId(),
+            ctx.tenant(),
+            blankToNull(command.getDisruptionId()),
+            key,
+            OrderChangeRecord.Status.PENDING,
+            order.status(),
+            order.bundleId(),
+            command.getReplacement().getBundleId(),
+            toJson(offer),
+            order.total().currency(),
+            null,
+            blankToNull(command.getPolicyDecisionId()),
+            blankToNull(command.getOptimizationRunId()),
+            blankToNull(command.getApprovalId()),
+            null,
+            null,
+            null,
+            null,
+            ctx.principal(),
+            now,
+            now);
+    if (!orders.transition(
+        order,
+        OrderStatus.CHANGE_PENDING,
+        "change requested" + (change.disruptionId() == null ? "" : " for " + change.disruptionId()),
+        null,
+        null,
+        null,
+        order.compensated(),
+        now)) {
+      throw Status.ABORTED
+          .withDescription("order changed concurrently; retry")
+          .asRuntimeException();
+    }
+    changes.insert(change);
+    OrderRecord pending = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+    outbox.append(
+        OrderEvents.changeRequested(pending, change, command.getCtx().getCausationId(), clock));
+    return change;
+  }
+
+  private OrderRecord applyChange(
+      RequestContexts.Validated ctx, ChangeOrderCommand command, OrderChangeRecord change) {
+    OrderRecord order = orders.find(ctx.tenant(), change.orderId()).orElseThrow();
+    Offer offer = command.getReplacement().getOffers(0);
+    Item currentItem =
+        order.items().stream()
+            .filter(i -> i.status() == ItemStatus.CONFIRMED)
+            .reduce((a, b) -> b)
+            .orElse(null);
+    if (currentItem == null || currentItem.externalRef() == null) {
+      return failChange(
+          ctx, order, change, "NO_CONFIRMED_ITEM", "the order has no confirmed item to change");
+    }
+    RequestContext supplierCtx =
+        command.getCtx().toBuilder()
+            .setIdempotencyKey(order.orderId() + ":" + change.changeId())
+            .build();
+    ChangeOrderResponse changed;
+    try {
+      PriceOfferResponse priced =
+          suppliers.price(
+              PriceOfferRequest.newBuilder()
+                  .setCtx(supplierCtx)
+                  .setProvider(offer.getProvider())
+                  .setProviderOfferId(offer.getProviderOfferId())
+                  .build());
+      Money quoted = money(offer.getTotal());
+      Money repriced = money(priced.getOffer().getTotal());
+      if (priced.getPriceChanged() && repriced.isGreaterThan(quoted)) {
+        throw Status.FAILED_PRECONDITION
+            .withDescription(
+                "PRICE_CHANGED: " + quoted + " is now " + repriced + "; re-evaluate policy")
+            .asRuntimeException();
+      }
+      changed =
+          suppliers.changeOrder(
+              ChangeOrderRequest.newBuilder()
+                  .setCtx(supplierCtx)
+                  .setProvider(currentItem.provider())
+                  .setExternalOrderId(currentItem.externalRef())
+                  .setNewProviderOfferId(offer.getProviderOfferId())
+                  .setPaymentToken(command.getPaymentToken())
+                  .build());
+    } catch (StatusRuntimeException e) {
+      if (isTransient(e.getStatus())) {
+        throw e; // the caller (a Temporal activity) retries; the PENDING change resumes
+      }
+      String code = failureCode(e);
+      log.warn("order {} change {} failed: {}", order.orderId(), change.changeId(), e.getStatus());
+      return failChange(
+          ctx,
+          order,
+          change,
+          code,
+          e.getStatus().getDescription() == null ? code : e.getStatus().getDescription());
+    }
+    Money incremental = money(changed.getIncrementalCost());
+    Money newTotal = order.total().plus(incremental);
+    Instant now = clock.instant();
+    Item replacementItem =
+        new Item(
+            Ids.newId(IdPrefix.ORDER_ITEM),
+            order.items().stream().mapToInt(Item::position).max().orElse(-1) + 1,
+            offer.getType().name(),
+            offer.getProvider(),
+            offer.getProviderOfferId(),
+            toJson(offer),
+            ItemStatus.CONFIRMED,
+            changed.getExternalOrderId(),
+            changed.getRecordLocator(),
+            money(offer.getTotal()),
+            null,
+            now);
+    return tx.execute(
+        s -> {
+          OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+          orders.updateItem(currentItem.itemId(), ItemStatus.CHANGED, null, null, null, now);
+          orders.insertItem(order.orderId(), ctx.tenant(), replacementItem);
+          if (!orders.replaceItinerary(
+              fresh,
+              OrderStatus.CHANGED,
+              change.replacementBundleId(),
+              newTotal,
+              changed.getExternalOrderId(),
+              "reissued at " + currentItem.provider() + " (" + change.changeId() + ")",
+              now)) {
+            throw Status.ABORTED
+                .withDescription("order changed concurrently; retry")
+                .asRuntimeException();
+          }
+          changes.complete(
+              change.changeId(),
+              OrderChangeRecord.Status.APPLIED,
+              incremental.amountMinor(),
+              changed.getExternalOrderId(),
+              changed.getRecordLocator(),
+              null,
+              null,
+              now);
+          OrderRecord done = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+          OrderChangeRecord applied = changes.find(ctx.tenant(), change.changeId()).orElseThrow();
+          outbox.append(
+              OrderEvents.changed(done, applied, command.getCtx().getCausationId(), clock));
+          return done;
+        });
+  }
+
+  /** A final supplier answer: the change is over, the order goes back to what it was. */
+  private OrderRecord failChange(
+      RequestContexts.Validated ctx,
+      OrderRecord order,
+      OrderChangeRecord change,
+      String code,
+      String message) {
+    Instant now = clock.instant();
+    return tx.execute(
+        s -> {
+          changes.complete(
+              change.changeId(),
+              OrderChangeRecord.Status.FAILED,
+              null,
+              null,
+              null,
+              code,
+              message.length() > 1000 ? message.substring(0, 1000) : message,
+              now);
+          OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+          if (fresh.status() == OrderStatus.CHANGE_PENDING) {
+            orders.transition(
+                fresh,
+                change.previousStatus(),
+                "change " + change.changeId() + " failed: " + code,
+                null,
+                null,
+                null,
+                fresh.compensated(),
+                now);
+          }
+          return orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+        });
+  }
+
+  /** Statuses the supplier client already retried and that may still clear up later. */
+  static boolean isTransient(Status status) {
+    return switch (status.getCode()) {
+      case UNAVAILABLE, DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED, ABORTED, UNKNOWN, INTERNAL -> true;
+      default -> false;
+    };
   }
 
   static String failureCode(StatusRuntimeException e) {

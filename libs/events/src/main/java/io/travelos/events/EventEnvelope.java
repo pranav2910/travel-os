@@ -41,7 +41,7 @@ public record EventEnvelope(
     Map<String, Object> data) {
 
   private static final Pattern EVENT_TYPE =
-      Pattern.compile("^travel\\.[a-z]+\\.[a-z_]+(\\.[a-z_]+)*$");
+      Pattern.compile("^travel\\.[a-z]+\\.[a-z][a-z_-]*(\\.[a-z][a-z_-]*)*$");
   private static final Pattern PRODUCER = Pattern.compile("^[a-z][a-z0-9-]*$");
 
   public EventEnvelope {

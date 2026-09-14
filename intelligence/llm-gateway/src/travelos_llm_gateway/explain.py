@@ -104,3 +104,72 @@ def _outcome_name(pd) -> str:
         return policy_pb2.Outcome.Name(pd.outcome)
     except ValueError:
         return str(pd.outcome)
+
+
+def disruption_evidence(request: llm_pb2.ExplainDisruptionRequest) -> Evidence:
+    """Everything the narration may say about a disruption, rendered from evidence only.
+
+    The supplier's free text is fenced as untrusted data; every other line comes from structured
+    facts the platform decided. Nothing the supplier wrote reaches the facts dictionary.
+    """
+    pd = request.policy_decision
+    original = _bundle_summary(request.original) if request.original.offers else "the itinerary"
+    replacement = (
+        _bundle_summary(request.replacement) if request.replacement.offers else "no replacement"
+    )
+    ranking = sorted(request.ranking, key=lambda r: r.rank or 999)
+    chosen = next((r for r in ranking if r.bundle_id == request.replacement.bundle_id), None)
+    runner_up = next(
+        (r for r in ranking if r.bundle_id != request.replacement.bundle_id and r.feasible), None
+    )
+    reasons = "; ".join(f"{r.code}: {r.message}" if r.message else r.code for r in pd.reasons)
+    autonomy = request.autonomy_outcome or _outcome_name(pd)
+    incremental = money(request.incremental_cost)
+    facts: dict[str, Any] = {
+        "kind": "disruption",
+        "type": request.disruption_type or "DISRUPTION",
+        "supplier": request.supplier,
+        "original": original,
+        "replacement": replacement,
+        "replacement_total": money(request.replacement.total),
+        "incremental": incremental,
+        "searched": request.candidates_searched,
+        "permitted": request.candidates_permitted,
+        "policy": f"{pd.policy_id} v{pd.policy_version}" if pd.policy_id else "",
+        "outcome": _outcome_name(pd),
+        "autonomy": autonomy,
+        "reasons": reasons,
+        "requires_approval": pd.requires_approval or autonomy == "ALLOW_WITH_APPROVAL",
+        "approver": pd.approvers[0].role if pd.approvers else "a manager",
+        "score": f"{chosen.score:.1f}" if chosen else "",
+        "breakdown": _breakdown(chosen) if chosen else "",
+    }
+    notice = (request.supplier_reason or "").strip()
+    lines = [
+        f"Audience: {request.audience or 'TRAVELER'}",
+        f"Disruption: {facts['type']} reported by {request.supplier or 'the supplier'}",
+        "<supplier_notice>",
+        notice or "(no message)",
+        "</supplier_notice>",
+        f"Original itinerary: {original}",
+        f"Alternatives searched: {request.candidates_searched}; permitted by policy: "
+        f"{request.candidates_permitted}",
+        f"Replacement chosen by the optimizer: {replacement} at {facts['replacement_total']}",
+        f"Incremental cost versus the original order: {incremental}",
+    ]
+    if chosen:
+        lines.append(f"Optimizer score: {chosen.score:.1f} of 100 ({_breakdown(chosen)})")
+    if runner_up:
+        lines.append(f"Runner-up: {runner_up.bundle_id} scored {runner_up.score:.1f}")
+    if pd.policy_id:
+        lines.append(f"Policy: {facts['policy']}, decision on changing the order: {autonomy}")
+        if reasons:
+            lines.append(f"Policy reasons: {reasons}")
+    lines.append(
+        f"Approval: required from {facts['approver']}"
+        if facts["requires_approval"]
+        else "Approval: not required; the change is made automatically"
+        if autonomy == "ALLOW"
+        else f"Approval: the change is not permitted ({autonomy})"
+    )
+    return Evidence(audience=request.audience or "TRAVELER", text="\n".join(lines), facts=facts)

@@ -1,0 +1,94 @@
+spring:
+  application:
+    name: disruption
+  datasource:
+    # The disruption_app role can reach ONLY the disruption database (ADR-0006).
+    url: ${DISRUPTION_DB_URL:jdbc:postgresql://localhost:5432/disruption}
+    username: ${DISRUPTION_DB_USER:disruption_app}
+    password: ${DISRUPTION_DB_PASSWORD:disruption-dev}
+    hikari:
+      maximum-pool-size: ${DISRUPTION_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+      validation-timeout: 2000
+  flyway:
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        linger.ms: 5
+        delivery.timeout.ms: 45000
+    consumer:
+      group-id: disruption
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      # Commit after each record is durably processed: at-least-once, deduped by event id.
+      ack-mode: record
+      observation-enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8089}
+  shutdown: graceful
+
+travelos:
+  grpc:
+    server:
+      port: ${GRPC_PORT:9089}
+    clients:
+      order:
+        address: ${ORDER_ADDRESS:localhost:9085}
+        deadline: 15s
+  temporal:
+    enabled: ${TEMPORAL_ENABLED:true}
+    address: ${TEMPORAL_ADDRESS:localhost:7233}
+    namespace: travelos
+  outbox:
+    poll-interval: 500ms
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+    export:
+      enabled: ${TRACING_EXPORT_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+          transport: http
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] [%X{correlation_id:-}] "

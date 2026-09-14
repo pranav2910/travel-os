@@ -14,7 +14,8 @@ hostAccess: &host
 
 kindScale: &kindScale
   replicaCount: 1
-  autoscaling: { enabled: true, minReplicas: 1, maxReplicas: 2 }
+  # The whole platform shares one ~8 GB Docker VM: HPAs exist (and scale on EKS) but stay at 1 here.
+  autoscaling: { enabled: true, minReplicas: 1, maxReplicas: 1 }
   pdb: { enabled: true, minAvailable: 0 }   # single replica: never block node drains
   topologySpread: { enabled: true, maxSkew: 1, whenUnsatisfiable: ScheduleAnyway }
   antiAffinity: soft
@@ -36,12 +37,20 @@ order:
   service: { type: NodePort, nodePorts: { http: 30085 } }
   networkPolicy:
     httpFrom: *host
-    grpcFromApps: [trip-planning]
+    grpcFromApps: [trip-planning, disruption]
     grpcToApps: [{ app: supplier-gateway, port: 9084 }]
 audit:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { http: 30088 } }
   networkPolicy: { httpFrom: *host }
+disruption:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30089 } }
+  networkPolicy:
+    httpFrom: *host
+    grpcFromApps: [trip-planning]
+    grpcToApps:
+      - { app: order, port: 9085 }
 trip-planning:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { http: 30086 } }
@@ -54,6 +63,7 @@ trip-planning:
       - { app: supplier-gateway, port: 9084 }
       - { app: order, port: 9085 }
       - { app: llm-gateway, port: 9087 }
+      - { app: disruption, port: 9089 }
 optimization:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { grpc: 30083 } }

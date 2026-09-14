@@ -17,6 +17,8 @@ import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
 import io.travelos.spring.grpc.RequestContexts;
 import io.travelos.supplier.AirSupplier.SupplierException;
 import io.travelos.supplier.SupplierRegistry;
+import io.travelos.supplier.notification.SupplierOrderRefRepository;
+import java.time.Clock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -32,9 +34,14 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
   private static final Logger log = LoggerFactory.getLogger(SupplierGatewayGrpcService.class);
 
   private final SupplierRegistry registry;
+  private final SupplierOrderRefRepository refs;
+  private final Clock clock;
 
-  public SupplierGatewayGrpcService(SupplierRegistry registry) {
+  public SupplierGatewayGrpcService(
+      SupplierRegistry registry, SupplierOrderRefRepository refs, Clock clock) {
     this.registry = registry;
+    this.refs = refs;
+    this.clock = clock;
   }
 
   @Override
@@ -81,12 +88,18 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
   public void createOrder(
       CreateOrderRequest request, StreamObserver<CreateOrderResponse> observer) {
     RequestContexts.require(request.getCtx());
-    if (request.getCtx().getIdempotencyKey().isBlank()) {
-      throw Status.INVALID_ARGUMENT
-          .withDescription("ctx.idempotency_key is required for CreateOrder")
-          .asRuntimeException();
-    }
-    observer.onNext(guarded(request.getProvider(), s -> s.createOrder(request)));
+    CreateOrderResponse response = guarded(request.getProvider(), s -> s.createOrder(request));
+    // The door remembers what it booked: a later supplier notice about this order is tied back to
+    // the trip (correlation id) without asking anyone.
+    refs.remember(
+        new SupplierOrderRefRepository.Ref(
+            request.getProvider(),
+            response.getExternalOrderId(),
+            request.getCtx().getTenantId(),
+            request.getCtx().getCorrelationId(),
+            response.getRecordLocator(),
+            clock.instant()));
+    observer.onNext(response);
     observer.onCompleted();
   }
 
@@ -121,7 +134,11 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
     return switch (e.code()) {
       case "PROVIDER_UNKNOWN", "OFFER_UNKNOWN", "ORDER_UNKNOWN" ->
           Status.NOT_FOUND.withDescription(description);
-      case "OFFER_EXPIRED", "SEAT_NO_LONGER_AVAILABLE", "PAYMENT_DECLINED" ->
+      case "OFFER_EXPIRED",
+          "SEAT_NO_LONGER_AVAILABLE",
+          "PAYMENT_DECLINED",
+          "FLIGHT_CANCELLED",
+          "ORDER_CANCELLED" ->
           Status.FAILED_PRECONDITION.withDescription(description);
       case "NOT_IMPLEMENTED" -> Status.UNIMPLEMENTED.withDescription(description);
       case "RATE_LIMITED" -> Status.RESOURCE_EXHAUSTED.withDescription(description);

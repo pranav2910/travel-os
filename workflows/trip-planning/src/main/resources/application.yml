@@ -39,6 +39,9 @@ travelos:
       llm-gateway:
         address: ${LLM_GATEWAY_ADDRESS:localhost:9087}
         deadline: 60s
+      disruption:
+        address: ${DISRUPTION_ADDRESS:localhost:9089}
+        deadline: 15s
   workflow:
     # The machine identity every downstream call is made as. Scoped, never "*".
     principal: agent/trip-planner/v1

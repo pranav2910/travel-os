@@ -249,7 +249,7 @@ class SupplierGatewayIntegrationTest {
                         .build()))
         .isInstanceOfSatisfying(
             StatusRuntimeException.class,
-            e -> assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.UNIMPLEMENTED));
+            e -> assertThat(e.getStatus().getDescription()).startsWith("IDEMPOTENCY_KEY_REQUIRED"));
   }
 
   @Test

@@ -34,7 +34,17 @@ public class ResourceServerSecurityAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(SecurityFilterChain.class)
   public SecurityFilterChain apiSecurityFilterChain(
-      HttpSecurity http, TenantJwtAuthenticationConverter converter) throws Exception {
+      HttpSecurity http,
+      TenantJwtAuthenticationConverter converter,
+      org.springframework.core.env.Environment environment)
+      throws Exception {
+    // Paths a service authenticates itself, e.g. supplier webhooks verified by HMAC signature
+    // (travelos.web.public-paths=/api/v1/suppliers/*/events). Everything else under /api needs a
+    // JWT.
+    String[] publicPaths =
+        org.springframework.boot.context.properties.bind.Binder.get(environment)
+            .bind("travelos.web.public-paths", String[].class)
+            .orElse(new String[0]);
     http.csrf(csrf -> csrf.disable())
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -46,6 +56,8 @@ public class ResourceServerSecurityAutoConfiguration {
                         "/actuator/health/**",
                         "/actuator/info",
                         "/actuator/prometheus")
+                    .permitAll()
+                    .requestMatchers(publicPaths)
                     .permitAll()
                     .requestMatchers("/api/**")
                     .authenticated()

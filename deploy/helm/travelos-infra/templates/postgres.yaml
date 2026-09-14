@@ -23,6 +23,7 @@ data:
     role approval_app           approval           "$APPROVAL_DB_PASSWORD"
     role orders_app             orders             "$ORDER_DB_PASSWORD"
     role audit_app              audit              "$AUDIT_DB_PASSWORD"
+    role disruption_app         disruption         "$DISRUPTION_DB_PASSWORD"
 ---
 apiVersion: v1
 kind: Service

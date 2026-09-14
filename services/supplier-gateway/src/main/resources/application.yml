@@ -10,6 +10,17 @@ spring:
       connection-timeout: 5000
   flyway:
     locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        linger.ms: 5
+        delivery.timeout.ms: 45000
   security:
     oauth2:
       resourceserver:
@@ -25,11 +36,17 @@ server:
   shutdown: graceful
 
 travelos:
+  web:
+    # Supplier webhooks authenticate themselves (HMAC signature), not with a tenant's JWT.
+    public-paths: /api/v1/suppliers/*/events
   grpc:
     server:
       port: ${GRPC_PORT:9084}
   suppliers:
     sandbox-air:
+      # Shared secret the sandbox airline signs its notices with. DEV-ONLY default; every deployed
+      # environment injects its own (Secret on kind, Secrets Manager on EKS).
+      webhook-secret: ${SANDBOX_AIR_WEBHOOK_SECRET:sandbox-air-dev-webhook-secret}
       # Per-adapter protection. Real suppliers publish their limits; these are the sandbox's.
       rate-limit-per-second: 50
       circuit-breaker:

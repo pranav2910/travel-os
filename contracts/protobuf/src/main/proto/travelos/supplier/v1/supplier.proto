@@ -93,16 +93,23 @@ message CreateOrderResponse {
 }
 
 message ChangeOrderRequest {
+  // ctx.idempotency_key is REQUIRED: N retries => one reissue at the supplier.
   travelos.common.v1.RequestContext ctx = 1;
   string provider = 2;
   string external_order_id = 3;
   string new_provider_offer_id = 4;
+  // Opaque token for the incremental charge (or refund). Never a PAN.
+  string payment_token = 5;
 }
 
 message ChangeOrderResponse {
   string external_order_id = 1;
   SupplierOrderStatus status = 2;
+  // Positive when the traveler's company pays more, negative when the supplier refunds.
   travelos.common.v1.Money incremental_cost = 3;
+  string record_locator = 4;
+  repeated string ticket_numbers = 5;
+  travelos.common.v1.Money charged_total = 6;
 }
 
 message CancelOrderRequest {

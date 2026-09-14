@@ -12,6 +12,7 @@ import io.travelos.contracts.policy.v1.Economics;
 import io.travelos.contracts.policy.v1.Outcome;
 import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.policy.v1.ReasonCode;
+import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.policy.engine.Cabin;
 import io.travelos.policy.engine.Decision;
 import io.travelos.policy.engine.Facts;
@@ -100,6 +101,45 @@ final class ProtoMapping {
                 .orElse(Money.zero(currencyFallback));
     Facts.Air air = airFare == null ? null : new Facts.Air(airFare, highest, maxStops);
     return new Facts.Candidate(bundle.getBundleId(), total, air, hotel);
+  }
+
+  /** The trip's time constraints from its frozen intent; absent timestamps stay null. */
+  static Facts.Constraints constraints(TravelIntent intent) {
+    return new Facts.Constraints(
+        intent.hasEarliestDeparture() ? instant(intent.getEarliestDeparture()) : null,
+        intent.hasArrivalDeadline() ? instant(intent.getArrivalDeadline()) : null,
+        intent.hasReturnAfter() ? instant(intent.getReturnAfter()) : null,
+        intent.hasLatestReturn() ? instant(intent.getLatestReturn()) : null);
+  }
+
+  /** When the bundle's air component flies, or null when it has no timed segments. */
+  static Facts.@Nullable Itinerary itinerary(Bundle bundle) {
+    for (Offer offer : bundle.getOffersList()) {
+      if (!offer.hasAir() || offer.getAir().getOutbound().getSegmentsCount() == 0) {
+        continue;
+      }
+      Journey out = offer.getAir().getOutbound();
+      FlightSegment first = out.getSegments(0);
+      FlightSegment last = out.getSegments(out.getSegmentsCount() - 1);
+      if (!first.hasDeparture() || !last.hasArrival()) {
+        continue;
+      }
+      Instant inDep = null;
+      Instant inArr = null;
+      Journey in = offer.getAir().getInbound();
+      if (in.getSegmentsCount() > 0 && in.getSegments(0).hasDeparture()) {
+        inDep = instant(in.getSegments(0).getDeparture());
+        FlightSegment lastIn = in.getSegments(in.getSegmentsCount() - 1);
+        inArr = lastIn.hasArrival() ? instant(lastIn.getArrival()) : null;
+      }
+      return new Facts.Itinerary(
+          instant(first.getDeparture()), instant(last.getArrival()), inDep, inArr);
+    }
+    return null;
+  }
+
+  private static Instant instant(com.google.protobuf.Timestamp ts) {
+    return Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
   }
 
   static Facts.Trip trip(

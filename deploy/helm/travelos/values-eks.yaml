@@ -91,6 +91,8 @@ supplier-gateway:
     data:
       - secretKey: SUPPLIER_GATEWAY_DB_PASSWORD
         remoteRef: { key: travelos/ENV/supplier-gateway/db, property: password }
+      - secretKey: SANDBOX_AIR_WEBHOOK_SECRET
+        remoteRef: { key: travelos/ENV/supplier-gateway/webhooks, property: sandbox_air }
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress:
@@ -120,6 +122,17 @@ audit:
     data:
       - secretKey: AUDIT_DB_PASSWORD
         remoteRef: { key: travelos/ENV/audit/db, property: password }
+disruption:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: DISRUPTION_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/disruption/db, property: password }
+  networkPolicy:
+    httpFrom: *httpFromVpc
+    extraEgress: *awsEgress
 trip-planning:
   <<: *prodScale
   networkPolicy:

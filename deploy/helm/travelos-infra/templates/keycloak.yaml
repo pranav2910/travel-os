@@ -31,6 +31,10 @@ spec:
               valueFrom: { secretKeyRef: { name: {{ .Values.keycloak.adminSecret }}, key: KC_BOOTSTRAP_ADMIN_PASSWORD } }
             - { name: KC_HEALTH_ENABLED, value: "true" }
             - { name: KC_HOSTNAME_STRICT, value: "false" }
+            # Keycloak's default heap is 70% of the cgroup limit; with metaspace, code cache and
+            # native buffers on top that exceeds the limit under token load and the kernel kills
+            # the pod (seen after ~70 min of E2E traffic). Half the limit leaves room for the rest.
+            - { name: JAVA_OPTS_KC_HEAP, value: "-XX:MaxRAMPercentage=50 -XX:InitialRAMPercentage=25" }
           ports:
             - { containerPort: 8180, name: http }
             - { containerPort: 9000, name: mgmt }

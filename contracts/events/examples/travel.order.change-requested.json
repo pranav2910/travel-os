@@ -1,0 +1,8 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S8",
+  "eventType": "travel.order.change-requested",
+  "eventVersion": 1, "occurredAt": "2026-09-13T14:05:12Z", "tenantId": "acme", "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+  "producer": "order",
+  "data": {"orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","disruptionId":"dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD","changeId":"chg_01K4Q0N7S6Z2X8G5H3J9M1P7RN","idempotencyKey":"TRIP:trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB:DISRUPTION:dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD:CHANGE:1","previousBundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RA","replacementBundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD","policyDecisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RK","optimizationRunId":"opt_01K4Q0N7S6Z2X8G5H3J9M1P7RE","requestedBy":"agent/disruption-recovery/v1"}
+}

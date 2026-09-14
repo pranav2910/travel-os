@@ -1,0 +1,8 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S6",
+  "eventType": "travel.disruption.resolved",
+  "eventVersion": 1, "occurredAt": "2026-09-13T14:05:12Z", "tenantId": "acme", "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+  "producer": "disruption",
+  "data": {"disruptionId":"dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","replacementBundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD","incrementalCost":{"currency":"USD","amountMinor":7300},"autonomyOutcome":"ALLOW","resolvedBy":"agent/disruption-recovery/v1","externalOrderId":"SBX-01K4Q0N7S6Z2X8G5H3J9M1P7RH","recordLocator":"TM3KA6","durationMs":4180}
+}

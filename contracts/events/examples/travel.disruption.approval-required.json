@@ -1,0 +1,8 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S5",
+  "eventType": "travel.disruption.approval-required",
+  "eventVersion": 1, "occurredAt": "2026-09-13T14:05:12Z", "tenantId": "acme", "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+  "producer": "disruption",
+  "data": {"disruptionId":"dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","approvalId":"apr_01K4Q0N7S6Z2X8G5H3J9M1P7RM","role":"MANAGER","incrementalCost":{"currency":"USD","amountMinor":18000},"policyDecisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RK","reasonCodes":["INCREMENTAL_COST_ABOVE_AUTONOMY_LIMIT"]}
+}

@@ -95,8 +95,14 @@ message EvaluateActionRequest {
   travelos.common.v1.RequestContext ctx = 1;
   string trip_id = 2;
   string traveler_id = 3;
-  // Capability being exercised: "order.create" | "order.change" | "order.cancel".
+  // Capability being exercised: "order.create" | "order.change" (alias CHANGE_EXISTING_ORDER) |
+  // "order.cancel".
   string action = 4;
   travelos.common.v1.Money incremental_cost = 5;
   travelos.offer.v1.Bundle proposed = 6;
+  // The frozen intent the trip was planned for. When present, a proposed itinerary must satisfy its
+  // time constraints (arrival deadline, return window) or the action is denied.
+  travelos.trip.v1.TravelIntent intent = 7;
+  // Why the action is being taken, for the evidence row (e.g. a disruption id). Never a rule input.
+  string context_ref = 8;
 }

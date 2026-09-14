@@ -134,7 +134,7 @@ public class TripActivitiesImpl implements TripActivities {
   }
 
   /** Statuses that will not improve by trying again. */
-  static boolean isFinal(Status status) {
+  public static boolean isFinal(Status status) {
     return switch (status.getCode()) {
       case INVALID_ARGUMENT,
           FAILED_PRECONDITION,

@@ -7,6 +7,8 @@ import io.grpc.stub.StreamObserver;
 import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
+import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
+import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
@@ -38,6 +40,8 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
   final Map<String, String> offerByExternalId = new ConcurrentHashMap<>();
   final Map<String, AtomicInteger> createAttempts = new ConcurrentHashMap<>();
   final List<String> cancelled = new ArrayList<>();
+  final Map<String, ChangeOrderResponse> changesByKey = new ConcurrentHashMap<>();
+  final Map<String, AtomicInteger> changeAttempts = new ConcurrentHashMap<>();
   private Server server;
 
   int start() throws IOException {
@@ -119,6 +123,43 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
             .setStatus(SupplierOrderStatus.CANCELLED)
             .setRefund(usd(40000))
             .build());
+    observer.onCompleted();
+  }
+
+  @Override
+  public void changeOrder(
+      ChangeOrderRequest request, StreamObserver<ChangeOrderResponse> observer) {
+    String id = request.getNewProviderOfferId();
+    String key = request.getCtx().getIdempotencyKey();
+    int attempt = changeAttempts.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet();
+    if (id.startsWith("flaky-") && attempt <= 2) {
+      observer.onError(
+          Status.UNAVAILABLE.withDescription("simulated change blip").asRuntimeException());
+      return;
+    }
+    if (id.startsWith("soldout-")) {
+      observer.onError(
+          Status.FAILED_PRECONDITION
+              .withDescription("SEAT_NO_LONGER_AVAILABLE: the last seat was just sold")
+              .asRuntimeException());
+      return;
+    }
+    String previous = offerByExternalId.getOrDefault(request.getExternalOrderId(), id);
+    ChangeOrderResponse response =
+        changesByKey.computeIfAbsent(
+            key,
+            k ->
+                ChangeOrderResponse.newBuilder()
+                    .setExternalOrderId(request.getExternalOrderId())
+                    .setStatus(SupplierOrderStatus.CHANGED)
+                    .setIncrementalCost(usd(cents(id) - cents(previous)))
+                    .setRecordLocator(
+                        "LOC" + Math.abs(request.getExternalOrderId().hashCode() % 1000))
+                    .addTicketNumbers("0067" + Math.abs(k.hashCode()))
+                    .setChargedTotal(usd(cents(id)))
+                    .build());
+    offerByExternalId.put(request.getExternalOrderId(), id);
+    observer.onNext(response);
     observer.onCompleted();
   }
 

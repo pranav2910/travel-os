@@ -76,6 +76,27 @@ public class SandboxOrderRepository {
         .optional();
   }
 
+  /** A reissue: new itinerary, new charge, new tickets, same order and locator. */
+  public void reissue(
+      String externalOrderId,
+      String providerOfferId,
+      long chargedMinor,
+      List<String> ticketNumbers,
+      Instant now) {
+    jdbc.sql(
+            """
+            UPDATE sandbox_order SET provider_offer_id = :offer, status = 'CHANGED', charged_minor = :charged,
+              ticket_numbers = CAST(:tickets AS jsonb), updated_at = :now
+            WHERE external_order_id = :id
+            """)
+        .param("offer", providerOfferId)
+        .param("charged", chargedMinor)
+        .param("tickets", JSON.writeValueAsString(ticketNumbers))
+        .param("now", ts(now))
+        .param("id", externalOrderId)
+        .update();
+  }
+
   public void updateStatus(String externalOrderId, String status, long chargedMinor, Instant now) {
     jdbc.sql(
             "UPDATE sandbox_order SET status = :status, charged_minor = :charged, updated_at = :now"

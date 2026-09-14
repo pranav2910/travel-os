@@ -22,6 +22,9 @@ service LlmGateway {
   rpc ExtractIntent(ExtractIntentRequest) returns (ExtractIntentResponse);
   // Narrates a decision from its evidence. Never a source of truth; the evidence is.
   rpc ExplainTrip(ExplainTripRequest) returns (ExplainTripResponse);
+  // Narrates a disruption and the recovery chosen for it, from evidence only. The supplier's own
+  // text is untrusted data inside the prompt; it cannot change what was decided.
+  rpc ExplainDisruption(ExplainDisruptionRequest) returns (ExplainDisruptionResponse);
 }
 
 message ExtractIntentRequest {
@@ -72,6 +75,33 @@ message ExplainTripRequest {
 }
 
 message ExplainTripResponse {
+  string explanation = 1;
+  travelos.common.v1.ModelCall call = 2;
+}
+
+message ExplainDisruptionRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  string disruption_id = 3;
+  // TRAVELER | MANAGER | FINANCE
+  string audience = 4;
+  // FLIGHT_CANCELLED | SCHEDULE_CHANGE | DELAY
+  string disruption_type = 5;
+  string supplier = 6;
+  // Untrusted free text from the supplier.
+  string supplier_reason = 7;
+  travelos.offer.v1.Bundle original = 8;
+  travelos.offer.v1.Bundle replacement = 9;
+  repeated travelos.optimization.v1.RankedCandidate ranking = 10;
+  travelos.policy.v1.PolicyDecision policy_decision = 11;
+  travelos.common.v1.Money incremental_cost = 12;
+  int32 candidates_searched = 13;
+  int32 candidates_permitted = 14;
+  // ALLOW | ALLOW_WITH_APPROVAL | DENY
+  string autonomy_outcome = 15;
+}
+
+message ExplainDisruptionResponse {
   string explanation = 1;
   travelos.common.v1.ModelCall call = 2;
 }

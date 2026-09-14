@@ -165,11 +165,15 @@ public class PolicyEvaluationService {
               request.hasProposed() ? ProtoMapping.legs(request.getProposed()) : List.of());
       Money incremental =
           request.hasIncrementalCost() ? ProtoMapping.money(request.getIncrementalCost()) : null;
+      Facts.Constraints constraints =
+          request.hasIntent() ? ProtoMapping.constraints(request.getIntent()) : null;
+      Facts.Itinerary itinerary =
+          request.hasProposed() ? ProtoMapping.itinerary(request.getProposed()) : null;
       decision =
           engine.evaluateAction(
               pv.document(),
               trip,
-              new Facts.Action(request.getAction(), incremental, proposed),
+              new Facts.Action(request.getAction(), incremental, proposed, constraints, itinerary),
               ctx.principal());
     }
     String bundleId = request.hasProposed() ? request.getProposed().getBundleId() : null;
@@ -179,7 +183,7 @@ public class PolicyEvaluationService {
         request.getTripId(),
         request.getTravelerId(),
         bundleId,
-        request.getAction(),
+        Facts.Action.canonical(request.getAction()),
         policyId,
         version,
         decision,

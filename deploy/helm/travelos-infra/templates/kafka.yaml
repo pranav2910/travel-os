@@ -39,10 +39,17 @@ spec:
             - { name: KAFKA_AUTO_CREATE_TOPICS_ENABLE, value: "false" }
             - { name: KAFKA_HEAP_OPTS, value: {{ .Values.kafka.heap | quote }} }
           ports: [{ containerPort: 9092, name: kafka }]
-          readinessProbe:
+          # The api-versions script starts a JVM: fine once at startup with a generous timeout, but as
+          # a readiness probe with a 1s timeout it flaps whenever the node is busy and blocks rollouts.
+          startupProbe:
             exec: { command: ["/opt/kafka/bin/kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"] }
             periodSeconds: 10
+            timeoutSeconds: 15
             failureThreshold: 30
+          readinessProbe:
+            tcpSocket: { port: 9092 }
+            periodSeconds: 10
+            failureThreshold: 3
           resources: {{- toYaml .Values.kafka.resources | nindent 12 }}
 ---
 # Declared topics only (contracts/events/topics.yaml); re-run on every upgrade, idempotent.

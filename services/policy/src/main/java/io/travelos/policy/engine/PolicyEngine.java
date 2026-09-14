@@ -34,6 +34,7 @@ public final class PolicyEngine {
   static final String RULE_AGENT_ORDER_CREATE = "AGENT_ORDER_CREATE";
   static final String RULE_HUMAN_ACTION = "HUMAN_ACTION";
   static final String RULE_ACTION_KNOWN = "ACTION_KNOWN";
+  static final String RULE_REPLACEMENT_CONSTRAINTS = "REPLACEMENT_ITINERARY_CONSTRAINTS";
 
   static final String ROLE_MANAGER = "MANAGER";
   static final String ROLE_TRAVELER = "TRAVELER";
@@ -145,6 +146,15 @@ public final class PolicyEngine {
       }
     }
 
+    // A change must still get the traveler where the trip needs them: the replacement's times are
+    // checked against the frozen intent here, by policy, not by whoever proposed it.
+    if ("order.change".equals(action.action())
+        && action.constraints() != null
+        && action.itinerary() != null) {
+      rules.add(RULE_REPLACEMENT_CONSTRAINTS);
+      violations.addAll(replacementConstraints(action.constraints(), action.itinerary()));
+    }
+
     // Whatever the actor, a proposed bundle must itself be in policy. A hallucinated business-class
     // fare is caught here, not by trusting the proposer.
     if (proposed != null && !"order.cancel".equals(action.action())) {
@@ -159,6 +169,59 @@ public final class PolicyEngine {
       }
     }
     return Decision.of(rules, violations, economics);
+  }
+
+  /** Every constraint the replacement breaks is a DENY: a late arrival is not a cheaper option. */
+  static List<Violation> replacementConstraints(Facts.Constraints k, Facts.Itinerary it) {
+    List<Violation> out = new ArrayList<>();
+    if (k.earliestDeparture() != null && it.outboundDeparture().isBefore(k.earliestDeparture())) {
+      out.add(
+          deny(
+              "DEPARTS_BEFORE_EARLIEST_DEPARTURE",
+              "the replacement departs "
+                  + it.outboundDeparture()
+                  + ", before the trip's earliest departure "
+                  + k.earliestDeparture()));
+    }
+    if (k.arrivalDeadline() != null && it.outboundArrival().isAfter(k.arrivalDeadline())) {
+      out.add(
+          deny(
+              "ARRIVES_AFTER_DEADLINE",
+              "the replacement arrives "
+                  + it.outboundArrival()
+                  + ", after the trip's arrival deadline "
+                  + k.arrivalDeadline()));
+    }
+    if (k.returnAfter() != null
+        && it.inboundDeparture() != null
+        && it.inboundDeparture().isBefore(k.returnAfter())) {
+      out.add(
+          deny(
+              "RETURNS_BEFORE_RETURN_WINDOW",
+              "the replacement returns "
+                  + it.inboundDeparture()
+                  + ", before the trip's earliest return "
+                  + k.returnAfter()));
+    }
+    if (k.latestReturn() != null
+        && it.inboundDeparture() != null
+        && it.inboundDeparture().isAfter(k.latestReturn())) {
+      out.add(
+          deny(
+              "RETURNS_AFTER_RETURN_WINDOW",
+              "the replacement returns "
+                  + it.inboundDeparture()
+                  + ", after the trip's latest return "
+                  + k.latestReturn()));
+    }
+    if (k.returnAfter() != null && it.inboundDeparture() == null) {
+      out.add(deny("RETURN_LEG_MISSING", "the trip needs a return leg; the replacement has none"));
+    }
+    return out;
+  }
+
+  private static Violation deny(String code, String message) {
+    return new Violation(RULE_REPLACEMENT_CONSTRAINTS, code, message, Consequence.DENY, null);
   }
 
   private Decision decide(PolicyDocument policy, Trip trip, Candidate candidate, Context ctx) {

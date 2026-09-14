@@ -39,13 +39,19 @@ spec:
           envFrom:
             - secretRef: { name: {{ .Values.temporal.dbSecret }} }
           ports: [{ containerPort: 7233, name: grpc }]
+          # The CLI health call under exec's 1s default timeout flaps whenever the node is busy, and a
+          # NotReady frontend drops out of the Service: workers and signals lose Temporal. The
+          # frontend serves grpc.health.v1, which the kubelet can ask directly and cheaply.
           startupProbe:
             exec: { command: ["sh", "-c", "temporal operator cluster health --address 127.0.0.1:7233 | grep -q SERVING"] }
-            periodSeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 15
             failureThreshold: 60
           readinessProbe:
-            exec: { command: ["sh", "-c", "temporal operator cluster health --address 127.0.0.1:7233 | grep -q SERVING"] }
+            grpc: { port: 7233 }
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           resources: {{- toYaml .Values.temporal.resources | nindent 12 }}
           volumeMounts:
             - { name: dynamicconfig, mountPath: /etc/temporal/config/dynamicconfig }

@@ -106,6 +106,95 @@ public class OrderRepository {
         .optional();
   }
 
+  /** Impacted-trip detection: the order whose (supplier, external reference) this is, if any. */
+  public Optional<OrderRecord> findByExternalRef(
+      TenantId tenant, String supplier, String externalOrderId) {
+    return jdbc.sql(
+            """
+            SELECT DISTINCT o.* FROM travel_order o
+            LEFT JOIN order_item i ON i.order_id = o.order_id
+            WHERE o.tenant_id = :t AND (
+              (o.supplier = :s AND o.external_order_id = :e) OR (i.provider = :s AND i.external_ref = :e))
+            ORDER BY o.created_at DESC
+            LIMIT 1
+            """)
+        .param("t", tenant.value())
+        .param("s", supplier)
+        .param("e", externalOrderId)
+        .query(this::map)
+        .optional();
+  }
+
+  public void insertItem(String orderId, TenantId tenant, OrderRecord.Item item) {
+    jdbc.sql(
+            """
+            INSERT INTO order_item (item_id, order_id, tenant_id, position, offer_type, provider, provider_offer_id, offer,
+              status, external_ref, record_locator, currency, total_minor, failure_code, updated_at)
+            VALUES (:id, :order, :t, :position, :type, :provider, :offerId, CAST(:offer AS jsonb), :status, :ref,
+              :locator, :currency, :total, :failureCode, :now)
+            """)
+        .param("id", item.itemId())
+        .param("order", orderId)
+        .param("t", tenant.value())
+        .param("position", item.position())
+        .param("type", item.offerType())
+        .param("provider", item.provider())
+        .param("offerId", item.providerOfferId())
+        .param("offer", item.offerJson())
+        .param("status", item.status().name())
+        .param("ref", item.externalRef())
+        .param("locator", item.recordLocator())
+        .param("currency", item.total().currency())
+        .param("total", item.total().amountMinor())
+        .param("failureCode", item.failureCode())
+        .param("now", ts(item.updatedAt()))
+        .update();
+  }
+
+  /** The order now IS the replacement: new bundle, new total, new supplier reference. */
+  public boolean replaceItinerary(
+      OrderRecord order,
+      OrderStatus to,
+      String bundleId,
+      io.travelos.common.money.Money total,
+      @Nullable String externalOrderId,
+      String reason,
+      Instant now) {
+    int rows =
+        jdbc.sql(
+                """
+                UPDATE travel_order SET status = :to, bundle_id = :bundle, currency = :currency, total_minor = :total,
+                  external_order_id = coalesce(:external, external_order_id), failure_code = NULL, failure_message = NULL,
+                  version = version + 1, updated_at = :now
+                WHERE tenant_id = :t AND order_id = :id AND version = :version
+                """)
+            .param("to", to.name())
+            .param("bundle", bundleId)
+            .param("currency", total.currency())
+            .param("total", total.amountMinor())
+            .param("external", externalOrderId)
+            .param("now", ts(now))
+            .param("t", order.tenant().value())
+            .param("id", order.orderId())
+            .param("version", order.version())
+            .update();
+    if (rows == 1) {
+      jdbc.sql(
+              """
+              INSERT INTO order_status_history (order_id, tenant_id, from_status, to_status, reason, occurred_at)
+              VALUES (:id, :t, :from, :to, :reason, :now)
+              """)
+          .param("id", order.orderId())
+          .param("t", order.tenant().value())
+          .param("from", order.status().name())
+          .param("to", to.name())
+          .param("reason", reason)
+          .param("now", ts(now))
+          .update();
+    }
+    return rows == 1;
+  }
+
   public List<OrderRecord> byTrip(TenantId tenant, String tripId) {
     return jdbc.sql(
             "SELECT "

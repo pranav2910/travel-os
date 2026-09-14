@@ -39,11 +39,11 @@ topics:
 
   - name: travel.order
     slice: 1
-    events: [travel.order.created, travel.order.confirmed, travel.order.changed, travel.order.cancelled, travel.order.failed]
+    events: [travel.order.created, travel.order.confirmed, travel.order.change-requested, travel.order.changed, travel.order.cancelled, travel.order.failed]
 
   - name: travel.disruption
     slice: 2
-    events: [travel.disruption.detected, travel.disruption.evaluated, travel.disruption.resolved]
+    events: [travel.disruption.detected, travel.disruption.impact-confirmed, travel.disruption.recovery-started, travel.disruption.decision-ready, travel.disruption.approval-required, travel.disruption.resolved, travel.disruption.recovery-failed]
 
   - name: travel.expense
     slice: 4

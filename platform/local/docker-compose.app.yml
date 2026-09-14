@@ -129,6 +129,28 @@ services:
       - "8088:8088"
     depends_on: *infra-ready
 
+  disruption:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/disruption:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/disruption/build/libs/disruption-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8089
+      GRPC_PORT: 9089
+      DISRUPTION_DB_URL: jdbc:postgresql://postgres:5432/disruption
+      ORDER_ADDRESS: order:9085
+    ports:
+      - "8089:8089"
+      - "9089:9089"
+    depends_on:
+      <<: *infra-ready
+      order:
+        condition: service_healthy
+
   trip-planning:
     <<: *java
     image: ghcr.io/pranav2910/travel-os/trip-planning:${TAG:-local}
@@ -146,6 +168,7 @@ services:
       SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
       ORDER_ADDRESS: order:9085
       LLM_GATEWAY_ADDRESS: llm-gateway:9087
+      DISRUPTION_ADDRESS: disruption:9089
     ports:
       - "8086:8086"
     depends_on:

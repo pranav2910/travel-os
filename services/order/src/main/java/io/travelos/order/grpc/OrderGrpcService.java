@@ -6,14 +6,18 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.stub.StreamObserver;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.order.v1.CancelOrderCommand;
+import io.travelos.contracts.order.v1.ChangeOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.order.v1.FindOrderByExternalRefRequest;
 import io.travelos.contracts.order.v1.GetOrderRequest;
 import io.travelos.contracts.order.v1.Order;
+import io.travelos.contracts.order.v1.OrderChange;
 import io.travelos.contracts.order.v1.OrderItem;
 import io.travelos.contracts.order.v1.OrderItemStatus;
 import io.travelos.contracts.order.v1.OrderServiceGrpc;
 import io.travelos.contracts.order.v1.OrderStatus;
 import io.travelos.order.saga.OrderService;
+import io.travelos.order.store.OrderChangeRecord;
 import io.travelos.order.store.OrderRecord;
 import io.travelos.spring.grpc.RequestContexts;
 import java.time.Instant;
@@ -47,6 +51,63 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
     observer.onCompleted();
   }
 
+  @Override
+  public void changeOrder(ChangeOrderCommand request, StreamObserver<Order> observer) {
+    OrderRecord changed = orders.change(request);
+    observer.onNext(withChanges(changed));
+    observer.onCompleted();
+  }
+
+  @Override
+  public void findOrderByExternalRef(
+      FindOrderByExternalRefRequest request, StreamObserver<Order> observer) {
+    RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
+    if (request.getSupplier().isBlank() || request.getExternalOrderId().isBlank()) {
+      throw io.grpc.Status.INVALID_ARGUMENT
+          .withDescription("supplier and external_order_id are required")
+          .asRuntimeException();
+    }
+    observer.onNext(
+        withChanges(
+            orders.findByExternalRef(
+                ctx.tenant(), request.getSupplier(), request.getExternalOrderId())));
+    observer.onCompleted();
+  }
+
+  private Order withChanges(OrderRecord o) {
+    Order.Builder b = toProto(o).toBuilder();
+    for (OrderChangeRecord c : orders.changesOf(o.tenant(), o.orderId())) {
+      b.addChanges(toProto(c));
+    }
+    return b.build();
+  }
+
+  public static OrderChange toProto(OrderChangeRecord c) {
+    OrderChange.Builder b =
+        OrderChange.newBuilder()
+            .setChangeId(c.changeId())
+            .setDisruptionId(nullToEmpty(c.disruptionId()))
+            .setIdempotencyKey(c.idempotencyKey())
+            .setStatus(c.status().name())
+            .setPreviousBundleId(c.previousBundleId())
+            .setReplacementBundleId(c.replacementBundleId())
+            .setPolicyDecisionId(nullToEmpty(c.policyDecisionId()))
+            .setOptimizationRunId(nullToEmpty(c.optimizationRunId()))
+            .setApprovalId(nullToEmpty(c.approvalId()))
+            .setExternalOrderId(nullToEmpty(c.externalOrderId()))
+            .setRecordLocator(nullToEmpty(c.recordLocator()))
+            .setFailureCode(nullToEmpty(c.failureCode()))
+            .setCreatedAt(ts(c.createdAt()))
+            .setUpdatedAt(ts(c.updatedAt()));
+    if (c.incrementalMinor() != null) {
+      b.setIncrementalCost(
+          io.travelos.contracts.common.v1.Money.newBuilder()
+              .setCurrency(c.currency())
+              .setAmountMinor(c.incrementalMinor()));
+    }
+    return b.build();
+  }
+
   public static Order toProto(OrderRecord o) {
     Order.Builder b =
         Order.newBuilder()
@@ -65,7 +126,9 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
             .setCreatedAt(ts(o.createdAt()))
             .setUpdatedAt(ts(o.updatedAt()))
             .setFailureCode(nullToEmpty(o.failureCode()))
-            .setCompensated(o.compensated());
+            .setCompensated(o.compensated())
+            .setTravelerId(o.travelerId())
+            .setBundleId(o.bundleId());
     for (OrderRecord.Item item : o.items()) {
       b.addItems(
           OrderItem.newBuilder()

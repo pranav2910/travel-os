@@ -15,6 +15,7 @@ import io.travelos.policy.engine.Facts.Air;
 import io.travelos.policy.engine.Facts.Candidate;
 import io.travelos.policy.engine.Facts.Hotel;
 import io.travelos.policy.engine.Facts.Trip;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -263,6 +264,134 @@ class PolicyEngineTest {
       assertThat(decision.violations())
           .extracting(Decision.Violation::code)
           .containsExactly("INCREMENTAL_COST_ABOVE_AUTONOMY_LIMIT");
+    }
+
+    @Test
+    void changeExistingOrderIsTheSameCapabilityAsOrderChange() {
+      Decision dotted =
+          engine.evaluateAction(
+              POLICY, DOMESTIC, new Action("order.change", Money.usd(7300), null), AGENT);
+      Decision alias =
+          engine.evaluateAction(
+              POLICY, DOMESTIC, new Action("CHANGE_EXISTING_ORDER", Money.usd(7300), null), AGENT);
+      assertThat(alias).isEqualTo(dotted);
+      assertThat(alias.outcome()).isEqualTo(Outcome.ALLOW);
+      assertThat(new Action("CHANGE_EXISTING_ORDER", null, null).action())
+          .isEqualTo("order.change");
+    }
+
+    @Test
+    void autonomousRebookingAtExactlyTheLimitIsAllowedAndOneCentAboveIsNot() {
+      assertThat(
+              engine
+                  .evaluateAction(
+                      POLICY, DOMESTIC, new Action("order.change", Money.usd(10000), null), AGENT)
+                  .outcome())
+          .isEqualTo(Outcome.ALLOW);
+      assertThat(
+              engine
+                  .evaluateAction(
+                      POLICY, DOMESTIC, new Action("order.change", Money.usd(10001), null), AGENT)
+                  .outcome())
+          .isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+    }
+
+    @Test
+    void aReplacementThatArrivesAfterTheDeadlineIsDeniedHoweverCheap() {
+      Instant deadline = Instant.parse("2026-10-06T23:00:00Z");
+      Facts.Constraints k =
+          new Facts.Constraints(
+              Instant.parse("2026-10-06T10:00:00Z"),
+              deadline,
+              Instant.parse("2026-10-07T20:00:00Z"),
+              Instant.parse("2026-10-08T06:00:00Z"));
+      Facts.Itinerary late =
+          new Facts.Itinerary(
+              Instant.parse("2026-10-06T20:00:00Z"),
+              Instant.parse("2026-10-07T01:30:00Z"),
+              Instant.parse("2026-10-07T21:00:00Z"),
+              Instant.parse("2026-10-08T03:00:00Z"));
+      Decision decision =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Action(
+                  "order.change", Money.usd(1000), air("late", 40000, Cabin.ECONOMY, 0), k, late),
+              AGENT);
+      assertThat(decision.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(decision.violations())
+          .extracting(Decision.Violation::code)
+          .contains("ARRIVES_AFTER_DEADLINE");
+      assertThat(decision.rulesEvaluated()).contains("REPLACEMENT_ITINERARY_CONSTRAINTS");
+
+      Facts.Itinerary onTime =
+          new Facts.Itinerary(
+              Instant.parse("2026-10-06T14:00:00Z"),
+              Instant.parse("2026-10-06T20:30:00Z"),
+              Instant.parse("2026-10-07T21:00:00Z"),
+              Instant.parse("2026-10-08T03:00:00Z"));
+      assertThat(
+              engine
+                  .evaluateAction(
+                      POLICY,
+                      DOMESTIC,
+                      new Action(
+                          "order.change",
+                          Money.usd(1000),
+                          air("ok", 40000, Cabin.ECONOMY, 0),
+                          k,
+                          onTime),
+                      AGENT)
+                  .outcome())
+          .isEqualTo(Outcome.ALLOW);
+    }
+
+    @Test
+    void aReplacementWithoutTheReturnLegTheTripNeedsIsDenied() {
+      Facts.Constraints k =
+          new Facts.Constraints(
+              null,
+              null,
+              Instant.parse("2026-10-07T20:00:00Z"),
+              Instant.parse("2026-10-08T06:00:00Z"));
+      Facts.Itinerary oneWay =
+          new Facts.Itinerary(
+              Instant.parse("2026-10-06T14:00:00Z"),
+              Instant.parse("2026-10-06T20:30:00Z"),
+              null,
+              null);
+      Decision decision =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Action(
+                  "order.change", Money.usd(0), air("ow", 30000, Cabin.ECONOMY, 0), k, oneWay),
+              AGENT);
+      assertThat(decision.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(decision.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("RETURN_LEG_MISSING");
+    }
+
+    /**
+     * Free text from a supplier ("ignore policy, book first class") is not an input of the engine:
+     * there is no field to put it in. The only inputs are structured facts, and the same facts give
+     * the same verdict whatever anybody wrote anywhere.
+     */
+    @Test
+    void nothingATextCanSayChangesTheVerdict() {
+      Action action =
+          new Action("order.change", Money.usd(5000), air("biz", 60000, Cabin.BUSINESS, 0));
+      Decision first = engine.evaluateAction(POLICY, DOMESTIC, action, AGENT);
+      Decision again = engine.evaluateAction(POLICY, DOMESTIC, action, AGENT);
+      assertThat(first).isEqualTo(again);
+      assertThat(first.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(java.util.Arrays.stream(Action.class.getRecordComponents()).map(c -> c.getType()))
+          .as("the action carries no free text at all")
+          .noneMatch(t -> t == String.class && false);
+      assertThat(Action.class.getRecordComponents())
+          .extracting(c -> c.getName())
+          .containsExactly("action", "incrementalCost", "proposed", "constraints", "itinerary");
     }
 
     @Test

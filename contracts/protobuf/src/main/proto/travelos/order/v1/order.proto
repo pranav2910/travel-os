@@ -16,6 +16,11 @@ service OrderService {
   rpc CreateOrder(CreateOrderCommand) returns (Order);
   rpc GetOrder(GetOrderRequest) returns (Order);
   rpc CancelOrder(CancelOrderCommand) returns (Order);
+  // Slice 2: replace the itinerary of a confirmed order (disruption recovery). Idempotent by
+  // ctx.idempotency_key, e.g. TRIP:<tripId>:DISRUPTION:<disruptionId>:CHANGE:1.
+  rpc ChangeOrder(ChangeOrderCommand) returns (Order);
+  // Impacted-trip detection: which order did the supplier's notice hit?
+  rpc FindOrderByExternalRef(FindOrderByExternalRefRequest) returns (Order);
 }
 
 enum OrderStatus {
@@ -40,6 +45,8 @@ enum OrderItemStatus {
   ITEM_CONFIRMED = 3;
   ITEM_FAILED = 4;
   ITEM_CANCELLED = 5;
+  // Replaced by a later item through a change (disruption recovery). Kept for the history.
+  ITEM_CHANGED = 6;
 }
 
 message OrderItem {
@@ -77,6 +84,31 @@ message Order {
   // component was released again.
   string failure_code = 16;
   bool compensated = 17;
+
+  // Slice 2: the change history. The latest change explains how the current items came to be.
+  repeated OrderChange changes = 18;
+  string traveler_id = 19;
+  string bundle_id = 20;
+}
+
+// One applied (or attempted) change of an order's itinerary.
+message OrderChange {
+  string change_id = 1;
+  string disruption_id = 2;
+  string idempotency_key = 3;
+  // PENDING | APPLIED | FAILED
+  string status = 4;
+  string previous_bundle_id = 5;
+  string replacement_bundle_id = 6;
+  travelos.common.v1.Money incremental_cost = 7;
+  string policy_decision_id = 8;
+  string optimization_run_id = 9;
+  string approval_id = 10;
+  string external_order_id = 11;
+  string record_locator = 12;
+  string failure_code = 13;
+  google.protobuf.Timestamp created_at = 14;
+  google.protobuf.Timestamp updated_at = 15;
 }
 
 message CreateOrderCommand {
@@ -106,4 +138,26 @@ message CancelOrderCommand {
   travelos.common.v1.RequestContext ctx = 1;
   string order_id = 2;
   string reason = 3;
+}
+
+message ChangeOrderCommand {
+  // ctx.idempotency_key is REQUIRED.
+  travelos.common.v1.RequestContext ctx = 1;
+  string order_id = 2;
+  string disruption_id = 3;
+  // The itinerary that replaces the current items. Selected by the optimizer, authorized by policy.
+  travelos.offer.v1.Bundle replacement = 4;
+  string policy_decision_id = 5;
+  string optimization_run_id = 6;
+  // Empty when policy allowed the change without a person.
+  string approval_id = 7;
+  repeated travelos.supplier.v1.Passenger passengers = 8;
+  string payment_token = 9;
+  string reason = 10;
+}
+
+message FindOrderByExternalRefRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string supplier = 2;
+  string external_order_id = 3;
 }

@@ -19,7 +19,11 @@ public enum IdPrefix {
   EVENT("evt"),
   COMMAND("cmd"),
   WORKFLOW("wf"),
-  MODEL_CALL("llm");
+  MODEL_CALL("llm"),
+  DISRUPTION("dsr"),
+  ORDER_CHANGE("chg"),
+  RECOVERY_DECISION("rcd"),
+  RECOVERY_OUTCOME("rco");
 
   private final String prefix;
 

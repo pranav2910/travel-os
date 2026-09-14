@@ -11,6 +11,8 @@ on:
       - infrastructure/**
       - workflows/**
       - scripts/**
+      - services/**
+      - intelligence/**
       - docker/**
       - contracts/**
       - platform/local/**
@@ -47,8 +49,8 @@ jobs:
           version: v4.0.0
       - name: kind
         run: |
-          curl -fsSL -o /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
-          chmod +x /usr/local/bin/kind
+          sudo curl -fsSL -o /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
+          sudo chmod +x /usr/local/bin/kind
           kind version; kubectl version --client; helm version; docker version --format '{{.Server.Version}}'
       - name: cluster (3 zones, Calico, metrics-server, registry)
         run: make kind-up
@@ -60,6 +62,10 @@ jobs:
         run: make kind-e2e
       - name: chaos (pod kills mid-workflow, NetworkPolicy enforcement)
         run: make kind-chaos
+      - name: slice 2 end-to-end (autonomous + approved recovery, injection, duplicates, trace)
+        run: make kind-e2e2
+      - name: slice 2 chaos (recovery worker + order service killed during ChangeOrder)
+        run: make kind-chaos2
       - name: diagnostics
         if: failure()
         run: |

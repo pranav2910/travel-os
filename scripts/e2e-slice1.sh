@@ -52,19 +52,30 @@ json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
 # statements, not an expression: `check 'assert ...; print(...)'`
 check() { python3 -c "import sys,json; d=json.load(sys.stdin); $1"; }
 
-tok() {
-  curl -sf -X POST "$KC/realms/travelos/protocol/openid-connect/token" -d client_id=travelos-dev-cli \
-    -d grant_type=password -d "username=$1" -d password=password | json 'd["access_token"]'
+tok() { # retries: Keycloak may still be starting, or restarting, when the run begins
+  local i out
+  for i in $(seq 1 45); do
+    out=$(curl -sf -X POST "$KC/realms/travelos/protocol/openid-connect/token" -d client_id=travelos-dev-cli \
+      -d grant_type=password -d "username=$1" -d password=password 2>/dev/null | json 'd["access_token"]' 2>/dev/null) \
+      && [ -n "$out" ] && { echo "$out"; return 0; }
+    sleep 2
+  done
+  return 1
 }
 
 echo "== 0. health"
 for svc in "$CORE" "$POLICY" "$ORDER" "$AUDIT" "$SUPPLIER" "$WORKER"; do
+  # a fresh rollout needs a moment before NodePorts route: wait, do not judge on the first probe
+  for i in $(seq 1 90); do curl -sf "$svc/actuator/health/readiness" >/dev/null && break; sleep 2; done
   curl -sf "$svc/actuator/health/readiness" >/dev/null || fail "$svc not ready"
 done
 nc -z localhost "$OPT_PORT" || fail "optimization gRPC :$OPT_PORT not listening"
 nc -z localhost "$LLM_PORT" || fail "llm-gateway gRPC :$LLM_PORT not listening"
 pass "all services ready"
 
+# tokens come from Keycloak, which is not one of the app services above: wait for its realm too
+for i in $(seq 1 90); do curl -sf "$KC/realms/travelos/.well-known/openid-configuration" >/dev/null && break; sleep 2; done
+curl -sf "$KC/realms/travelos/.well-known/openid-configuration" >/dev/null || fail "Keycloak at $KC not ready"
 ALICE=$(tok alice); BOB=$(tok bob); CAROL=$(tok carol)
 
 publish_policy() { # $1 = python expression mutating d (the seed document), $2 = note

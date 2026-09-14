@@ -35,7 +35,9 @@ public record OrderRecord(
     HELD,
     CONFIRMED,
     FAILED,
-    CANCELLED
+    CANCELLED,
+    /** Replaced by a later item through a change (disruption recovery); kept for the history. */
+    CHANGED
   }
 
   /**

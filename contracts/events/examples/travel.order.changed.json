@@ -7,5 +7,34 @@
   "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
   "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
   "producer": "order",
-  "data": {"orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","incrementalCost":{"currency":"USD","amountMinor":7300},"changedBy":"agent/disruption-recovery/v1","policyDecisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RK"}
+  "data": {
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "incrementalCost": {
+      "currency": "USD",
+      "amountMinor": 7300
+    },
+    "changedBy": "agent/disruption-recovery/v1",
+    "policyDecisionId": "pd_01K4Q0N7S6Z2X8G5H3J9M1P7RK",
+    "disruptionId": "dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+    "changeId": "chg_01K4Q0N7S6Z2X8G5H3J9M1P7RN",
+    "previousBundleId": "bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+    "replacementBundleId": "bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+    "optimizationRunId": "opt_01K4Q0N7S6Z2X8G5H3J9M1P7RE",
+    "externalOrderId": "SBX-01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+    "recordLocator": "TM3KA6",
+    "total": {
+      "currency": "USD",
+      "amountMinor": 56858
+    },
+    "items": [
+      {
+        "itemId": "itm_01K4Q0N7S6Z2X8G5H3J9M1P7RP",
+        "type": "AIR",
+        "status": "CONFIRMED",
+        "externalRef": "SBX-01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+        "recordLocator": "TM3KA6"
+      }
+    ]
+  }
 }

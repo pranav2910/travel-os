@@ -2,6 +2,9 @@
 # Failure injection on the kind stack. Pods die while trips are in flight; the platform must end
 # with exactly one order per trip, no lost state, and NetworkPolicies must actually be enforced.
 set -euo pipefail
+# Whatever happens, never leave the order service scaled to zero (an HPA will not scale up from 0).
+restore_order() { kubectl -n travelos scale deploy/order --replicas=1 >/dev/null 2>&1 || true; }
+trap restore_order EXIT
 cd "$(dirname "$0")/.."
 export E2E_BACKEND=kind
 KC=http://localhost:18180; CORE=http://localhost:18081; POLICY=http://localhost:18082; ORDER=http://localhost:18085; AUDIT=http://localhost:18088
@@ -9,7 +12,19 @@ SEED=platform/local/seed/policies/acme-us-standard.json
 pass() { printf '  \033[32mPASS\033[0m %s\n' "$*"; }
 fail() { printf '  \033[31mFAIL\033[0m %s\n' "$*"; exit 1; }
 json() { python3 -c "import sys,json; d=json.load(sys.stdin); print($1)"; }
-tok() { curl -sf -X POST "$KC/realms/travelos/protocol/openid-connect/token" -d client_id=travelos-dev-cli -d grant_type=password -d "username=$1" -d password=password | json 'd["access_token"]'; }
+tok() { # retries: Keycloak may still be starting, or restarting, when the run begins
+  local i out
+  for i in $(seq 1 45); do
+    out=$(curl -sf -X POST "$KC/realms/travelos/protocol/openid-connect/token" -d client_id=travelos-dev-cli \
+      -d grant_type=password -d "username=$1" -d password=password 2>/dev/null | json 'd["access_token"]' 2>/dev/null) \
+      && [ -n "$out" ] && { echo "$out"; return 0; }
+    sleep 2
+  done
+  return 1
+}
+# tokens come from Keycloak, which is not one of the app services above: wait for its realm too
+for i in $(seq 1 90); do curl -sf "$KC/realms/travelos/.well-known/openid-configuration" >/dev/null && break; sleep 2; done
+curl -sf "$KC/realms/travelos/.well-known/openid-configuration" >/dev/null || fail "Keycloak at $KC not ready"
 ALICE=$(tok alice); BOB=$(tok bob); CAROL=$(tok carol)
 publish_policy() { python3 -c "import json,sys; d=json.load(open('$SEED')); $1; print(json.dumps({'document': d, 'note': 'chaos'}))" | curl -s -X POST "$POLICY/api/v1/policies" -H "Authorization: Bearer $CAROL" -H 'Content-Type: application/json' -d @- | json '"v%s" % d["version"]'; }
 create_trip() { curl -s -X POST "$CORE/api/v1/trips" -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: chaos-$(date +%s%N)" -H 'Content-Type: application/json' -d '{"intent":{"origin":"BOS","destination":"SEA","earliestDeparture":"2026-10-06T10:00:00Z","arrivalDeadline":"2026-10-06T23:00:00Z","returnAfter":"2026-10-07T20:00:00Z","latestReturn":"2026-10-08T06:00:00Z","purpose":"chaos"},"source":"API"}' | json 'd["tripId"]'; }

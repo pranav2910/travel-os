@@ -6,6 +6,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 SHA="$(git rev-parse --short=12 HEAD)"
+# Uncommitted changes get their own tag: an image tag must never mean two different builds, and a
+# Deployment whose image reference did not change would keep running the old one.
+if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+  SHA="${SHA}-dirty-$( (git diff HEAD --binary; git status --porcelain --untracked-files=all) | shasum | cut -c1-8)"
+fi
 TAG="${TAG:-$SHA}"
 REGISTRY=localhost:5001/travel-os
 

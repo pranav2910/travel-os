@@ -5,38 +5,103 @@
   "$defs": {
     "travel.approval.requested": {
       "type": "object",
-      "required": ["approvalId", "tripId", "requestedFrom", "role", "policyDecisionId", "total"],
+      "required": [
+        "approvalId",
+        "tripId",
+        "requestedFrom",
+        "role",
+        "policyDecisionId",
+        "total"
+      ],
       "additionalProperties": false,
       "properties": {
-        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "requestedFrom": { "type": "string", "minLength": 1 },
-        "role": { "enum": ["MANAGER", "TRAVEL_ADMIN", "FINANCE"] },
-        "policyDecisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
-        "total": { "$ref": "common.schema.json#/$defs/money" },
-        "expiresAt": { "type": "string", "format": "date-time" }
+        "approvalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "requestedFrom": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "MANAGER",
+            "TRAVEL_ADMIN",
+            "FINANCE"
+          ]
+        },
+        "policyDecisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "disruptionId": {
+          "type": "string",
+          "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$"
+        }
       }
     },
     "travel.approval.approved": {
       "type": "object",
-      "required": ["approvalId", "tripId", "decidedBy"],
+      "required": [
+        "approvalId",
+        "tripId",
+        "decidedBy"
+      ],
       "additionalProperties": false,
       "properties": {
-        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "decidedBy": { "$ref": "common.schema.json#/$defs/principal" },
-        "comment": { "type": "string", "maxLength": 2000 }
+        "approvalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "decidedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "disruptionId": {
+          "type": "string",
+          "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$"
+        }
       }
     },
     "travel.approval.rejected": {
       "type": "object",
-      "required": ["approvalId", "tripId", "decidedBy"],
+      "required": [
+        "approvalId",
+        "tripId",
+        "decidedBy"
+      ],
       "additionalProperties": false,
       "properties": {
-        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "decidedBy": { "$ref": "common.schema.json#/$defs/principal" },
-        "comment": { "type": "string", "maxLength": 2000 }
+        "approvalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "decidedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "comment": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "disruptionId": {
+          "type": "string",
+          "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$"
+        }
       }
     }
   }

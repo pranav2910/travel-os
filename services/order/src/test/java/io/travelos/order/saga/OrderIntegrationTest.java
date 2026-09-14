@@ -18,7 +18,9 @@ import io.travelos.contracts.offer.v1.Journey;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
 import io.travelos.contracts.order.v1.CancelOrderCommand;
+import io.travelos.contracts.order.v1.ChangeOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.order.v1.FindOrderByExternalRefRequest;
 import io.travelos.contracts.order.v1.GetOrderRequest;
 import io.travelos.contracts.order.v1.Order;
 import io.travelos.contracts.order.v1.OrderItemStatus;
@@ -318,6 +320,172 @@ class OrderIntegrationTest {
         .contains(order.getOrderId());
   }
 
+  // ------------------------------------------------------------------ Slice 2: changes
+
+  private Order confirmed(String offerId) {
+    return orders.createOrder(
+        command(
+            TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+            bundle(
+                "bdl_01ARZ3NDEKTSV4RRFFQ69G5F" + String.format("%02d", ATTEMPT.get() % 100),
+                offerId)));
+  }
+
+  private ChangeOrderCommand change(Order order, String key, String replacementOfferId) {
+    return ChangeOrderCommand.newBuilder()
+        .setCtx(ctx(key))
+        .setOrderId(order.getOrderId())
+        .setDisruptionId("dsr_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+        .setReplacement(bundle("bdl_01ARZ3NDEKTSV4RRFFQ69G5FB1", replacementOfferId))
+        .setPolicyDecisionId("pd_01ARZ3NDEKTSV4RRFFQ69G5FB1")
+        .setOptimizationRunId("opt_01ARZ3NDEKTSV4RRFFQ69G5FB1")
+        .addPassengers(
+            Passenger.newBuilder()
+                .setGivenName("Alice")
+                .setFamilyName("Nguyen")
+                .setEmail("alice@acme.example"))
+        .setPaymentToken("tok_corp_visa")
+        .build();
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(10)
+  void aChangeReissuesTheOrderOnceHoweverManyTimesItIsAsked() {
+    Order order = confirmed("ok-DL240");
+    String key = "TRIP:" + TRIP + ":DISRUPTION:dsr_01ARZ3NDEKTSV4RRFFQ69G5FAV:CHANGE:1";
+    ChangeOrderCommand command = change(order, key, "ok-DL242");
+
+    Order first = orders.changeOrder(command);
+    Order second = orders.changeOrder(command);
+    Order third = orders.changeOrder(command);
+
+    assertThat(first.getStatus()).isEqualTo(OrderStatus.CHANGED);
+    assertThat(first.getBundleId()).isEqualTo("bdl_01ARZ3NDEKTSV4RRFFQ69G5FB1");
+    assertThat(first.getItemsList()).hasSize(2);
+    assertThat(first.getItems(0).getStatus()).isEqualTo(OrderItemStatus.ITEM_CHANGED);
+    assertThat(first.getItems(1).getStatus()).isEqualTo(OrderItemStatus.ITEM_CONFIRMED);
+    assertThat(first.getItems(1).getOffer().getProviderOfferId()).isEqualTo("ok-DL242");
+    long expectedIncrement =
+        FakeSupplierGateway.cents("ok-DL242") - FakeSupplierGateway.cents("ok-DL240");
+    assertThat(first.getTotal().getAmountMinor())
+        .isEqualTo(order.getTotal().getAmountMinor() + expectedIncrement);
+    assertThat(first.getChangesList())
+        .singleElement()
+        .satisfies(
+            c -> {
+              assertThat(c.getStatus()).isEqualTo("APPLIED");
+              assertThat(c.getIdempotencyKey()).isEqualTo(key);
+              assertThat(c.getDisruptionId()).isEqualTo("dsr_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+              assertThat(c.getIncrementalCost().getAmountMinor()).isEqualTo(expectedIncrement);
+              assertThat(c.getPreviousBundleId()).isEqualTo(order.getBundleId());
+            });
+    assertThat(second).isEqualTo(first);
+    assertThat(third).isEqualTo(first);
+    String supplierKey = first.getOrderId() + ":" + first.getChanges(0).getChangeId();
+    assertThat(SUPPLIER.changeAttempts.get(supplierKey).get())
+        .as("replays never reach the supplier again")
+        .isEqualTo(1);
+    assertThat(
+            jdbc.sql("SELECT count(*) FROM order_change WHERE order_id = :o")
+                .param("o", first.getOrderId())
+                .query(Long.class)
+                .single())
+        .isEqualTo(1L);
+
+    // Impacted-trip detection finds it by the supplier's reference, in its tenant only.
+    Order found =
+        orders.findOrderByExternalRef(
+            FindOrderByExternalRefRequest.newBuilder()
+                .setCtx(ctx(""))
+                .setSupplier("sandbox-air")
+                .setExternalOrderId(first.getExternalOrderId())
+                .build());
+    assertThat(found.getOrderId()).isEqualTo(first.getOrderId());
+    assertThatThrownBy(
+            () ->
+                orders.findOrderByExternalRef(
+                    FindOrderByExternalRefRequest.newBuilder()
+                        .setCtx(ctx("").toBuilder().setTenantId("globex").build())
+                        .setSupplier("sandbox-air")
+                        .setExternalOrderId(first.getExternalOrderId())
+                        .build()))
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getCode()).isEqualTo(io.grpc.Status.Code.NOT_FOUND));
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(11)
+  void aChangeSurvivesTransientSupplierFailuresAndResumesFromPending() {
+    Order order = confirmed("ok-UA300");
+    String key = "TRIP:" + TRIP + ":DISRUPTION:dsr_01ARZ3NDEKTSV4RRFFQ69G5FB2:CHANGE:1";
+    Order changed = orders.changeOrder(change(order, key, "flaky-UA302"));
+    assertThat(changed.getStatus()).isEqualTo(OrderStatus.CHANGED);
+    String supplierKey = changed.getOrderId() + ":" + changed.getChanges(0).getChangeId();
+    assertThat(SUPPLIER.changeAttempts.get(supplierKey).get())
+        .as("two blips, then success, all under one supplier-side key")
+        .isEqualTo(3);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(12)
+  void aFinalSupplierRefusalEndsTheChangeAndLeavesTheOrderAsItWas() {
+    Order order = confirmed("ok-AA500");
+    String key = "TRIP:" + TRIP + ":DISRUPTION:dsr_01ARZ3NDEKTSV4RRFFQ69G5FB3:CHANGE:1";
+    Order after = orders.changeOrder(change(order, key, "soldout-AA502"));
+    assertThat(after.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(after.getBundleId()).isEqualTo(order.getBundleId());
+    assertThat(after.getItemsList()).hasSize(1);
+    assertThat(after.getChangesList())
+        .singleElement()
+        .satisfies(
+            c -> {
+              assertThat(c.getStatus()).isEqualTo("FAILED");
+              assertThat(c.getFailureCode()).isEqualTo("SEAT_NO_LONGER_AVAILABLE");
+            });
+    // The key is spent: asking again returns the order, it does not retry the supplier.
+    Order again = orders.changeOrder(change(order, key, "soldout-AA502"));
+    assertThat(again.getChangesList()).hasSize(1);
+    // A NEW logical attempt (n=2) may try another itinerary.
+    Order second =
+        orders.changeOrder(
+            change(
+                order,
+                "TRIP:" + TRIP + ":DISRUPTION:dsr_01ARZ3NDEKTSV4RRFFQ69G5FB3:CHANGE:2",
+                "ok-AA504"));
+    assertThat(second.getStatus()).isEqualTo(OrderStatus.CHANGED);
+    assertThat(second.getChangesList()).hasSize(2);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(13)
+  void changesAreGuarded() {
+    Order order = confirmed("ok-B6700");
+    assertThatThrownBy(
+            () -> orders.changeOrder(change(order, "TRIP:" + TRIP + ":CHANGE:1", "ok-B6700")))
+        .as("same itinerary")
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getDescription()).contains("SAME_ITINERARY"));
+    assertThatThrownBy(() -> orders.changeOrder(change(order, "", "ok-B6702")))
+        .as("no key")
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e ->
+                assertThat(e.getStatus().getCode())
+                    .isEqualTo(io.grpc.Status.Code.INVALID_ARGUMENT));
+    assertThatThrownBy(
+            () ->
+                orders.changeOrder(
+                    change(order, "TRIP:" + TRIP + ":CHANGE:1", "ok-B6702").toBuilder()
+                        .setCtx(ctx("TRIP:" + TRIP + ":CHANGE:1").toBuilder().setTenantId("globex"))
+                        .build()))
+        .as("another tenant cannot change it")
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getCode()).isEqualTo(io.grpc.Status.Code.NOT_FOUND));
+  }
+
   @Test
   @org.junit.jupiter.api.Order(99)
   void everyOrderEventIsContractValid() {
@@ -335,7 +503,9 @@ class OrderIntegrationTest {
                       "travel.order.created",
                       "travel.order.confirmed",
                       "travel.order.failed",
-                      "travel.order.cancelled");
+                      "travel.order.cancelled",
+                      "travel.order.change-requested",
+                      "travel.order.changed");
             });
     for (ConsumerRecord<String, String> record : received) {
       assertThat(EventSchemas.violations(record.value())).as(record.value()).isEmpty();

@@ -3,6 +3,7 @@ package io.travelos.order.events;
 import io.travelos.common.identity.Principal;
 import io.travelos.common.money.Money;
 import io.travelos.events.EventEnvelope;
+import io.travelos.order.store.OrderChangeRecord;
 import io.travelos.order.store.OrderRecord;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -70,6 +71,42 @@ public final class OrderEvents {
     data.put("reason", reason);
     data.put("cancelledBy", by.id());
     return envelope("travel.order.cancelled", o, causationId, data, clock);
+  }
+
+  public static EventEnvelope changeRequested(
+      OrderRecord o, OrderChangeRecord c, @Nullable String causationId, Clock clock) {
+    Map<String, Object> data = base(o);
+    data.put("disruptionId", c.disruptionId());
+    data.put("changeId", c.changeId());
+    data.put("idempotencyKey", c.idempotencyKey());
+    data.put("previousBundleId", c.previousBundleId());
+    data.put("replacementBundleId", c.replacementBundleId());
+    putIfPresent(data, "policyDecisionId", c.policyDecisionId());
+    putIfPresent(data, "optimizationRunId", c.optimizationRunId());
+    putIfPresent(data, "approvalId", c.approvalId());
+    data.put("requestedBy", c.requestedBy().id());
+    return envelope("travel.order.change-requested", o, causationId, data, clock);
+  }
+
+  public static EventEnvelope changed(
+      OrderRecord o, OrderChangeRecord c, @Nullable String causationId, Clock clock) {
+    Map<String, Object> data = base(o);
+    Money incremental =
+        Money.of(c.currency(), c.incrementalMinor() == null ? 0L : c.incrementalMinor());
+    data.put("incrementalCost", money(incremental));
+    data.put("changedBy", c.requestedBy().id());
+    putIfPresent(data, "policyDecisionId", c.policyDecisionId());
+    data.put("disruptionId", c.disruptionId());
+    data.put("changeId", c.changeId());
+    data.put("previousBundleId", c.previousBundleId());
+    data.put("replacementBundleId", c.replacementBundleId());
+    putIfPresent(data, "optimizationRunId", c.optimizationRunId());
+    putIfPresent(data, "approvalId", c.approvalId());
+    putIfPresent(data, "externalOrderId", o.externalOrderId());
+    putIfPresent(data, "recordLocator", c.recordLocator());
+    data.put("total", money(o.total()));
+    data.put("items", items(o));
+    return envelope("travel.order.changed", o, causationId, data, clock);
   }
 
   private static Map<String, Object> base(OrderRecord o) {

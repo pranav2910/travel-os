@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/disruption-events.schema.json",
+  "title": "DisruptionEvents",
+  "$defs": {
+    "disruptionId": { "type": "string", "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "disruptionType": { "type": "string", "enum": ["FLIGHT_CANCELLED", "SCHEDULE_CHANGE", "DELAY"] },
+    "severity": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+    "status": {
+      "type": "string",
+      "enum": ["DETECTED", "IMPACT_CONFIRMED", "SEARCHING_ALTERNATIVES", "OPTIMIZING", "DECISION_READY", "AUTO_ALLOWED", "HUMAN_REQUIRED", "CHANGING", "RESOLVED", "NO_ALTERNATIVE", "FAILED", "MANUAL_INTERVENTION_REQUIRED"]
+    },
+    "affectedSegment": {
+      "type": "object",
+      "required": ["carrier", "flightNumber", "origin", "destination", "scheduledDeparture"],
+      "additionalProperties": false,
+      "properties": {
+        "segmentId": { "type": "string" },
+        "carrier": { "type": "string", "minLength": 2, "maxLength": 3 },
+        "flightNumber": { "type": "string", "minLength": 1 },
+        "origin": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "destination": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "scheduledDeparture": { "type": "string", "format": "date-time" },
+        "scheduledArrival": { "type": "string", "format": "date-time" }
+      }
+    },
+    "rejectedCandidate": {
+      "type": "object",
+      "required": ["bundleId", "stage", "reasonCodes"],
+      "additionalProperties": false,
+      "properties": {
+        "bundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
+        "stage": { "type": "string", "enum": ["POLICY", "OPTIMIZATION"] },
+        "reasonCodes": { "type": "array", "items": { "type": "string" } },
+        "total": { "$ref": "common.schema.json#/$defs/money" }
+      }
+    },
+
+    "travel.disruption.detected": {
+      "description": "The supplier gateway normalized a supplier notice. Impact (which trip/order) is not yet known.",
+      "type": "object",
+      "required": ["disruptionId", "type", "supplier", "supplierEventId", "externalOrderId", "detectedAt", "severity", "affected"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "type": { "$ref": "#/$defs/disruptionType" },
+        "supplier": { "type": "string", "minLength": 1 },
+        "supplierEventId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "externalOrderId": { "type": "string", "minLength": 1 },
+        "recordLocator": { "type": "string" },
+        "detectedAt": { "type": "string", "format": "date-time" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "rawReference": { "type": "string", "maxLength": 512 },
+        "reason": { "type": "string", "maxLength": 2000, "description": "Untrusted supplier text." },
+        "affected": { "$ref": "#/$defs/affectedSegment" }
+      }
+    },
+    "travel.disruption.impact-confirmed": {
+      "type": "object",
+      "required": ["disruptionId", "tripId", "orderId", "travelerId", "type", "supplier", "severity"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "travelerId": { "type": "string", "minLength": 1 },
+        "segmentId": { "type": "string" },
+        "type": { "$ref": "#/$defs/disruptionType" },
+        "supplier": { "type": "string" },
+        "severity": { "$ref": "#/$defs/severity" },
+        "affected": { "$ref": "#/$defs/affectedSegment" }
+      }
+    },
+    "travel.disruption.recovery-started": {
+      "type": "object",
+      "required": ["disruptionId", "tripId", "orderId", "workflowId", "agent"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "workflowId": { "type": "string" },
+        "agent": { "$ref": "common.schema.json#/$defs/principal" }
+      }
+    },
+    "travel.disruption.decision-ready": {
+      "description": "The deterministic part is over: what was searched, what policy rejected, what the optimizer chose, what it costs, and what policy says about doing it.",
+      "type": "object",
+      "required": ["disruptionId", "tripId", "orderId", "candidatesSearched", "candidatesPermitted", "candidatesFeasible", "selectedBundleId", "incrementalCost", "policyDecisionId", "optimizationRunId", "autonomyOutcome"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "candidatesSearched": { "type": "integer", "minimum": 0 },
+        "candidatesPermitted": { "type": "integer", "minimum": 0 },
+        "candidatesFeasible": { "type": "integer", "minimum": 0 },
+        "rejected": { "type": "array", "items": { "$ref": "#/$defs/rejectedCandidate" } },
+        "selectedBundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
+        "selectedScore": { "type": "number", "minimum": 0, "maximum": 100 },
+        "originalTotal": { "$ref": "common.schema.json#/$defs/money" },
+        "replacementTotal": { "$ref": "common.schema.json#/$defs/money" },
+        "incrementalCost": { "$ref": "common.schema.json#/$defs/money" },
+        "policyDecisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
+        "policyId": { "type": "string" },
+        "policyVersion": { "type": "integer", "minimum": 0 },
+        "optimizationRunId": { "$ref": "common.schema.json#/$defs/optimizationRunId" },
+        "autonomyOutcome": { "type": "string", "enum": ["ALLOW", "ALLOW_WITH_APPROVAL", "DENY", "ALLOW_WITH_TRAVELER_PAYMENT"] },
+        "reasonCodes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "travel.disruption.approval-required": {
+      "type": "object",
+      "required": ["disruptionId", "tripId", "orderId", "approvalId", "role", "incrementalCost", "policyDecisionId"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
+        "role": { "type": "string" },
+        "incrementalCost": { "$ref": "common.schema.json#/$defs/money" },
+        "policyDecisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
+        "reasonCodes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "travel.disruption.resolved": {
+      "type": "object",
+      "required": ["disruptionId", "tripId", "orderId", "replacementBundleId", "incrementalCost", "autonomyOutcome", "resolvedBy"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "replacementBundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
+        "incrementalCost": { "$ref": "common.schema.json#/$defs/money" },
+        "autonomyOutcome": { "type": "string" },
+        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
+        "approvedBy": { "$ref": "common.schema.json#/$defs/principal" },
+        "resolvedBy": { "$ref": "common.schema.json#/$defs/principal" },
+        "externalOrderId": { "type": "string" },
+        "recordLocator": { "type": "string" },
+        "durationMs": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "travel.disruption.recovery-failed": {
+      "type": "object",
+      "required": ["disruptionId", "status", "stage", "reasonCode"],
+      "additionalProperties": false,
+      "properties": {
+        "disruptionId": { "$ref": "#/$defs/disruptionId" },
+        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
+        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
+        "status": { "type": "string", "enum": ["NO_ALTERNATIVE", "FAILED", "MANUAL_INTERVENTION_REQUIRED"] },
+        "stage": { "type": "string" },
+        "reasonCode": { "type": "string" },
+        "message": { "type": "string", "maxLength": 2000 }
+      }
+    }
+  }
+}

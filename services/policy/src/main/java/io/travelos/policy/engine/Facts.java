@@ -1,6 +1,7 @@
 package io.travelos.policy.engine;
 
 import io.travelos.common.money.Money;
+import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -41,12 +42,60 @@ public final class Facts {
   public record Hotel(Money nightlyRate, int nights) {}
 
   /**
+   * The time constraints a trip was planned for (from its frozen intent). A replacement itinerary
+   * must satisfy them; policy checks this itself rather than trusting whoever proposes the change.
+   */
+  public record Constraints(
+      @Nullable Instant earliestDeparture,
+      @Nullable Instant arrivalDeadline,
+      @Nullable Instant returnAfter,
+      @Nullable Instant latestReturn) {}
+
+  /** When a proposed itinerary flies: first departure, final arrival, and the return leg if any. */
+  public record Itinerary(
+      Instant outboundDeparture,
+      Instant outboundArrival,
+      @Nullable Instant inboundDeparture,
+      @Nullable Instant inboundArrival) {}
+
+  /**
    * Something a principal wants to do to an existing trip.
    *
-   * @param action "order.create" | "order.change" | "order.cancel"
+   * @param action canonical capability: "order.create" | "order.change" | "order.cancel". The
+   *     aliases CREATE_ORDER, CHANGE_EXISTING_ORDER and CANCEL_ORDER are accepted and
+   *     canonicalized.
    * @param incrementalCost cost added to the trip by the action, when known
    * @param proposed the bundle the action would book, when it books one
+   * @param constraints the trip's time constraints, when the caller wants them enforced
+   * @param itinerary when the proposed bundle flies, when known
    */
   public record Action(
-      String action, @Nullable Money incrementalCost, @Nullable Candidate proposed) {}
+      String action,
+      @Nullable Money incrementalCost,
+      @Nullable Candidate proposed,
+      @Nullable Constraints constraints,
+      @Nullable Itinerary itinerary) {
+
+    public static final String ORDER_CREATE = "order.create";
+    public static final String ORDER_CHANGE = "order.change";
+    public static final String ORDER_CANCEL = "order.cancel";
+
+    public Action {
+      action = canonical(action);
+    }
+
+    public Action(String action, @Nullable Money incrementalCost, @Nullable Candidate proposed) {
+      this(action, incrementalCost, proposed, null, null);
+    }
+
+    /** {@code CHANGE_EXISTING_ORDER} and friends name the same capability as the dotted form. */
+    public static String canonical(String action) {
+      return switch (action == null ? "" : action.trim()) {
+        case "CREATE_ORDER", "ORDER_CREATE" -> ORDER_CREATE;
+        case "CHANGE_EXISTING_ORDER", "CHANGE_ORDER", "ORDER_CHANGE" -> ORDER_CHANGE;
+        case "CANCEL_ORDER", "ORDER_CANCEL" -> ORDER_CANCEL;
+        default -> action == null ? "" : action.trim();
+      };
+    }
+  }
 }

@@ -1,0 +1,65 @@
+# Idempotent role/database bootstrap, run after every install/upgrade: the init script only runs on
+# an empty volume, so a service added later (Slice 2: disruption) still gets its role and database.
+# The same script is what an EKS operator runs once against Aurora with the master secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-roles-script
+data:
+  ensure-roles.sh: |
+    #!/bin/bash
+    set -euo pipefail
+    export PGPASSWORD="$POSTGRES_PASSWORD"
+    psql() { command psql -v ON_ERROR_STOP=1 -h "$PGHOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$@"; }
+    ensure() { # role db password
+      if [ "$(psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$1'")" != 1 ]; then
+        psql -c "CREATE ROLE $1 LOGIN PASSWORD '$3';"; echo "role $1 created"
+      else
+        psql -c "ALTER ROLE $1 WITH PASSWORD '$3';"
+      fi
+      if [ "$(psql -tAc "SELECT 1 FROM pg_database WHERE datname='$2'")" != 1 ]; then
+        psql -c "CREATE DATABASE $2 OWNER $1;" -c "REVOKE CONNECT ON DATABASE $2 FROM PUBLIC;"; echo "database $2 created"
+      fi
+    }
+    for i in $(seq 1 60); do command psql -h "$PGHOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc 'select 1' >/dev/null 2>&1 && break; sleep 2; done
+    ensure enterprise_context_app enterprise_context "$ENTERPRISE_CONTEXT_DB_PASSWORD"
+    ensure travel_core_app        travel_core        "$TRAVEL_CORE_DB_PASSWORD"
+    ensure policy_app             policy             "$POLICY_DB_PASSWORD"
+    ensure supplier_gateway_app   supplier_gateway   "$SUPPLIER_GATEWAY_DB_PASSWORD"
+    ensure approval_app           approval           "$APPROVAL_DB_PASSWORD"
+    ensure orders_app             orders             "$ORDER_DB_PASSWORD"
+    ensure audit_app              audit              "$AUDIT_DB_PASSWORD"
+    ensure disruption_app         disruption         "$DISRUPTION_DB_PASSWORD"
+    echo "roles ensured"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-roles
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      enableServiceLinks: false
+      containers:
+        - name: psql
+          image: {{ .Values.postgres.image }}
+          command: ["/bin/bash", "/scripts/ensure-roles.sh"]
+          env:
+            - { name: PGHOST, value: postgres }
+            - { name: POSTGRES_USER, value: travelos }
+            - { name: POSTGRES_DB, value: travelos }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: {{ .Values.postgres.superuserSecret }}, key: password } }
+          envFrom:
+            - secretRef: { name: {{ .Values.postgres.appPasswordsSecret }} }
+          volumeMounts:
+            - { name: script, mountPath: /scripts }
+      volumes:
+        - name: script
+          configMap: { name: postgres-roles-script, defaultMode: 0555 }

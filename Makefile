@@ -9,9 +9,9 @@ export JAVA_HOME
 GRADLE  := ./gradlew
 COMPOSE := docker compose -f platform/local/docker-compose.yml
 STACK   := docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml
-JARS    := travel-core policy supplier-gateway order audit
+JARS    := travel-core policy supplier-gateway order audit disruption
 
-.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e kind-up kind-deploy kind-e2e kind-chaos kind-rollback-demo kind-down helm-lint tf-check
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e stack-e2e2 kind-up kind-deploy kind-e2e kind-e2e2 kind-chaos kind-chaos2 kind-rollback-demo kind-down helm-lint tf-check
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -56,10 +56,10 @@ run-optimization: ## run the Python optimization service (gRPC :9083)
 run-llm-gateway: ## run the LLM gateway (gRPC :9087). LLM_PROVIDER=fake for offline; anthropic when ANTHROPIC_API_KEY is set
 	cd intelligence/llm-gateway && uv sync --frozen && uv run --frozen python scripts/gen_proto.py && OTEL_EXPORTER_OTLP_ENDPOINT=$${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317} uv run --frozen python -m travelos_llm_gateway.server
 
-jars: ## build every runnable jar (5 services + the worker)
+jars: ## build every runnable jar (6 services + the worker)
 	$(GRADLE) $(foreach s,$(JARS),:services:$(s):bootJar) :workflows:trip-planning:bootJar -q
 
-images: jars ## build all 8 container images as ghcr.io/pranav2910/travel-os/<name>:local
+images: jars ## build all 9 container images as ghcr.io/pranav2910/travel-os/<name>:local
 	scripts/build-images.sh local
 
 stack-up: ## run the WHOLE platform in Docker: infra + 8 services, wait healthy, create topics (needs `make images`)
@@ -78,6 +78,9 @@ stack-ps: ## status of the Docker stack
 stack-logs: ## tail Docker stack logs (SVC=trip-planning to filter)
 	$(STACK) logs -f $(SVC)
 
+stack-e2e2: ## run the Slice 2 script against the Docker stack
+	bash scripts/e2e-slice2.sh
+
 stack-e2e: ## run the live end-to-end script against the Docker stack
 	bash scripts/e2e-slice1.sh
 
@@ -93,6 +96,12 @@ kind-e2e: ## run the Slice 1 end-to-end script against the kind cluster
 
 kind-chaos: ## kill pods mid-flight and prove no duplicate orders, no lost state, enforced NetworkPolicies
 	bash scripts/chaos-kind.sh
+
+kind-e2e2: ## run the Slice 2 disruption-recovery script against the kind cluster
+	E2E_BACKEND=kind bash scripts/e2e-slice2.sh
+
+kind-chaos2: ## kill the recovery worker and the order service during ChangeOrder; prove one logical recovery
+	bash scripts/chaos-slice2-kind.sh
 
 kind-rollback-demo: ## deploy a stand-in "next" release then roll back to the previous revision
 	bash scripts/rollback-kind.sh

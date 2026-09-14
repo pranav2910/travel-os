@@ -15,6 +15,8 @@ SUPPLIER_GATEWAY_DB_PASSWORD=$(gen)
 APPROVAL_DB_PASSWORD=$(gen)
 ORDER_DB_PASSWORD=$(gen)
 AUDIT_DB_PASSWORD=$(gen)
+DISRUPTION_DB_PASSWORD=$(gen)
+SANDBOX_AIR_WEBHOOK_SECRET=$(gen)
 KEYCLOAK_ADMIN_PASSWORD=$(gen)
 PAYMENT_TOKEN=tok_corp_visa_sandbox
 ENV
@@ -33,13 +35,15 @@ apply postgres-app-passwords -n travelos-infra \
   --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD" \
   --from-literal=APPROVAL_DB_PASSWORD="$APPROVAL_DB_PASSWORD" \
   --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD" \
-  --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"
+  --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD" \
+  --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
 apply temporal-db -n travelos-infra --from-literal=POSTGRES_USER=travelos --from-literal=POSTGRES_PWD="$POSTGRES_SUPERUSER_PASSWORD"
 apply keycloak-admin -n travelos-infra --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$KEYCLOAK_ADMIN_PASSWORD"
 # application namespace: one Secret per service, only what that service needs
 apply travel-core-secrets -n travelos --from-literal=TRAVEL_CORE_DB_PASSWORD="$TRAVEL_CORE_DB_PASSWORD"
 apply policy-secrets -n travelos --from-literal=POLICY_DB_PASSWORD="$POLICY_DB_PASSWORD"
-apply supplier-gateway-secrets -n travelos --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD"
+apply supplier-gateway-secrets -n travelos --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD" --from-literal=SANDBOX_AIR_WEBHOOK_SECRET="$SANDBOX_AIR_WEBHOOK_SECRET"
+apply disruption-secrets -n travelos --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
 apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD"
 apply audit-secrets -n travelos --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"
 apply trip-planning-secrets -n travelos --from-literal=PAYMENT_TOKEN="$PAYMENT_TOKEN"

@@ -1,3 +1,5 @@
+import org.gradle.api.services.BuildService
+import org.gradle.api.services.BuildServiceParameters
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
@@ -20,7 +22,16 @@ tasks.withType<JavaCompile>().configureEach {
     options.compilerArgs.addAll(listOf("-parameters", "-Xlint:all", "-Xlint:-processing", "-Xlint:-serial"))
 }
 
+// Most suites boot Postgres + Kafka in Testcontainers. Six of those at once starve each other on a
+// laptop or a CI runner (consumer groups take >30 s to assign, outbox polls miss their windows) and
+// the failures look like real bugs. A shared service caps how many test tasks run concurrently.
+abstract class TestSlots : BuildService<BuildServiceParameters.None>
+val testSlots = gradle.sharedServices.registerIfAbsent("testSlots", TestSlots::class) {
+    maxParallelUsages = 2
+}
+
 tasks.withType<Test>().configureEach {
+    usesService(testSlots)
     useJUnitPlatform()
     testLogging {
         events("failed", "skipped")

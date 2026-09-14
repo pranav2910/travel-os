@@ -12,7 +12,10 @@ import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
 import io.temporal.worker.WorkerFactoryOptions;
+import io.travelos.workflows.DisruptionRecovery;
 import io.travelos.workflows.TripPlanning;
+import io.travelos.workflows.recovery.RecoveryActivities;
+import io.travelos.workflows.recovery.RecoveryWorkflowImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -64,6 +67,7 @@ class TemporalWorkerConfiguration {
   WorkerFactory workerFactory(
       WorkflowClient client,
       TripActivities activities,
+      RecoveryActivities recoveryActivities,
       WorkflowProperties properties,
       OpenTracingOptions tracing) {
     // The workflow reads the payment token through a side effect from a system property so the
@@ -79,6 +83,10 @@ class TemporalWorkerConfiguration {
     Worker worker = factory.newWorker(TripPlanning.TASK_QUEUE);
     worker.registerWorkflowImplementationTypes(TripWorkflowImpl.class);
     worker.registerActivitiesImplementations(activities);
+    // Slice 2: disruption recovery runs on its own task queue so its load never starves planning.
+    Worker recovery = factory.newWorker(DisruptionRecovery.TASK_QUEUE);
+    recovery.registerWorkflowImplementationTypes(RecoveryWorkflowImpl.class);
+    recovery.registerActivitiesImplementations(recoveryActivities);
     return factory;
   }
 

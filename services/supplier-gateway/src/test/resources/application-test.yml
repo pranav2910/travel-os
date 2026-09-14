@@ -4,6 +4,13 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://test-issuer/realms/travelos
+  kafka:
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
 travelos:
   grpc:
     server:

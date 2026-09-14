@@ -37,6 +37,8 @@ include(":services:policy")
 include(":services:supplier-gateway")
 include(":services:order")
 include(":services:audit")
+// Slice 2: disruption detection, the recovery decision record, and recovery approvals.
+include(":services:disruption")
 
 // Temporal workflows: durable coordination of the trip lifecycle.
 include(":workflows:trip-planning")

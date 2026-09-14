@@ -29,7 +29,8 @@ from travelos_optimization import ids
 log = logging.getLogger(__name__)
 
 PRODUCER = "optimization"
-DELIVERY_TIMEOUT_S = 5.0  # well inside the caller's gRPC deadline, so a dead broker surfaces as UNAVAILABLE, not a timeout
+# Well inside the caller's gRPC deadline, so a dead broker surfaces as UNAVAILABLE, not a timeout.
+DELIVERY_TIMEOUT_S = 5.0
 
 
 def envelope(

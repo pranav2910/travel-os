@@ -3,14 +3,14 @@ data "aws_region" "current" {}
 
 locals {
   # service account -> namespace. Each role trusts exactly one service account.
-  kafka_producers = ["travel-core", "policy", "order", "optimization"]
-  kafka_consumers = ["audit", "trip-planning"]
+  kafka_producers = ["travel-core", "policy", "order", "optimization", "supplier-gateway", "disruption"]
+  kafka_consumers = ["audit", "trip-planning", "disruption"]
   bindings = merge(
     {
       external-secrets             = "external-secrets"
       aws-load-balancer-controller = "kube-system"
     },
-    { for s in concat(local.kafka_producers, local.kafka_consumers) : s => "travelos" },
+    { for s in distinct(concat(local.kafka_producers, local.kafka_consumers)) : s => "travelos" },
   )
   # arn:aws:kafka:<region>:<account>:cluster/<name>/<uuid> -> topic/<name>/<uuid>/<topic>, group/<name>/<uuid>/<group>
   msk_topic_prefix = replace(var.msk_cluster_arn, ":cluster/", ":topic/")

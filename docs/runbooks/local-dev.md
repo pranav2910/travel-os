@@ -23,6 +23,7 @@ Docker Desktop needs ~3 GB for the platform; Java services run on the host.
 | Temporal UI | http://localhost:8233 | — |
 | Keycloak | http://localhost:8180 (realm `travelos`) | admin console `admin` / `admin` |
 | LLM gateway | gRPC `localhost:9087` (`make run-llm-gateway`) | `LLM_PROVIDER=fake` offline; set `ANTHROPIC_API_KEY` for `anthropic` (Claude Opus 5) |
+| Disruption | http://localhost:8089 / gRPC :9089 (`make run SVC=disruption`) | Slice 2: consumer group `disruption` on `travel.disruption`; `GET /api/v1/trips/{tripId}/disruptions`, `GET /api/v1/disruptions/{id}`, `POST /api/v1/disruptions/{id}/approval` (MANAGER/TRAVEL_ADMIN) |
 | Audit | http://localhost:8088 (`make run SVC=audit`) | consumer group `audit` on every `travel.*` topic; `GET /api/v1/audit/trips/{id}`, `/decisions`, `/events?type=` (TRAVEL_ADMIN/FINANCE) |
 
 Service ports (HTTP 808x pairs with gRPC 908x): travel-core 8081 · policy 8082 / 9082 · optimization 8083 / 9083 · supplier-gateway 8084 / 9084 · order 8085 / 9085.
@@ -177,3 +178,16 @@ docker compose -f platform/local/docker-compose.yml exec postgres psql -U travel
 
 The same platform on a local `kind` cluster (and the path to EKS): [kubernetes.md](kubernetes.md).
 `make kind-up && make kind-deploy && make kind-e2e`. Stop the compose stack first; both need the memory.
+
+## Slice 2: cancel a flight and watch the recovery
+
+The sandbox airline sends signed notices to the gateway's webhook (`POST /api/v1/suppliers/sandbox-air/events`,
+`X-Supplier-Signature: sha256=<hmac of the body>` with `SANDBOX_AIR_WEBHOOK_SECRET`, dev default
+`sandbox-air-dev-webhook-secret`). `scripts/e2e-slice2.sh` does the whole thing (book, cancel, recover
+autonomously, cancel again with a +$180 replacement and approve as bob, try an injected instruction,
+redeliver the webhook, check the ledger and the trace). `make stack-e2e2` runs it against the Docker
+stack, `make kind-e2e2` against kind, `make kind-chaos2` takes the order service away at
+cancellation (impact is deferred, not dropped), parks the recovery at `Optimize` by removing the
+optimizer, removes the order service underneath it, lets the optimizer back so `ChangeOrder` retries
+with nobody to call, kills the recovery worker mid-retry, and proves one logical recovery. Each hold
+is confirmed by a Temporal pending-activity tripwire (attempt ≥ 2) before the next fault is injected.

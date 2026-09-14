@@ -1,6 +1,6 @@
 apiVersion: v2
 name: travelos
-description: The travel-os platform - all eight services, each an instance of the travelos-service chart, plus the namespace's default-deny network policy.
+description: The travel-os platform - all nine services, each an instance of the travelos-service chart, plus the namespace's default-deny network policy.
 type: application
 version: 0.1.0
 appVersion: "0.1.0"
@@ -35,5 +35,9 @@ dependencies:
     repository: file://../travelos-service
   - name: travelos-service
     alias: llm-gateway
+    version: 0.1.0
+    repository: file://../travelos-service
+  - name: travelos-service
+    alias: disruption
     version: 0.1.0
     repository: file://../travelos-service

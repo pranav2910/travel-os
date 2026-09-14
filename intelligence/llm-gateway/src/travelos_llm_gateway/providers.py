@@ -18,6 +18,9 @@ from pydantic import ValidationError
 
 from travelos_llm_gateway import pricing
 from travelos_llm_gateway.prompts import (
+    DISRUPTION_PROMPT_ID,
+    DISRUPTION_PROMPT_VERSION,
+    EXPLAIN_DISRUPTION_SYSTEM,
     EXPLAIN_PROMPT_ID,
     EXPLAIN_PROMPT_VERSION,
     EXPLAIN_SYSTEM,
@@ -135,8 +138,13 @@ class AnthropicProvider:
 
     def explain(self, evidence: Evidence) -> ExplanationOutcome:
         started = time.monotonic()
+        disruption = evidence.facts.get("kind") == "disruption"
+        system = EXPLAIN_DISRUPTION_SYSTEM if disruption else EXPLAIN_SYSTEM
+        prompt_id = DISRUPTION_PROMPT_ID if disruption else EXPLAIN_PROMPT_ID
+        prompt_version = DISRUPTION_PROMPT_VERSION if disruption else EXPLAIN_PROMPT_VERSION
+        # No tools, ever: the gateway narrates; it cannot search, book, change or approve anything.
         response = self._create(
-            system=EXPLAIN_SYSTEM,
+            system=system,
             user=f"Audience: {evidence.audience}\n\nEvidence:\n{evidence.text}",
             max_tokens=1024,
             effort="low",
@@ -146,8 +154,7 @@ class AnthropicProvider:
         if not text:
             raise ProviderError("model returned an empty explanation", retryable=True)
         return ExplanationOutcome(
-            explanation=text,
-            call=self._call(response, EXPLAIN_PROMPT_ID, EXPLAIN_PROMPT_VERSION, started),
+            explanation=text, call=self._call(response, prompt_id, prompt_version, started)
         )
 
     def _create(
@@ -355,6 +362,8 @@ class FakeProvider:
 
     def explain(self, evidence: Evidence) -> ExplanationOutcome:
         f = evidence.facts
+        if f.get("kind") == "disruption":
+            return self._explain_disruption(f)
         parts = [
             f"For the {f.get('route', 'trip')} we chose {f.get('selected', 'the selected option')} "
             f"at {f.get('total', 'the quoted total')}.",
@@ -373,6 +382,44 @@ class FakeProvider:
         return ExplanationOutcome(
             explanation=" ".join(parts),
             call=ModelCallResult(self.name, self.model, EXPLAIN_PROMPT_ID, EXPLAIN_PROMPT_VERSION),
+        )
+
+    def _explain_disruption(self, f: dict[str, Any]) -> ExplanationOutcome:
+        """Deterministic narration from the facts alone; the supplier's words are not among them."""
+        if f.get("autonomy") == "ALLOW":
+            authorization = (
+                "Policy permits this change automatically, so the booking is updated without "
+                "waiting for anyone."
+            )
+        elif f.get("requires_approval"):
+            authorization = (
+                f"Policy requires approval from {f.get('approver', 'a manager')} before the "
+                "booking is changed."
+            )
+        else:
+            authorization = (
+                f"Policy does not permit this change ({f.get('autonomy', 'DENY')}); "
+                "a person must handle it."
+            )
+        parts = [
+            f"{f.get('supplier', 'The supplier')} reported {f.get('type', 'a disruption')} on "
+            f"{f.get('original', 'the itinerary')}.",
+            f"{f.get('searched', 0)} alternatives were searched and {f.get('permitted', 0)} were "
+            f"permitted by policy {f.get('policy', '')}.".replace("policy .", "policy."),
+            f"The optimizer chose {f.get('replacement', 'a replacement')} at "
+            f"{f.get('replacement_total', 'the quoted total')}, "
+            f"{f.get('incremental', 'n/a')} versus the original order"
+            + (f", scoring {f['score']} ({f['breakdown']})" if f.get("score") else "")
+            + ".",
+            authorization,
+        ]
+        if f.get("reasons"):
+            parts.append(f"Policy noted: {f['reasons']}.")
+        return ExplanationOutcome(
+            explanation=" ".join(parts),
+            call=ModelCallResult(
+                self.name, self.model, DISRUPTION_PROMPT_ID, DISRUPTION_PROMPT_VERSION
+            ),
         )
 
     def _outcome(self, extraction: IntentExtraction) -> ExtractionOutcome:

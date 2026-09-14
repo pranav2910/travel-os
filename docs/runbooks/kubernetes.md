@@ -23,12 +23,16 @@ make kind-up            # cluster + Calico + metrics-server + registry; namespac
 make kind-deploy        # jars -> images:<git-sha> -> push to localhost:5001 -> helm infra -> helm app
 make kind-e2e           # the full Slice 1 E2E flow against the cluster (E2E_BACKEND=kind)
 make kind-chaos         # kill pods mid-workflow, prove one order per trip; prove NetworkPolicies bite
+make kind-e2e2          # Slice 2: autonomous + approved disruption recovery, injection, duplicates, trace
+make kind-chaos2        # Slice 2: order + optimizer outages parked at proven points, worker killed mid-ChangeOrder; one recovery
 make kind-rollback-demo # deploy a stand-in "next" release, roll back with helm, verify
 make kind-down
 ```
 
 `make kind-deploy` is idempotent: it always deploys the images for the current `git rev-parse
---short=12 HEAD`. Every Deployment's image is `<registry>/<service>:<sha>`; `latest` is never used.
+--short=12 HEAD`, with `-dirty` appended while the tree has uncommitted changes (a tag must never
+mean two different builds, and a Deployment whose image reference did not change keeps its old
+pods). Every Deployment's image is `<registry>/<service>:<sha>`; `latest` is never used.
 
 Host ports once deployed:
 
@@ -40,6 +44,7 @@ Host ports once deployed:
 | order | http://localhost:18085 |
 | trip-planning (worker actuator) | http://localhost:18086 |
 | audit | http://localhost:18088 |
+| disruption | http://localhost:18089 (gRPC 9089 in-cluster) |
 | optimization gRPC | localhost:19083 |
 | llm-gateway gRPC | localhost:19087 |
 | Keycloak | http://localhost:18180 (admin password in `deploy/kind/.secrets.env`) |
@@ -118,8 +123,9 @@ Temporal UI.
    `ClusterSecretStore` named `aws-secrets-manager`; install metrics-server and the cluster
    autoscaler or Karpenter.
 5. **Databases**: run the role bootstrap once against the Aurora writer using the master secret
-   (`aurora_master_secret_arn`): the SQL in `deploy/helm/travelos-infra/templates/postgres.yaml`
-   (roles + databases) with the per-service passwords from `travelos/<env>/<svc>/db`.
+   (`aurora_master_secret_arn`): `deploy/helm/travelos-infra/templates/postgres-roles.yaml` is the
+   idempotent script (roles + databases) with the per-service passwords from `travelos/<env>/<svc>/db`;
+   on kind the same script runs as a Helm hook after every upgrade.
 6. **Images**: `REGISTRY=<ecr>/travel-os scripts/build-images.sh <git-sha> --push` after
    `aws ecr get-login-password | docker login`.
 7. **Deploy**: fill `values-eks.yaml` endpoints from `terraform output` (or override with `--set`)

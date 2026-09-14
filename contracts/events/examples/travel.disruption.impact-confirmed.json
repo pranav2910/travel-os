@@ -1,0 +1,8 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S2",
+  "eventType": "travel.disruption.impact-confirmed",
+  "eventVersion": 1, "occurredAt": "2026-09-13T14:05:12Z", "tenantId": "acme", "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S1",
+  "producer": "disruption",
+  "data": {"disruptionId":"dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","travelerId":"emp-1001","segmentId":"DL240-BOS","type":"FLIGHT_CANCELLED","supplier":"sandbox-air","severity":"HIGH","affected":{"segmentId":"DL240-BOS","carrier":"DL","flightNumber":"DL240","origin":"BOS","destination":"SEA","scheduledDeparture":"2026-10-06T10:00:00Z"}}
+}

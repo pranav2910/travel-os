@@ -66,7 +66,7 @@ order:
     SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
   networkPolicy:
     httpFrom: *httpFrom
-    grpcFromApps: [trip-planning]
+    grpcFromApps: [trip-planning, disruption]
     grpcToApps:
       - { app: supplier-gateway, port: 9084 }
 
@@ -80,6 +80,20 @@ audit:
   networkPolicy:
     httpFrom: *httpFrom
 
+disruption:
+  name: disruption
+  ports: { http: 8089, grpc: 9089 }
+  secretRef: disruption-secrets
+  env:
+    DISRUPTION_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/disruption
+    DISRUPTION_DB_USER: disruption_app
+    ORDER_ADDRESS: order:9085
+  networkPolicy:
+    httpFrom: *httpFrom
+    grpcFromApps: [trip-planning]
+    grpcToApps:
+      - { app: order, port: 9085 }
+
 trip-planning:
   name: trip-planning
   ports: { http: 8086 }
@@ -90,6 +104,7 @@ trip-planning:
     SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
     ORDER_ADDRESS: order:9085
     LLM_GATEWAY_ADDRESS: llm-gateway:9087
+    DISRUPTION_ADDRESS: disruption:9089
     DEFAULT_TIMEZONE: America/New_York
   secretRef: trip-planning-secrets          # PAYMENT_TOKEN
   autoscaling:
@@ -99,6 +114,7 @@ trip-planning:
     grpcToApps:
       - { app: travel-core, port: 9081 }
       - { app: policy, port: 9082 }
+      - { app: disruption, port: 9089 }
       - { app: optimization, port: 9083 }
       - { app: supplier-gateway, port: 9084 }
       - { app: order, port: 9085 }
@@ -154,3 +170,6 @@ ingress:
     - { path: /api/v1/policy-decisions, service: policy, port: 8082 }
     - { path: /api/v1/orders, service: order, port: 8085 }
     - { path: /api/v1/audit, service: audit, port: 8088 }
+    - { path: /api/v1/disruptions, service: disruption, port: 8089 }
+    - { path: /api/v1/trips, service: travel-core, port: 8081, pathType: Prefix }
+    - { path: /api/v1/suppliers, service: supplier-gateway, port: 8084 }

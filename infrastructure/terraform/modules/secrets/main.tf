@@ -53,3 +53,24 @@ resource "aws_secretsmanager_secret_version" "payment" {
     ignore_changes = [secret_string]
   }
 }
+
+# Supplier webhook signing secrets: generated here, read by the gateway, shared with the supplier
+# out of band (a real airline gives us theirs; the sandbox airline is us).
+resource "random_password" "sandbox_webhook" {
+  length  = 48
+  special = false
+}
+
+resource "aws_secretsmanager_secret" "webhooks" {
+  name       = "travelos/${var.environment}/supplier-gateway/webhooks"
+  kms_key_id = var.kms_key_arn
+  tags       = merge(var.tags, { service = "supplier-gateway" })
+}
+
+resource "aws_secretsmanager_secret_version" "webhooks" {
+  secret_id     = aws_secretsmanager_secret.webhooks.id
+  secret_string = jsonencode({ sandbox_air = random_password.sandbox_webhook.result })
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
