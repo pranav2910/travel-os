@@ -16,7 +16,9 @@ and the secret source differ. Nothing in Git contains a password, token or API k
 
 Prerequisites: Docker Desktop with ~8 GB for containers, `kind`, `kubectl`, `helm` 4, `kubeconform`
 (`brew install kind kubectl helm kubeconform`). Stop the compose stack first (`make stack-down`) so
-the cluster has the memory.
+the cluster has the memory, and do not run `./gradlew check` (six Testcontainers stacks) while the
+cluster is up: at 8 GB the Docker VM starves and every pod restarts at once, which resets the
+in-memory metrics and looks like an outage that never happened.
 
 ```bash
 make kind-up            # cluster + Calico + metrics-server + registry; namespaces travelos-infra, travelos
