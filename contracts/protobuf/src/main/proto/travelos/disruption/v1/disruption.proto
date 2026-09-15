@@ -67,6 +67,22 @@ message AffectedSegment {
   string destination = 5;
   google.protobuf.Timestamp scheduled_departure = 6;
   google.protobuf.Timestamp scheduled_arrival = 7;
+  // Slice 3: the itinerary component the segment belongs to, when the order knows it.
+  string component_id = 8;
+}
+
+// Slice 3: what the recovery did to one component of a multi-component itinerary.
+message ComponentChange {
+  string component_id = 1;
+  // AIR | HOTEL | GROUND
+  string type = 2;
+  // REPLACED (new supplier booking) | RETIMED (same supplier booking, changed) | PRESERVED |
+  // CANCELLED
+  string action = 3;
+  travelos.common.v1.Money previous_total = 4;
+  travelos.common.v1.Money replacement_total = 5;
+  travelos.common.v1.Money delta = 6;
+  string reason = 7;
 }
 
 // What the recovery has established so far. Ids point at evidence held by the owning services.
@@ -84,6 +100,8 @@ message RecoveryState {
   string explanation = 8;
   string failure_stage = 9;
   string failure_code = 10;
+  // Slice 3: every component the disruption touched (the cancelled leg and its dependants).
+  repeated string affected_component_ids = 11;
 }
 
 message Disruption {
@@ -162,6 +180,8 @@ message RecoveryDecision {
   string workflow_type = 18;
   string workflow_version = 19;
   google.protobuf.Timestamp decided_at = 20;
+  // Slice 3: per-component accounting behind incremental_cost.
+  repeated ComponentChange component_changes = 21;
 }
 
 message SupplierResult {

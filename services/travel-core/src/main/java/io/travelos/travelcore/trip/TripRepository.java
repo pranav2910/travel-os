@@ -29,7 +29,7 @@ public class TripRepository {
       selected_bundle_id, optimization_run_id, policy_decision_id, approval_id, order_id,
       created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
       traveler_given_name, traveler_family_name, traveler_email, total_currency, total_minor,
-      failure_stage, failure_code, explanation
+      failure_stage, failure_code, explanation, itinerary
       """;
 
   private final JdbcClient jdbc;
@@ -46,13 +46,18 @@ public class TripRepository {
               origin, destination, earliest_departure, arrival_deadline, return_after, latest_return,
               purpose, hotel_required, travelers,
               created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
-              traveler_given_name, traveler_family_name, traveler_email)
+              traveler_given_name, traveler_family_name, traveler_email, itinerary)
             VALUES (:tripId, :tenantId, :travelerId, :status, :source, :requestText,
               :origin, :destination, :earliestDeparture, :arrivalDeadline, :returnAfter, :latestReturn,
               :purpose, :hotelRequired, :travelers,
               :createdBy, :idempotencyKey, :requestFingerprint, :version, :createdAt, :updatedAt,
-              :givenName, :familyName, :email)
+              :givenName, :familyName, :email, CAST(:itinerary AS jsonb))
             """)
+        .param(
+            "itinerary",
+            intent == null || intent.itinerary() == null
+                ? null
+                : ItineraryCodec.toJson(intent.itinerary()))
         .param("tripId", trip.tripId())
         .param("tenantId", trip.tenantId().value())
         .param("travelerId", trip.travelerId())
@@ -132,9 +137,14 @@ public class TripRepository {
                   policy_decision_id = :policyDecision, approval_id = :approval, order_id = :orderId,
                   total_currency = :currency, total_minor = :totalMinor,
                   failure_stage = :failureStage, failure_code = :failureCode,
-                  explanation = :explanation
+                  explanation = :explanation, itinerary = CAST(:itinerary AS jsonb)
                 WHERE tenant_id = :tenantId AND trip_id = :tripId AND version = :expectedVersion
                 """)
+            .param(
+                "itinerary",
+                intent == null || intent.itinerary() == null
+                    ? null
+                    : ItineraryCodec.toJson(intent.itinerary()))
             .param("origin", intent == null ? null : intent.origin())
             .param("destination", intent == null ? null : intent.destination())
             .param("earliestDeparture", ts(intent == null ? null : intent.earliestDeparture()))
@@ -230,7 +240,8 @@ public class TripRepository {
                 instant(rs, "latest_return"),
                 rs.getString("purpose"),
                 rs.getBoolean("hotel_required"),
-                rs.getInt("travelers"));
+                rs.getInt("travelers"),
+                ItineraryCodec.fromJson(rs.getString("itinerary")));
     String currency = rs.getString("total_currency");
     Money total = currency == null ? null : Money.of(currency, rs.getLong("total_minor"));
     return new Trip(

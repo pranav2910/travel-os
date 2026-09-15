@@ -47,6 +47,9 @@ enum OrderItemStatus {
   ITEM_CANCELLED = 5;
   // Replaced by a later item through a change (disruption recovery). Kept for the history.
   ITEM_CHANGED = 6;
+  // Slice 3: confirmed at the supplier but our cancellation failed; the exposure is recorded and
+  // a person must act.
+  ITEM_CANCEL_FAILED = 7;
 }
 
 message OrderItem {
@@ -55,6 +58,29 @@ message OrderItem {
   OrderItemStatus status = 3;
   string external_ref = 4;
   string record_locator = 5;
+  // Slice 3
+  string component_id = 6;
+  travelos.common.v1.Money total = 7;
+  string failure_code = 8;
+}
+
+// Slice 3: money the company may have lost because a confirmed component could not be released.
+message Exposure {
+  string exposure_id = 1;
+  string item_id = 2;
+  string component_id = 3;
+  string provider = 4;
+  string external_ref = 5;
+  travelos.common.v1.Money amount = 6;
+  // COMPENSATION_FAILED | NON_REFUNDABLE
+  string reason = 7;
+  string detail = 8;
+  // OPEN | RESOLVED
+  string status = 9;
+  string resolved_by = 10;
+  string resolution = 11;
+  google.protobuf.Timestamp created_at = 12;
+  google.protobuf.Timestamp resolved_at = 13;
 }
 
 message Order {
@@ -89,6 +115,8 @@ message Order {
   repeated OrderChange changes = 18;
   string traveler_id = 19;
   string bundle_id = 20;
+  // Slice 3: open and resolved exposures from failed compensation.
+  repeated Exposure exposures = 21;
 }
 
 // One applied (or attempted) change of an order's itinerary.
@@ -154,6 +182,8 @@ message ChangeOrderCommand {
   repeated travelos.supplier.v1.Passenger passengers = 8;
   string payment_token = 9;
   string reason = 10;
+  // Slice 3: when the replacement's offers carry component ids, only those components change and
+  // every other item is preserved; without component ids (Slice 2) the whole itinerary is replaced.
 }
 
 message FindOrderByExternalRefRequest {

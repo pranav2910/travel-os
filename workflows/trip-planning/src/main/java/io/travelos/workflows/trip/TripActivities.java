@@ -5,17 +5,26 @@ import io.travelos.contracts.llm.v1.ExplainTripRequest;
 import io.travelos.contracts.llm.v1.ExplainTripResponse;
 import io.travelos.contracts.llm.v1.ExtractIntentRequest;
 import io.travelos.contracts.llm.v1.ExtractIntentResponse;
+import io.travelos.contracts.optimization.v1.OptimizeItineraryRequest;
+import io.travelos.contracts.optimization.v1.OptimizeItineraryResponse;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
 import io.travelos.contracts.order.v1.Order;
 import io.travelos.contracts.policy.v1.EvaluateTripRequest;
 import io.travelos.contracts.policy.v1.EvaluateTripResponse;
+import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
+import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SearchGroundRequest;
+import io.travelos.contracts.supplier.v1.SearchGroundResponse;
+import io.travelos.contracts.supplier.v1.SearchHotelsRequest;
+import io.travelos.contracts.supplier.v1.SearchHotelsResponse;
 import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.Trip;
+import io.travelos.contracts.trip.v1.UpdateComponentsRequest;
 
 /**
  * Every side effect of the workflow, one gRPC call each. Activities are retried by Temporal on
@@ -46,4 +55,18 @@ public interface TripActivities {
   ExplainTripResponse explain(ExplainTripRequest request);
 
   Order createOrder(CreateOrderCommand command);
+
+  // ---------------------------------------------------------------- Slice 3
+
+  SearchHotelsResponse searchHotels(SearchHotelsRequest request);
+
+  SearchGroundResponse searchGround(SearchGroundRequest request);
+
+  OptimizeItineraryResponse optimizeItinerary(OptimizeItineraryRequest request);
+
+  /** Revalidate one offer before a mutation (any kind). Pure. */
+  QuoteOfferResponse quote(QuoteOfferRequest request);
+
+  /** Report component states to Travel Core. Idempotent. */
+  Trip updateComponents(UpdateComponentsRequest request);
 }

@@ -20,6 +20,7 @@ import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
 import io.travelos.contracts.supplier.v1.Passenger;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
+import io.travelos.contracts.supplier.v1.PriceOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
@@ -354,6 +355,35 @@ class DisruptionIngestionIntegrationTest {
 
   @Test
   @org.junit.jupiter.api.Order(4)
+  void aOneWayLegOnTheSameDayLosesOnlyTheCancelledFlightNumber() {
+    // One-way schedules are numbered differently from round trips (no inbound choices), so the
+    // cancelled flight must be recognised by its number, never by its slot: a one-way offer that
+    // happens to share the round trip's slot number is an innocent flight and prices normally.
+    String cancelledFlight = booked.getAir().getOutbound().getSegments(0).getFlightNumber();
+    SearchAirResponse oneWay =
+        gateway.searchAir(search("BOS", "SEA").toBuilder().clearReturnDeparture().build());
+    assertThat(oneWay.getOffersList())
+        .noneMatch(
+            o -> o.getAir().getOutbound().getSegments(0).getFlightNumber().equals(cancelledFlight));
+    List<Offer> nonstops =
+        oneWay.getOffersList().stream()
+            .filter(o -> o.getAir().getOutbound().getSegmentsCount() == 1)
+            .toList();
+    assertThat(nonstops).isNotEmpty();
+    for (Offer o : nonstops) {
+      PriceOfferResponse priced =
+          gateway.priceOffer(
+              PriceOfferRequest.newBuilder()
+                  .setCtx(ctx(""))
+                  .setProvider("sandbox-air")
+                  .setProviderOfferId(o.getProviderOfferId())
+                  .build());
+      assertThat(priced.getOffer().getProviderOfferId()).isEqualTo(o.getProviderOfferId());
+    }
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(5)
   void reissueIsIdempotentByKeyAndChargesTheIncrementOnce() {
     Offer replacement =
         gateway.searchAir(search("BOS", "SEA")).getOffersList().stream()
@@ -412,7 +442,7 @@ class DisruptionIngestionIntegrationTest {
   }
 
   @Test
-  @org.junit.jupiter.api.Order(5)
+  @org.junit.jupiter.api.Order(6)
   void aRedeliveryAfterTheOrderMovedOnIsStillTheSameDisruptionButANewNoticeForTheOldFlightIsNot() {
     String oldFlight = booked.getAir().getOutbound().getSegments(0).getFlightNumber();
     String original =

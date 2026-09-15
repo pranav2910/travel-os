@@ -7,10 +7,15 @@ import io.travelos.common.money.Money;
 import io.travelos.contracts.offer.v1.FlightSegment;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.order.saga.OrderService;
+import io.travelos.order.store.ExposureRecord;
 import io.travelos.order.store.OrderChangeRecord;
 import io.travelos.order.store.OrderRecord;
 import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
+import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +23,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,9 +62,11 @@ public class OrderController {
       List<ChangeView> changes,
       long version,
       Instant createdAt,
-      Instant updatedAt) {
+      Instant updatedAt,
+      @Nullable List<ExposureView> exposures) {
 
-    static OrderResponse from(OrderRecord o, List<OrderChangeRecord> changes) {
+    static OrderResponse from(
+        OrderRecord o, List<OrderChangeRecord> changes, List<ExposureRecord> exposures) {
       return new OrderResponse(
           o.orderId(),
           o.tripId(),
@@ -77,9 +86,46 @@ public class OrderController {
           changes.stream().map(ChangeView::from).toList(),
           o.version(),
           o.createdAt(),
-          o.updatedAt());
+          o.updatedAt(),
+          exposures.isEmpty() ? null : exposures.stream().map(ExposureView::from).toList());
     }
   }
+
+  /** Slice 3: money at risk after a failed compensation, and who resolved it. */
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record ExposureView(
+      String exposureId,
+      String itemId,
+      @Nullable String componentId,
+      String provider,
+      String externalRef,
+      MoneyView amount,
+      String reason,
+      @Nullable String detail,
+      String status,
+      @Nullable String resolvedBy,
+      @Nullable String resolution,
+      Instant createdAt,
+      @Nullable Instant resolvedAt) {
+    static ExposureView from(ExposureRecord e) {
+      return new ExposureView(
+          e.exposureId(),
+          e.itemId(),
+          e.componentId(),
+          e.provider(),
+          e.externalRef(),
+          MoneyView.of(e.amount()),
+          e.reason(),
+          e.detail(),
+          e.status().name(),
+          e.resolvedBy(),
+          e.resolution(),
+          e.createdAt(),
+          e.resolvedAt());
+    }
+  }
+
+  public record ResolutionRequest(@NotBlank @Size(max = 2000) String resolution) {}
 
   /**
    * One logical change of the itinerary (Slice 2): what replaced what, at what cost, or why not.
@@ -142,8 +188,12 @@ public class OrderController {
       @Nullable String recordLocator,
       MoneyView total,
       @Nullable String failureCode,
-      List<FlightView> flights) {
+      List<FlightView> flights,
+      @Nullable String componentId,
+      @Nullable StayView hotel,
+      @Nullable TransferView ground) {
     static ItemView from(OrderRecord.Item i) {
+      Offer offer = parse(i.offerJson());
       return new ItemView(
           i.itemId(),
           i.offerType(),
@@ -154,7 +204,70 @@ public class OrderController {
           i.recordLocator(),
           MoneyView.of(i.total()),
           i.failureCode(),
-          FlightView.of(i.offerJson()));
+          FlightView.of(i.offerJson()),
+          i.componentId(),
+          offer != null && offer.hasHotel() ? StayView.of(offer) : null,
+          offer != null && offer.hasGround() ? TransferView.of(offer) : null);
+    }
+  }
+
+  static @Nullable Offer parse(String offerJson) {
+    Offer.Builder b = Offer.newBuilder();
+    try {
+      JsonFormat.parser().ignoringUnknownFields().merge(offerJson, b);
+    } catch (InvalidProtocolBufferException e) {
+      return null;
+    }
+    return b.build();
+  }
+
+  /** Slice 3: the stay an item books, on the property's calendar. */
+  public record StayView(
+      String propertyId,
+      String name,
+      String city,
+      String checkInDate,
+      String checkOutDate,
+      int nights,
+      String timeZone,
+      boolean refundable) {
+    static StayView of(Offer o) {
+      return new StayView(
+          o.getHotel().getPropertyId(),
+          o.getHotel().getName(),
+          o.getHotel().getCity(),
+          o.getHotel().getCheckInDate(),
+          o.getHotel().getCheckOutDate(),
+          o.getHotel().getNights(),
+          o.getHotel().getTimeZone(),
+          o.getRefundable());
+    }
+  }
+
+  /** Slice 3: the transfer an item books. */
+  public record TransferView(
+      String vendorId,
+      String vendorName,
+      String vehicleClass,
+      String pickupLocation,
+      String dropoffLocation,
+      @Nullable Instant pickup,
+      @Nullable Instant dropoff,
+      String timeZone) {
+    static TransferView of(Offer o) {
+      return new TransferView(
+          o.getGround().getVendorId(),
+          o.getGround().getVendorName(),
+          o.getGround().getVehicleClass(),
+          o.getGround().getPickupLocation(),
+          o.getGround().getDropoffLocation(),
+          o.getGround().hasPickup()
+              ? Instant.ofEpochSecond(o.getGround().getPickup().getSeconds())
+              : null,
+          o.getGround().hasDropoff()
+              ? Instant.ofEpochSecond(o.getGround().getDropoff().getSeconds())
+              : null,
+          o.getGround().getTimeZone());
     }
   }
 
@@ -213,7 +326,55 @@ public class OrderController {
     if (!canRead(me, order)) {
       throw new ApiException.NotFound("order", orderId);
     }
-    return OrderResponse.from(order, orders.changesOf(me.tenant(), order.orderId()));
+    return OrderResponse.from(
+        order,
+        orders.changesOf(me.tenant(), order.orderId()),
+        orders.exposuresOf(me.tenant(), order.orderId()));
+  }
+
+  /**
+   * Slice 3: a TRAVEL_ADMIN or FINANCE person closes an exposure and says how. Idempotent by the
+   * Idempotency-Key; when the last one closes, the order is FAILED and fully compensated.
+   */
+  @PostMapping(path = "/{orderId}/exposures/{exposureId}/resolution", consumes = "application/json")
+  public ExposureView resolve(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String orderId,
+      @PathVariable String exposureId,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @Valid @RequestBody ResolutionRequest request) {
+    OrderRecord order;
+    try {
+      order = orders.get(me.tenant(), orderId);
+    } catch (io.grpc.StatusRuntimeException e) {
+      throw new ApiException.NotFound("order", orderId);
+    }
+    if (!canRead(me, order)) {
+      throw new ApiException.NotFound("order", orderId);
+    }
+    if (!me.hasAnyRole("TRAVEL_ADMIN", "FINANCE")) {
+      throw new ApiException.Forbidden(
+          "NOT_AN_EXPOSURE_RESOLVER", "only TRAVEL_ADMIN or FINANCE may resolve exposures");
+    }
+    try {
+      return ExposureView.from(
+          orders.resolveExposure(
+              me.tenant(),
+              orderId,
+              exposureId,
+              me.principal(),
+              request.resolution(),
+              idempotencyKey));
+    } catch (io.grpc.StatusRuntimeException e) {
+      if (e.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND) {
+        throw new ApiException.NotFound("exposure", exposureId);
+      }
+      throw new ApiException.Conflict(
+          "EXPOSURE_ALREADY_RESOLVED",
+          e.getStatus().getDescription() == null
+              ? "already resolved"
+              : e.getStatus().getDescription());
+    }
   }
 
   @GetMapping
@@ -221,7 +382,12 @@ public class OrderController {
       @AuthenticationPrincipal RequestPrincipal me, @RequestParam String tripId) {
     return orders.byTrip(me.tenant(), tripId).stream()
         .filter(o -> canRead(me, o))
-        .map(o -> OrderResponse.from(o, orders.changesOf(me.tenant(), o.orderId())))
+        .map(
+            o ->
+                OrderResponse.from(
+                    o,
+                    orders.changesOf(me.tenant(), o.orderId()),
+                    orders.exposuresOf(me.tenant(), o.orderId())))
         .toList();
   }
 

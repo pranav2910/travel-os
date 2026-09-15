@@ -28,7 +28,10 @@ public record DecisionLedger(
     @Nullable Map<String, Object> failure,
     List<Map<String, Object>> disruptions,
     List<String> narrative,
-    int eventCount) {
+    int eventCount,
+    List<Map<String, Object>> components,
+    List<Map<String, Object>> replans,
+    @Nullable Map<String, Object> compensation) {
 
   static DecisionLedger from(String tripId, String travelerId, List<AuditRecord> trail) {
     String status = "SUBMITTED";
@@ -43,6 +46,10 @@ public record DecisionLedger(
     int policyViolations = 0;
     Map<String, Map<String, Object>> policyByBundle = new LinkedHashMap<>();
     Map<String, Map<String, Object>> disruptionsById = new LinkedHashMap<>();
+    Map<String, Map<String, Object>> componentsById = new LinkedHashMap<>();
+    List<Map<String, Object>> replans = new ArrayList<>();
+    Map<String, Object> compensation = null;
+    Map<String, Map<String, Object>> exposuresById = new LinkedHashMap<>();
 
     for (AuditRecord r : trail) {
       Map<String, Object> d = r.data();
@@ -90,14 +97,55 @@ public record DecisionLedger(
               "status", r.eventType().substring("travel.order.".length()).toUpperCase(Locale.ROOT));
           order = merged;
         }
-        case "travel.trip.booked" -> status = "BOOKED";
+        case "travel.trip.booked" -> {
+          status = "BOOKED";
+          components(componentsById, d);
+        }
         case "travel.trip.cancelled" -> status = "CANCELLED";
         case "travel.trip.failed" -> {
           status = "FAILED";
           failure = d;
+          components(componentsById, d);
+        }
+        case "travel.trip.replanned" -> {
+          Map<String, Object> replan = new LinkedHashMap<>(d);
+          replan.put("occurredAt", r.occurredAt().toString());
+          replans.add(replan);
+          status = "AWAITING_APPROVAL";
+        }
+        case "travel.order.compensation-failed" -> {
+          compensation = new LinkedHashMap<>(d);
+          compensation.put("occurredAt", r.occurredAt().toString());
+          if (d.get("exposures") instanceof List<?> list) {
+            for (Object o : list) {
+              if (o instanceof Map<?, ?> m && m.get("exposureId") != null) {
+                exposuresById.put(String.valueOf(m.get("exposureId")), toMap(m));
+              }
+            }
+          }
+        }
+        case "travel.order.exposure-resolved" -> {
+          Map<String, Object> e =
+              exposuresById.computeIfAbsent(
+                  String.valueOf(d.get("exposureId")), k -> new LinkedHashMap<>());
+          e.put("status", "RESOLVED");
+          e.put("resolvedBy", d.get("resolvedBy"));
+          e.put("resolution", d.get("resolution"));
+          if (d.get("amount") != null) {
+            e.put("amount", d.get("amount"));
+          }
         }
         default -> {}
       }
+    }
+    if (!exposuresById.isEmpty()) {
+      if (compensation == null) {
+        compensation = new LinkedHashMap<>();
+      }
+      compensation.put("exposures", new ArrayList<>(exposuresById.values()));
+      compensation.put(
+          "open",
+          exposuresById.values().stream().filter(e -> !"RESOLVED".equals(e.get("status"))).count());
     }
     if (plan != null && plan.get("selectedBundleId") != null) {
       Map<String, Object> selected =
@@ -204,6 +252,25 @@ public record DecisionLedger(
                   + "."
               : "Order " + order.get("orderId") + " ended " + st + ".");
     }
+    for (Map<String, Object> replan : replans) {
+      narrative.add(
+          "Revalidation before booking found "
+              + str(replan, "reason", "a material change")
+              + ": the plan of "
+              + money(replan.get("previousTotal")).replace(" for ", "")
+              + " became "
+              + money(replan.get("newTotal")).replace(" for ", "")
+              + (Boolean.TRUE.equals(replan.get("requiresApproval"))
+                  ? " and went back to a person for approval."
+                  : " and was re-checked against policy."));
+    }
+    if (!componentsById.isEmpty()) {
+      Map<String, Long> byStatus = new LinkedHashMap<>();
+      for (Map<String, Object> c : componentsById.values()) {
+        byStatus.merge(String.valueOf(c.get("status")), 1L, Long::sum);
+      }
+      narrative.add("Itinerary components: " + componentsById.size() + " (" + byStatus + ").");
+    }
     if (failure != null) {
       narrative.add(
           "The trip failed at "
@@ -212,6 +279,28 @@ public record DecisionLedger(
               + failure.get("reasonCode")
               + (failure.get("message") == null ? "" : " (" + failure.get("message") + ")")
               + ".");
+    }
+    if (compensation != null) {
+      long open = compensation.get("open") instanceof Long l ? l : 0L;
+      narrative.add(
+          "Compensation could not release everything: "
+              + exposuresById.size()
+              + " exposure(s) recorded, "
+              + open
+              + " still open"
+              + (open == 0 ? "; every one was resolved by a person." : "; a person must act."));
+      for (Map<String, Object> e : exposuresById.values()) {
+        if ("RESOLVED".equals(e.get("status"))) {
+          narrative.add(
+              "Exposure "
+                  + e.get("exposureId")
+                  + money(e.get("amount"))
+                  + " was resolved by "
+                  + e.get("resolvedBy")
+                  + (e.get("resolution") == null ? "" : " (\"" + e.get("resolution") + "\")")
+                  + ".");
+        }
+      }
     }
     List<Map<String, Object>> disruptions = new ArrayList<>(disruptionsById.values());
     for (Map<String, Object> x : disruptions) {
@@ -230,7 +319,27 @@ public record DecisionLedger(
         failure,
         disruptions,
         narrative,
-        trail.size());
+        trail.size(),
+        new ArrayList<>(componentsById.values()),
+        replans,
+        compensation);
+  }
+
+  /** Slice 3: the latest reported state of each component wins. */
+  private static void components(Map<String, Map<String, Object>> byId, Map<String, Object> d) {
+    if (d.get("components") instanceof List<?> list) {
+      for (Object o : list) {
+        if (o instanceof Map<?, ?> m && m.get("componentId") != null) {
+          byId.put(String.valueOf(m.get("componentId")), toMap(m));
+        }
+      }
+    }
+  }
+
+  private static Map<String, Object> toMap(Map<?, ?> m) {
+    Map<String, Object> out = new LinkedHashMap<>();
+    m.forEach((k, v) -> out.put(String.valueOf(k), v));
+    return out;
   }
 
   /** One map per disruption: what was detected, decided, approved, changed and how it ended. */

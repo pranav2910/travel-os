@@ -2,14 +2,18 @@ package io.travelos.order.supplier;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.travelos.contracts.supplier.v1.BookingStatus;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
 import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
 import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
+import io.travelos.contracts.supplier.v1.GetBookingStatusRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferResponse;
+import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
+import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
 import io.travelos.spring.grpc.GrpcChannels;
 import java.time.Duration;
@@ -51,6 +55,16 @@ public class SupplierClient {
 
   public PriceOfferResponse price(PriceOfferRequest request) {
     return withRetry("PriceOffer", () -> stub().priceOffer(request));
+  }
+
+  /** Slice 3: the general revalidation (hotels, ground, and air alike). */
+  public QuoteOfferResponse quote(QuoteOfferRequest request) {
+    return withRetry("QuoteOffer", () -> stub().quoteOffer(request));
+  }
+
+  /** Slice 3: what the supplier did with a command whose answer we lost. Read-only. */
+  public BookingStatus bookingStatus(GetBookingStatusRequest request) {
+    return withRetry("GetBookingStatus", () -> stub().getBookingStatus(request));
   }
 
   public CreateOrderResponse createOrder(CreateOrderRequest request) {
@@ -101,7 +115,7 @@ public class SupplierClient {
     }
   }
 
-  static boolean isRetryable(Status status) {
+  public static boolean isRetryable(Status status) {
     return switch (status.getCode()) {
       case UNAVAILABLE, RESOURCE_EXHAUSTED, DEADLINE_EXCEEDED -> true;
       default -> false;

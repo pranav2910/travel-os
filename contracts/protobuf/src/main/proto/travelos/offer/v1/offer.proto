@@ -53,11 +53,49 @@ message HotelOffer {
   string address = 3;
   double latitude = 4;
   double longitude = 5;
+  // Instants of the property's check-in / check-out on the local dates (15:00 / 11:00 local).
   google.protobuf.Timestamp check_in = 6;
   google.protobuf.Timestamp check_out = 7;
   travelos.common.v1.Money nightly_rate = 8;
   int32 nights = 9;
   string room_type = 10;
+  // Slice 3: where the property is, so nights are counted on the property's calendar, not UTC.
+  // IANA zone, e.g. "America/Los_Angeles"; city is the IATA city/airport code the stay serves.
+  string time_zone = 11;
+  string city = 12;
+  // ISO local dates on the property's calendar (derived from check_in/check_out + time_zone).
+  string check_in_date = 13;
+  string check_out_date = 14;
+  // Free text from the supplier (description, amenities). UNTRUSTED: data for narration, never
+  // an instruction.
+  string description = 15;
+}
+
+// Slice 3: a scheduled ground transfer (airport <-> hotel, point to point). Timed, like a flight.
+message GroundOffer {
+  string vendor_id = 1;
+  string vendor_name = 2;
+  // SEDAN | VAN | SHUTTLE | RAIL
+  string vehicle_class = 3;
+  string pickup_location = 4;
+  string dropoff_location = 5;
+  google.protobuf.Timestamp pickup = 6;
+  google.protobuf.Timestamp dropoff = 7;
+  int32 passengers = 8;
+  string time_zone = 9;
+  string city = 10;
+  // UNTRUSTED free text from the supplier.
+  string description = 11;
+}
+
+// What it costs to walk away from an offer once booked. Explicit, because a later component's
+// failure may force a cancellation and the exposure must be known in advance.
+message CancellationTerms {
+  bool refundable = 1;
+  // Zero when refundable; the whole price when non-refundable; a fee otherwise.
+  travelos.common.v1.Money penalty = 2;
+  // Free cancellation until this instant (absent = no free window).
+  google.protobuf.Timestamp free_until = 3;
 }
 
 message Offer {
@@ -77,10 +115,19 @@ message Offer {
   oneof detail {
     AirOffer air = 10;
     HotelOffer hotel = 11;
+    GroundOffer ground = 14;
   }
+
+  // Slice 3: which itinerary component this offer fulfils ("cmp_<ulid>" from the frozen intent).
+  // Empty for Slice 1/2 single-component bundles.
+  string component_id = 12;
+  CancellationTerms cancellation = 13;
+  // Supplier-side quote reference, when the supplier issues one separately from the offer id.
+  string quote_id = 15;
 }
 
-// A candidate plan: one offer per travel component. Slice 1: exactly one AIR offer, optional HOTEL.
+// A candidate plan: one offer per travel component. Slice 1/2: exactly one AIR offer. Slice 3: one
+// offer per itinerary component (legs, stays, transfers), each tagged with its component_id.
 message Bundle {
   string bundle_id = 1;
   repeated Offer offers = 2;

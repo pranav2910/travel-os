@@ -41,7 +41,13 @@ public final class TripPlanning {
     EVALUATING_POLICY,
     OPTIMIZING,
     AWAITING_APPROVAL,
+    /**
+     * Slice 3: quotes and the approved plan are checked again right before any supplier mutation.
+     */
+    REVALIDATING,
     BOOKING,
+    /** Slice 3: a later component failed; confirmed ones are being released. */
+    COMPENSATING,
     BOOKED,
     FAILED,
     CANCELLED

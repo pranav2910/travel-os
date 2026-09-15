@@ -23,7 +23,11 @@ public enum IdPrefix {
   DISRUPTION("dsr"),
   ORDER_CHANGE("chg"),
   RECOVERY_DECISION("rcd"),
-  RECOVERY_OUTCOME("rco");
+  RECOVERY_OUTCOME("rco"),
+  /** Slice 3: an itinerary component (leg, stay, transfer) with a stable id across re-planning. */
+  COMPONENT("cmp"),
+  /** Slice 3: money at risk after a failed compensation, until a person resolves it. */
+  EXPOSURE("exp");
 
   private final String prefix;
 

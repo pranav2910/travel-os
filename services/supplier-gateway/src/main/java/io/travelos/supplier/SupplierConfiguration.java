@@ -17,7 +17,8 @@ class SupplierConfiguration {
   }
 
   @Bean
-  SupplierRegistry supplierRegistry(List<AirSupplier> suppliers, SupplierProperties properties) {
+  SupplierRegistry supplierRegistry(
+      List<SupplierAdapter> suppliers, SupplierProperties properties) {
     return new SupplierRegistry(suppliers, properties);
   }
 }

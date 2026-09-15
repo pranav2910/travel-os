@@ -173,7 +173,15 @@ public class PolicyEvaluationService {
           engine.evaluateAction(
               pv.document(),
               trip,
-              new Facts.Action(request.getAction(), incremental, proposed, constraints, itinerary),
+              new Facts.Action(
+                  request.getAction(),
+                  incremental,
+                  proposed,
+                  constraints,
+                  itinerary,
+                  request.hasProposed()
+                      ? ProtoMapping.legTimings(request.getProposed())
+                      : List.of()),
               ctx.principal());
     }
     String bundleId = request.hasProposed() ? request.getProposed().getBundleId() : null;

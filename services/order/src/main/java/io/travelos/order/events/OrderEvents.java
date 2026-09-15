@@ -3,6 +3,7 @@ package io.travelos.order.events;
 import io.travelos.common.identity.Principal;
 import io.travelos.common.money.Money;
 import io.travelos.events.EventEnvelope;
+import io.travelos.order.store.ExposureRecord;
 import io.travelos.order.store.OrderChangeRecord;
 import io.travelos.order.store.OrderRecord;
 import java.time.Clock;
@@ -48,13 +49,71 @@ public final class OrderEvents {
       boolean compensated,
       @Nullable String causationId,
       Clock clock) {
+    return failed(o, reasonCode, message, compensated, List.of(), causationId, clock);
+  }
+
+  public static EventEnvelope failed(
+      OrderRecord o,
+      String reasonCode,
+      String message,
+      boolean compensated,
+      List<ExposureRecord> exposures,
+      @Nullable String causationId,
+      Clock clock) {
     Map<String, Object> data = base(o);
     data.put("status", o.status().name());
     data.put("reasonCode", reasonCode);
     data.put("message", message.length() > 2000 ? message.substring(0, 2000) : message);
     data.put("compensated", compensated);
     data.put("items", items(o));
+    if (!exposures.isEmpty()) {
+      data.put("exposures", exposures(exposures));
+    }
     return envelope("travel.order.failed", o, causationId, data, clock);
+  }
+
+  /** Slice 3: money at risk after a failed compensation; a person must act. */
+  public static EventEnvelope compensationFailed(
+      OrderRecord o,
+      List<ExposureRecord> exposures,
+      String reasonCode,
+      String message,
+      @Nullable String causationId,
+      Clock clock) {
+    Map<String, Object> data = base(o);
+    data.put("reasonCode", reasonCode);
+    data.put("message", message.length() > 2000 ? message.substring(0, 2000) : message);
+    data.put("exposures", exposures(exposures));
+    data.put("requiredRole", "TRAVEL_ADMIN");
+    return envelope("travel.order.compensation-failed", o, causationId, data, clock);
+  }
+
+  public static EventEnvelope exposureResolved(
+      OrderRecord o, ExposureRecord e, Principal by, @Nullable String causationId, Clock clock) {
+    Map<String, Object> data = base(o);
+    data.put("exposureId", e.exposureId());
+    data.put("resolvedBy", by.id());
+    data.put("resolution", e.resolution() == null ? "" : e.resolution());
+    data.put("amount", money(e.amount()));
+    return envelope("travel.order.exposure-resolved", o, causationId, data, clock);
+  }
+
+  private static List<Map<String, Object>> exposures(List<ExposureRecord> exposures) {
+    List<Map<String, Object>> out = new ArrayList<>();
+    for (ExposureRecord e : exposures) {
+      Map<String, Object> m = new LinkedHashMap<>();
+      m.put("exposureId", e.exposureId());
+      m.put("itemId", e.itemId());
+      putIfPresent(m, "componentId", e.componentId());
+      m.put("provider", e.provider());
+      m.put("externalRef", e.externalRef());
+      m.put("amount", money(e.amount()));
+      m.put("reason", e.reason());
+      putIfPresent(m, "detail", e.detail());
+      m.put("status", e.status().name());
+      out.add(m);
+    }
+    return out;
   }
 
   public static EventEnvelope cancelled(
@@ -125,6 +184,9 @@ public final class OrderEvents {
       m.put("status", item.status().name());
       putIfPresent(m, "externalRef", item.externalRef());
       putIfPresent(m, "recordLocator", item.recordLocator());
+      putIfPresent(m, "componentId", item.componentId());
+      m.put("total", money(item.total()));
+      putIfPresent(m, "failureCode", item.failureCode());
       items.add(m);
     }
     return items;

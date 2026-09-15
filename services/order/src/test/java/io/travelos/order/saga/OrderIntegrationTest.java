@@ -240,7 +240,11 @@ class OrderIntegrationTest {
     assertThat(view.get("compensated").asBoolean()).isFalse();
     assertThat(view.get("items").get(0).get("status").asString())
         .as("still confirmed at the supplier: a human must release it")
-        .isEqualTo("CONFIRMED");
+        .isEqualTo("CANCEL_FAILED");
+    assertThat(view.get("exposures")).hasSize(1);
+    assertThat(view.get("exposures").get(0).get("status").asString()).isEqualTo("OPEN");
+    assertThat(view.get("exposures").get(0).get("amount").get("amountMinor").asLong())
+        .isEqualTo(view.get("items").get(0).get("total").get("amountMinor").asLong());
   }
 
   @Test
@@ -511,6 +515,257 @@ class OrderIntegrationTest {
       assertThat(EventSchemas.violations(record.value())).as(record.value()).isEmpty();
       assertThat(record.key()).isEqualTo(TRIP);
     }
+  }
+
+  // ------------------------------------------------------------------ Slice 3
+
+  @Test
+  @org.junit.jupiter.api.Order(14)
+  void anItineraryBooksLegsThenStaysThenTransfersAndCarriesComponentIds() {
+    int before = SUPPLIER.createLog.size();
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary(
+                    "bdl_01ARZ3NDEKTSV4RRFFQ69G5FB1", "ground-SEA-1", "hotel-SEA-1", "ok-DL140")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(order.getItemsList())
+        .extracting(i -> i.getOffer().getType().name())
+        .as("legs first, then the stay, then the transfer")
+        .containsExactly("AIR", "HOTEL", "GROUND");
+    assertThat(order.getItemsList()).allMatch(i -> i.getComponentId().startsWith("cmp_"));
+    assertThat(order.getItemsList()).allMatch(i -> i.getTotal().getAmountMinor() > 0);
+    assertThat(SUPPLIER.createLog.subList(before, SUPPLIER.createLog.size()))
+        .containsExactly("ok-DL140", "hotel-SEA-1", "ground-SEA-1");
+    JsonNode view =
+        json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.alice()).getBody());
+    assertThat(view.get("items").get(1).get("hotel").get("propertyId").asString())
+        .isEqualTo("HTL-SEA-1");
+    assertThat(view.get("items").get(1).get("hotel").get("checkInDate").asString())
+        .isEqualTo("2026-10-06");
+    assertThat(view.get("items").get(2).get("ground").get("vendorName").asString())
+        .isEqualTo("CityShuttle");
+    assertThat(view.get("items").get(0).get("componentId").asString()).startsWith("cmp_");
+    assertThat(view.has("exposures")).isFalse();
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(15)
+  void aLostAnswerIsReconciledByStatusLookupAndNeverBookedTwice() {
+    int lookupsBefore = SUPPLIER.statusLookups.get();
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary("bdl_01ARZ3NDEKTSV4RRFFQ69G5FB2", "ok-DL150", "lost-hotel-SEA")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    String key = order.getOrderId() + ":" + order.getItems(1).getItemId();
+    assertThat(SUPPLIER.ordersByKey).containsKey(key);
+    assertThat(order.getItems(1).getExternalRef())
+        .as("the booking the supplier made under our key is the one we hold")
+        .isEqualTo(SUPPLIER.ordersByKey.get(key).getExternalOrderId());
+    assertThat(SUPPLIER.createAttempts.get(key).get())
+        .as("the client retried, every answer was lost")
+        .isGreaterThanOrEqualTo(3);
+    assertThat(SUPPLIER.statusLookups.get()).isGreaterThan(lookupsBefore);
+    assertThat(SUPPLIER.ordersByKey.keySet().stream().filter(key::equals).count()).isEqualTo(1);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(16)
+  void aLaterFailureCompensatesInReverseOrderAndExposesWhatCannotBeReleased() {
+    int before = SUPPLIER.cancelAttempts.size();
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary(
+                    "bdl_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+                    "ok-DL160",
+                    "norefund-hotel-SEA",
+                    "soldout-ground-SEA")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.PARTIALLY_FAILED);
+    assertThat(order.getCompensated()).isFalse();
+    assertThat(order.getItems(2).getStatus()).isEqualTo(OrderItemStatus.ITEM_FAILED);
+    assertThat(order.getItems(1).getStatus()).isEqualTo(OrderItemStatus.ITEM_CANCEL_FAILED);
+    assertThat(order.getItems(0).getStatus()).isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(SUPPLIER.cancelAttempts.subList(before, SUPPLIER.cancelAttempts.size()))
+        .as("the last thing confirmed is the first thing released")
+        .containsExactly(order.getItems(1).getExternalRef(), order.getItems(0).getExternalRef());
+    assertThat(order.getExposuresCount()).isEqualTo(1);
+    assertThat(order.getExposures(0).getStatus()).isEqualTo("OPEN");
+    assertThat(order.getExposures(0).getReason()).isEqualTo("COMPENSATION_FAILED");
+    assertThat(order.getExposures(0).getDetail()).startsWith("CANCELLATION_REFUSED");
+    assertThat(order.getExposures(0).getAmount()).isEqualTo(order.getItems(1).getTotal());
+    String exposureId = order.getExposures(0).getExposureId();
+    String path =
+        "/api/v1/orders/" + order.getOrderId() + "/exposures/" + exposureId + "/resolution";
+    // the traveler cannot close the company's exposure; a travel admin can, once
+    assertThat(resolve(path, TestTokens.alice(), "res-" + exposureId).getStatusCode().value())
+        .isEqualTo(403);
+    ResponseEntity<String> resolved = resolve(path, TestTokens.carol(), "res-" + exposureId);
+    assertThat(resolved.getStatusCode().value()).as(resolved.getBody()).isEqualTo(200);
+    assertThat(json.readTree(resolved.getBody()).get("status").asString()).isEqualTo("RESOLVED");
+    assertThat(json.readTree(resolved.getBody()).get("resolvedBy").asString())
+        .isEqualTo("human/carol");
+    assertThat(resolve(path, TestTokens.carol(), "res-" + exposureId).getStatusCode().value())
+        .as("idempotent")
+        .isEqualTo(200);
+    assertThat(resolve(path, TestTokens.carol(), "other-key").getStatusCode().value())
+        .as("a different resolution of the same exposure is a conflict")
+        .isEqualTo(409);
+    JsonNode view =
+        json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.bob()).getBody());
+    assertThat(view.get("status").asString())
+        .as("nothing is open any more: FAILED, compensated by a person")
+        .isEqualTo("FAILED");
+    assertThat(view.get("compensated").asBoolean()).isTrue();
+    assertThat(view.get("exposures").get(0).get("resolution").asString()).contains("phone");
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              consumer.poll(Duration.ofMillis(250)).forEach(received::add);
+              List<String> mine =
+                  received.stream()
+                      .filter(r -> r.value().contains(order.getOrderId()))
+                      .map(r -> json.readTree(r.value()).get("eventType").asString())
+                      .toList();
+              assertThat(mine)
+                  .contains("travel.order.compensation-failed", "travel.order.exposure-resolved");
+            });
+    for (ConsumerRecord<String, String> record : received) {
+      if (record.value().contains(order.getOrderId())) {
+        assertThat(EventSchemas.violations(record.value())).as(record.value()).isEmpty();
+      }
+    }
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(17)
+  void aComponentChangePreservesTheItemsItDoesNotName() {
+    Bundle original =
+        itinerary("bdl_01ARZ3NDEKTSV4RRFFQ69G5FB4", "ok-DL170", "hotel-SEA-2", "ground-SEA-1");
+    Order order =
+        orders.createOrder(command(TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(), original));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    String rideId = original.getOffers(2).getComponentId();
+    String stayId = original.getOffers(1).getComponentId();
+    String legId = original.getOffers(0).getComponentId();
+    Bundle fresh = itinerary("bdl_01ARZ3NDEKTSV4RRFFQ69G5FB5", "ok-DL777", "ground-SEA-2");
+    Bundle replacement =
+        fresh.toBuilder()
+            .clearOffers()
+            .addOffers(fresh.getOffers(0).toBuilder().setComponentId(legId))
+            .addOffers(fresh.getOffers(1).toBuilder().setComponentId(rideId))
+            .build();
+    String key = "TRIP:" + TRIP + ":DISRUPTION:dsr_01ARZ3NDEKTSV4RRFFQ69G5FB5:CHANGE:1";
+    ChangeOrderCommand change =
+        ChangeOrderCommand.newBuilder()
+            .setCtx(ctx(key))
+            .setOrderId(order.getOrderId())
+            .setDisruptionId("dsr_01ARZ3NDEKTSV4RRFFQ69G5FB5")
+            .setReplacement(replacement)
+            .setPolicyDecisionId("pd_01ARZ3NDEKTSV4RRFFQ69G5FB5")
+            .addPassengers(Passenger.newBuilder().setGivenName("Alice").setFamilyName("Nguyen"))
+            .setPaymentToken("tok_corp_visa")
+            .setReason("connected recovery")
+            .build();
+    Order changed = orders.changeOrder(change);
+    assertThat(changed.getStatus()).isEqualTo(OrderStatus.CHANGED);
+    assertThat(changed.getItemsList())
+        .extracting(i -> i.getComponentId() + ":" + i.getStatus().name())
+        .containsExactlyInAnyOrder(
+            legId + ":ITEM_CHANGED",
+            stayId + ":ITEM_CONFIRMED",
+            rideId + ":ITEM_CHANGED",
+            legId + ":ITEM_CONFIRMED",
+            rideId + ":ITEM_CONFIRMED");
+    long expected =
+        changed.getItemsList().stream()
+            .filter(i -> i.getStatus() == OrderItemStatus.ITEM_CONFIRMED)
+            .mapToLong(i -> i.getTotal().getAmountMinor())
+            .sum();
+    assertThat(changed.getTotal().getAmountMinor()).isEqualTo(expected);
+    long incremental =
+        FakeSupplierGateway.cents("ok-DL777")
+            - FakeSupplierGateway.cents("ok-DL170")
+            + FakeSupplierGateway.cents("ground-SEA-2")
+            - FakeSupplierGateway.cents("ground-SEA-1");
+    assertThat(changed.getChanges(0).getIncrementalCost().getAmountMinor()).isEqualTo(incremental);
+    assertThat(orders.changeOrder(change).getVersion())
+        .as("replay is a read")
+        .isEqualTo(changed.getVersion());
+  }
+
+  private ResponseEntity<String> resolve(String path, String token, String key) {
+    return http.post()
+        .uri(path)
+        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+        .header(org.springframework.http.HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header("Idempotency-Key", key)
+        .body("{\"resolution\":\"cancelled by phone with the property; refund confirmed\"}")
+        .retrieve()
+        .toEntity(String.class);
+  }
+
+  /**
+   * Typed offers by prefix (hotel-*, ground-*, else air), each tagged with a fresh component id.
+   */
+  private static Bundle itinerary(String bundleId, String... providerOfferIds) {
+    Bundle.Builder b = Bundle.newBuilder().setBundleId(bundleId);
+    long total = 0;
+    for (String id : providerOfferIds) {
+      long cents = FakeSupplierGateway.cents(id);
+      total += cents;
+      String componentId =
+          io.travelos.common.ids.Ids.newId(io.travelos.common.ids.IdPrefix.COMPONENT);
+      Offer.Builder o =
+          Offer.newBuilder()
+              .setOfferId("off_" + id)
+              .setProviderOfferId(id)
+              .setComponentId(componentId)
+              .setTotal(Money.newBuilder().setCurrency("USD").setAmountMinor(cents));
+      if (id.contains("hotel-")) {
+        o.setProvider("sandbox-hotel")
+            .setType(OfferType.HOTEL)
+            .setHotel(
+                io.travelos.contracts.offer.v1.HotelOffer.newBuilder()
+                    .setPropertyId("HTL-SEA-1")
+                    .setName("Budget Inn")
+                    .setCity("SEA")
+                    .setCheckInDate("2026-10-06")
+                    .setCheckOutDate("2026-10-08")
+                    .setNights(2)
+                    .setTimeZone("America/Los_Angeles"));
+      } else if (id.contains("ground-")) {
+        o.setProvider("sandbox-ground")
+            .setType(OfferType.GROUND)
+            .setGround(
+                io.travelos.contracts.offer.v1.GroundOffer.newBuilder()
+                    .setVendorId("GRD-SEA-SHUTTLE")
+                    .setVendorName("CityShuttle")
+                    .setVehicleClass("SHUTTLE")
+                    .setPickupLocation("SEA airport")
+                    .setDropoffLocation("hotel")
+                    .setTimeZone("America/Los_Angeles"));
+      } else {
+        o.setProvider("sandbox-air")
+            .setType(OfferType.AIR)
+            .setAir(
+                AirOffer.newBuilder()
+                    .setOutbound(
+                        Journey.newBuilder()
+                            .addSegments(
+                                FlightSegment.newBuilder()
+                                    .setCarrier("DL")
+                                    .setOrigin("BOS")
+                                    .setDestination("SEA"))));
+      }
+      b.addOffers(o);
+    }
+    return b.setTotal(Money.newBuilder().setCurrency("USD").setAmountMinor(total)).build();
   }
 
   // ------------------------------------------------------------------ helpers

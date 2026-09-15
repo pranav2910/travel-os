@@ -18,9 +18,75 @@ public record TravelIntent(
     @Nullable Instant latestReturn,
     @Nullable String purpose,
     boolean hotelRequired,
-    int travelers) {
+    int travelers,
+    @Nullable Itinerary itinerary) {
 
   private static final Pattern IATA = Pattern.compile("^[A-Z]{3}$");
+
+  /** The Slice 1/2 shape: one origin, one destination, an optional return. */
+  public TravelIntent(
+      String origin,
+      String destination,
+      Instant earliestDeparture,
+      Instant arrivalDeadline,
+      @Nullable Instant returnAfter,
+      @Nullable Instant latestReturn,
+      @Nullable String purpose,
+      boolean hotelRequired,
+      int travelers) {
+    this(
+        origin,
+        destination,
+        earliestDeparture,
+        arrivalDeadline,
+        returnAfter,
+        latestReturn,
+        purpose,
+        hotelRequired,
+        travelers,
+        null);
+  }
+
+  /**
+   * Slice 3: an itinerary. The legacy fields describe its first leg (and the last leg as the
+   * "return" when the trip comes home) so every Slice 1/2 reader keeps working.
+   */
+  public static TravelIntent of(Itinerary itinerary, @Nullable String purpose, int travelers) {
+    Itinerary.Leg first = itinerary.legs().getFirst();
+    Itinerary.Leg last = itinerary.legs().getLast();
+    boolean home = itinerary.returnsHome();
+    return new TravelIntent(
+        first.origin(),
+        first.destination(),
+        first.earliestDeparture(),
+        first.arrivalDeadline(),
+        home ? last.earliestDeparture() : null,
+        home ? last.arrivalDeadline() : null,
+        purpose,
+        !itinerary.stays().isEmpty(),
+        travelers,
+        itinerary);
+  }
+
+  /** The stated request, id-free: the input to the idempotency fingerprint. */
+  public String canonical() {
+    return String.join(
+        "|",
+        origin,
+        destination,
+        String.valueOf(earliestDeparture),
+        String.valueOf(arrivalDeadline),
+        String.valueOf(returnAfter),
+        String.valueOf(latestReturn),
+        purpose == null ? "" : purpose,
+        String.valueOf(hotelRequired),
+        String.valueOf(travelers),
+        itinerary == null ? "" : itinerary.canonical());
+  }
+
+  public boolean isItinerary() {
+    return itinerary != null;
+  }
 
   public TravelIntent {
     require(

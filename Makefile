@@ -11,7 +11,7 @@ COMPOSE := docker compose -f platform/local/docker-compose.yml
 STACK   := docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml
 JARS    := travel-core policy supplier-gateway order audit disruption
 
-.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e stack-e2e2 kind-up kind-deploy kind-e2e kind-e2e2 kind-chaos kind-chaos2 kind-rollback-demo kind-down helm-lint tf-check
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e stack-e2e2 stack-e2e3 kind-up kind-deploy kind-e2e kind-e2e2 kind-e2e3 kind-chaos kind-chaos2 kind-chaos3 kind-rollback-demo kind-down helm-lint tf-check
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -80,6 +80,8 @@ stack-logs: ## tail Docker stack logs (SVC=trip-planning to filter)
 
 stack-e2e2: ## run the Slice 2 script against the Docker stack
 	bash scripts/e2e-slice2.sh
+stack-e2e3: ## run the Slice 3 script against the Docker stack
+	bash scripts/e2e-slice3.sh
 
 stack-e2e: ## run the live end-to-end script against the Docker stack
 	bash scripts/e2e-slice1.sh
@@ -102,6 +104,10 @@ kind-e2e2: ## run the Slice 2 disruption-recovery script against the kind cluste
 
 kind-chaos2: ## kill the recovery worker and the order service during ChangeOrder; prove one logical recovery
 	bash scripts/chaos-slice2-kind.sh
+kind-e2e3: ## run the Slice 3 itinerary script (hotels, ground, multi-city) against the kind cluster
+	E2E_BACKEND=kind bash scripts/e2e-slice3.sh
+kind-chaos3: ## hold a 7-component booking and its recovery at proven points, kill the worker; prove one booking each
+	bash scripts/chaos-slice3-kind.sh
 
 kind-rollback-demo: ## deploy a stand-in "next" release then roll back to the previous revision
 	bash scripts/rollback-kind.sh

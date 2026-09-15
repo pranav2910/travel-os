@@ -22,7 +22,9 @@ public enum TripStatus {
           SUBMITTED, EnumSet.of(PLANNING, CANCELLED, FAILED),
           PLANNING, EnumSet.of(AWAITING_APPROVAL, APPROVED, CANCELLED, FAILED),
           AWAITING_APPROVAL, EnumSet.of(APPROVED, CANCELLED, FAILED),
-          APPROVED, EnumSet.of(BOOKING, CANCELLED),
+          // Slice 3: revalidation before booking found a material change (price up, quote gone):
+          // the approved plan is stale and a person decides again.
+          APPROVED, EnumSet.of(BOOKING, AWAITING_APPROVAL, CANCELLED),
           BOOKING, EnumSet.of(BOOKED, FAILED),
           BOOKED, EnumSet.of(CANCELLED),
           CANCELLED, EnumSet.noneOf(TripStatus.class),

@@ -27,6 +27,8 @@ public final class PolicyEngine {
   static final String RULE_MAX_STOPS = "MAX_STOPS";
   static final String RULE_LLF = "LOWEST_LOGICAL_FARE";
   static final String RULE_HOTEL = "HOTEL_NIGHTLY_LIMIT";
+  static final String RULE_GROUND = "GROUND_TRANSFER_LIMIT";
+  static final String RULE_TRIP_BUDGET = "TRIP_BUDGET";
   static final String RULE_MANAGER_THRESHOLD = "MANAGER_APPROVAL_THRESHOLD";
   static final String RULE_INCENTIVE = "INCENTIVE_SHARE";
   static final String RULE_AGENT_REBOOKING = "AGENT_REBOOKING_AUTONOMY";
@@ -46,6 +48,8 @@ public final class PolicyEngine {
           new MaxStopsRule(),
           new LowestLogicalFareRule(),
           new HotelNightlyLimitRule(),
+          new GroundTransferLimitRule(),
+          new TripBudgetRule(),
           new ManagerApprovalThresholdRule());
 
   /** Facts shared by every candidate of one evaluation: the benchmark fare and the ceiling. */
@@ -148,11 +152,14 @@ public final class PolicyEngine {
 
     // A change must still get the traveler where the trip needs them: the replacement's times are
     // checked against the frozen intent here, by policy, not by whoever proposed it.
-    if ("order.change".equals(action.action())
-        && action.constraints() != null
-        && action.itinerary() != null) {
-      rules.add(RULE_REPLACEMENT_CONSTRAINTS);
-      violations.addAll(replacementConstraints(action.constraints(), action.itinerary()));
+    if ("order.change".equals(action.action()) && action.constraints() != null) {
+      if (!action.legTimings().isEmpty() && !action.constraints().legWindows().isEmpty()) {
+        rules.add(RULE_REPLACEMENT_CONSTRAINTS);
+        violations.addAll(legWindows(action.constraints(), action.legTimings()));
+      } else if (action.itinerary() != null) {
+        rules.add(RULE_REPLACEMENT_CONSTRAINTS);
+        violations.addAll(replacementConstraints(action.constraints(), action.itinerary()));
+      }
     }
 
     // Whatever the actor, a proposed bundle must itself be in policy. A hallucinated business-class
@@ -216,6 +223,40 @@ public final class PolicyEngine {
     }
     if (k.returnAfter() != null && it.inboundDeparture() == null) {
       out.add(deny("RETURN_LEG_MISSING", "the trip needs a return leg; the replacement has none"));
+    }
+    return out;
+  }
+
+  /** Slice 3: every leg of a multi-leg replacement must fly inside its own window. */
+  static List<Violation> legWindows(Facts.Constraints k, List<Facts.LegTiming> timings) {
+    List<Violation> out = new ArrayList<>();
+    for (Facts.LegTiming t : timings) {
+      Facts.Window w = k.legWindows().get(t.componentId());
+      if (w == null) {
+        continue;
+      }
+      if (t.departure().isBefore(w.earliestDeparture())) {
+        out.add(
+            deny(
+                "LEG_DEPARTS_BEFORE_WINDOW",
+                "leg "
+                    + t.componentId()
+                    + " departs "
+                    + t.departure()
+                    + ", before its earliest departure "
+                    + w.earliestDeparture()));
+      }
+      if (t.arrival().isAfter(w.arrivalDeadline())) {
+        out.add(
+            deny(
+                "LEG_ARRIVES_AFTER_DEADLINE",
+                "leg "
+                    + t.componentId()
+                    + " lands "
+                    + t.arrival()
+                    + ", after its deadline "
+                    + w.arrivalDeadline()));
+      }
     }
     return out;
   }
@@ -383,6 +424,35 @@ public final class PolicyEngine {
                 Consequence.DENY,
                 null));
       }
+      for (Facts.Hotel h : c.hotels()) {
+        if (!h.nightlyRate().currency().equals(policy.currency())) {
+          return Optional.of(
+              new Violation(
+                  RULE_CURRENCY,
+                  "CURRENCY_MISMATCH",
+                  "a stay is priced in "
+                      + h.nightlyRate().currency()
+                      + ", policy is in "
+                      + policy.currency()
+                      + "; the platform does not convert currencies",
+                  Consequence.DENY,
+                  null));
+        }
+      }
+      for (Facts.Ground g : c.ground()) {
+        if (!g.fare().currency().equals(policy.currency())) {
+          return Optional.of(
+              new Violation(
+                  RULE_CURRENCY,
+                  "CURRENCY_MISMATCH",
+                  "a transfer is priced in "
+                      + g.fare().currency()
+                      + ", policy is in "
+                      + policy.currency(),
+                  Consequence.DENY,
+                  null));
+        }
+      }
       return Optional.empty();
     }
   }
@@ -486,20 +556,96 @@ public final class PolicyEngine {
     public Optional<Violation> evaluate(
         PolicyDocument policy, Trip trip, Candidate c, Context ctx) {
       Long limit = policy.hotel().nightlyLimit();
-      if (c.hotel() == null || limit == null) {
+      if (c.hotels().isEmpty() || limit == null) {
         return Optional.empty();
       }
       Money max = Money.of(policy.currency(), limit);
-      if (!c.hotel().nightlyRate().currency().equals(policy.currency())
-          || c.hotel().nightlyRate().compareTo(max) <= 0) {
+      // every stay is checked; the first one over the limit is the objection (its stay is named)
+      for (Facts.Hotel h : c.hotels()) {
+        if (!h.nightlyRate().currency().equals(policy.currency())
+            || h.nightlyRate().compareTo(max) <= 0) {
+          continue;
+        }
+        Consequence consequence = policy.hotel().consequence();
+        return Optional.of(
+            new Violation(
+                RULE_HOTEL,
+                "HOTEL_RATE_ABOVE_LIMIT",
+                "nightly rate "
+                    + h.nightlyRate()
+                    + (h.componentId() == null ? "" : " for stay " + h.componentId())
+                    + " exceeds the "
+                    + max
+                    + " limit",
+                consequence,
+                approverFor(consequence)));
+      }
+      return Optional.empty();
+    }
+  }
+
+  /** Slice 3: each ground transfer within the policy's per-transfer limit. */
+  private static final class GroundTransferLimitRule implements TripRule {
+    @Override
+    public String id() {
+      return RULE_GROUND;
+    }
+
+    @Override
+    public Optional<Violation> evaluate(
+        PolicyDocument policy, Trip trip, Candidate c, Context ctx) {
+      Long limit = policy.ground().perTransferLimit();
+      if (c.ground().isEmpty() || limit == null) {
         return Optional.empty();
       }
-      Consequence consequence = policy.hotel().consequence();
+      Money max = Money.of(policy.currency(), limit);
+      for (Facts.Ground g : c.ground()) {
+        if (!g.fare().currency().equals(policy.currency()) || g.fare().compareTo(max) <= 0) {
+          continue;
+        }
+        Consequence consequence = policy.ground().consequence();
+        return Optional.of(
+            new Violation(
+                RULE_GROUND,
+                "GROUND_TRANSFER_ABOVE_LIMIT",
+                "transfer "
+                    + (g.componentId() == null ? "" : g.componentId() + " ")
+                    + "costs "
+                    + g.fare()
+                    + ", above the "
+                    + max
+                    + " limit per transfer",
+                consequence,
+                approverFor(consequence)));
+      }
+      return Optional.empty();
+    }
+  }
+
+  /** Slice 3: the whole itinerary, every component included, against the trip budget. */
+  private static final class TripBudgetRule implements TripRule {
+    @Override
+    public String id() {
+      return RULE_TRIP_BUDGET;
+    }
+
+    @Override
+    public Optional<Violation> evaluate(
+        PolicyDocument policy, Trip trip, Candidate c, Context ctx) {
+      Long budget = policy.trip().maxTotal();
+      if (budget == null || !c.total().currency().equals(policy.currency())) {
+        return Optional.empty();
+      }
+      Money max = Money.of(policy.currency(), budget);
+      if (c.total().compareTo(max) <= 0) {
+        return Optional.empty();
+      }
+      Consequence consequence = policy.trip().consequence();
       return Optional.of(
           new Violation(
-              RULE_HOTEL,
-              "HOTEL_RATE_ABOVE_LIMIT",
-              "nightly rate " + c.hotel().nightlyRate() + " exceeds the " + max + " limit",
+              RULE_TRIP_BUDGET,
+              "TRIP_TOTAL_ABOVE_BUDGET",
+              "the itinerary costs " + c.total() + ", above the " + max + " trip budget",
               consequence,
               approverFor(consequence)));
     }

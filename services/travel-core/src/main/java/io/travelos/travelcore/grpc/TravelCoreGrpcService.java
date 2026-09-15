@@ -6,18 +6,29 @@ import io.grpc.stub.StreamObserver;
 import io.travelos.common.money.Money;
 import io.travelos.contracts.common.v1.ModelCall;
 import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
+import io.travelos.contracts.trip.v1.ComponentState;
 import io.travelos.contracts.trip.v1.GetTripRequest;
+import io.travelos.contracts.trip.v1.Itinerary;
+import io.travelos.contracts.trip.v1.Leg;
+import io.travelos.contracts.trip.v1.Stay;
+import io.travelos.contracts.trip.v1.Transfer;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
 import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.contracts.trip.v1.TravelerSnapshot;
 import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
+import io.travelos.contracts.trip.v1.UpdateComponentsRequest;
 import io.travelos.spring.grpc.RequestContexts;
 import io.travelos.spring.web.error.ApiException;
 import io.travelos.travelcore.trip.AgentDecision;
+import io.travelos.travelcore.trip.TripComponent;
 import io.travelos.travelcore.trip.TripService;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +47,7 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
     RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
     try {
       io.travelos.travelcore.trip.Trip trip = trips.getInternal(ctx.tenant(), request.getTripId());
-      Trip.Builder proto = toProto(trip).toBuilder();
+      Trip.Builder proto = withComponents(ctx.tenant(), trip).toBuilder();
       trips
           .latestApproval(ctx.tenant(), trip.tripId())
           .ifPresent(a -> proto.setApprovalStatus(a.status().name()));
@@ -86,8 +97,9 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                   blankToNull(request.getFailureStage()),
                   blankToNull(request.getFailureCode()),
                   blankToNull(request.getCtx().getCausationId()),
-                  blankToNull(request.getExplanation())));
-      observer.onNext(toProto(trip));
+                  blankToNull(request.getExplanation()),
+                  blankToNull(request.getReplanReason())));
+      observer.onNext(withComponents(ctx.tenant(), trip));
     } catch (ApiException.NotFound e) {
       throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();
     }
@@ -152,7 +164,81 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
     observer.onCompleted();
   }
 
+  @Override
+  public void updateComponents(UpdateComponentsRequest request, StreamObserver<Trip> observer) {
+    RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
+    List<TripComponent> states = new ArrayList<>();
+    Instant now = Instant.now();
+    int position = 0;
+    for (ComponentState c : request.getComponentsList()) {
+      if (c.getComponentId().isBlank() || c.getType().isBlank() || c.getStatus().isBlank()) {
+        throw Status.INVALID_ARGUMENT
+            .withDescription("every component needs component_id, type and status")
+            .asRuntimeException();
+      }
+      states.add(
+          new TripComponent(
+              c.getComponentId(),
+              c.getType(),
+              c.getStatus(),
+              blankToNull(c.getOfferId()),
+              blankToNull(c.getProvider()),
+              blankToNull(c.getExternalRef()),
+              c.hasTotal()
+                  ? Money.of(c.getTotal().getCurrency(), c.getTotal().getAmountMinor())
+                  : null,
+              blankToNull(c.getFailureCode()),
+              blankToNull(c.getSummary()),
+              position++,
+              c.hasUpdatedAt() ? instant(c.getUpdatedAt()) : now));
+    }
+    try {
+      io.travelos.travelcore.trip.Trip trip =
+          trips.updateComponents(ctx.tenant(), request.getTripId(), states);
+      observer.onNext(withComponents(ctx.tenant(), trip));
+    } catch (ApiException.NotFound e) {
+      throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();
+    }
+    observer.onCompleted();
+  }
+
+  private Trip withComponents(
+      io.travelos.common.tenant.TenantId tenant, io.travelos.travelcore.trip.Trip trip) {
+    Trip.Builder b = toProto(trip).toBuilder();
+    for (TripComponent c : trips.components(tenant, trip.tripId())) {
+      b.addComponents(toProto(c));
+    }
+    return b.build();
+  }
+
+  static ComponentState toProto(TripComponent c) {
+    ComponentState.Builder b =
+        ComponentState.newBuilder()
+            .setComponentId(c.componentId())
+            .setType(c.type())
+            .setStatus(c.status())
+            .setOfferId(nullToEmpty(c.offerId()))
+            .setProvider(nullToEmpty(c.provider()))
+            .setExternalRef(nullToEmpty(c.externalRef()))
+            .setFailureCode(nullToEmpty(c.failureCode()))
+            .setSummary(nullToEmpty(c.summary()))
+            .setUpdatedAt(ts(c.updatedAt()));
+    if (c.total() != null) {
+      b.setTotal(
+          io.travelos.contracts.common.v1.Money.newBuilder()
+              .setCurrency(c.total().currency())
+              .setAmountMinor(c.total().amountMinor()));
+    }
+    return b.build();
+  }
+
   static io.travelos.travelcore.trip.TravelIntent fromProto(TravelIntent p) {
+    if (p.hasItinerary()) {
+      return io.travelos.travelcore.trip.TravelIntent.of(
+          fromProto(p.getItinerary()),
+          blankToNull(p.getPurpose()),
+          p.getTravelers() == 0 ? 1 : p.getTravelers());
+    }
     return new io.travelos.travelcore.trip.TravelIntent(
         p.getOrigin(),
         p.getDestination(),
@@ -167,6 +253,96 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
 
   private static Instant instant(Timestamp ts) {
     return Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+  }
+
+  static io.travelos.travelcore.trip.Itinerary fromProto(Itinerary p) {
+    List<io.travelos.travelcore.trip.Itinerary.Leg> legs = new ArrayList<>();
+    for (Leg l : p.getLegsList()) {
+      legs.add(
+          new io.travelos.travelcore.trip.Itinerary.Leg(
+              l.getComponentId(),
+              l.getSequence(),
+              l.getOrigin(),
+              l.getDestination(),
+              instant(l.getEarliestDeparture()),
+              instant(l.getArrivalDeadline()),
+              ZoneId.of(l.getOriginTimeZone()),
+              ZoneId.of(l.getDestinationTimeZone()),
+              l.getDependsOnList()));
+    }
+    List<io.travelos.travelcore.trip.Itinerary.Stay> stays = new ArrayList<>();
+    for (Stay st : p.getStaysList()) {
+      stays.add(
+          new io.travelos.travelcore.trip.Itinerary.Stay(
+              st.getComponentId(),
+              st.getCity(),
+              LocalDate.parse(st.getCheckInDate()),
+              LocalDate.parse(st.getCheckOutDate()),
+              ZoneId.of(st.getTimeZone()),
+              st.getRequired(),
+              st.getDependsOnList()));
+    }
+    List<io.travelos.travelcore.trip.Itinerary.Transfer> transfers = new ArrayList<>();
+    for (Transfer t : p.getTransfersList()) {
+      transfers.add(
+          new io.travelos.travelcore.trip.Itinerary.Transfer(
+              t.getComponentId(),
+              t.getKind(),
+              t.getCity(),
+              t.getFromLocation(),
+              t.getToLocation(),
+              t.hasPickup() ? instant(t.getPickup()) : null,
+              ZoneId.of(t.getTimeZone()),
+              t.getRequired(),
+              t.getDependsOnList()));
+    }
+    return new io.travelos.travelcore.trip.Itinerary(legs, stays, transfers, p.getCurrency());
+  }
+
+  static Itinerary toProto(io.travelos.travelcore.trip.Itinerary it) {
+    Itinerary.Builder b = Itinerary.newBuilder().setCurrency(it.currency());
+    for (io.travelos.travelcore.trip.Itinerary.Leg l : it.legs()) {
+      b.addLegs(
+          Leg.newBuilder()
+              .setComponentId(l.componentId())
+              .setSequence(l.sequence())
+              .setOrigin(l.origin())
+              .setDestination(l.destination())
+              .setEarliestDeparture(ts(l.earliestDeparture()))
+              .setArrivalDeadline(ts(l.arrivalDeadline()))
+              .setOriginTimeZone(l.originZone().getId())
+              .setDestinationTimeZone(l.destinationZone().getId())
+              .addAllDependsOn(l.dependsOn()));
+    }
+    for (io.travelos.travelcore.trip.Itinerary.Stay st : it.stays()) {
+      b.addStays(
+          Stay.newBuilder()
+              .setComponentId(st.componentId())
+              .setCity(st.city())
+              .setCheckInDate(st.checkIn().toString())
+              .setCheckOutDate(st.checkOut().toString())
+              .setTimeZone(st.zone().getId())
+              .setNights(st.nights())
+              .setRequired(st.required())
+              .addAllDependsOn(st.dependsOn()));
+    }
+    for (io.travelos.travelcore.trip.Itinerary.Transfer t : it.transfers()) {
+      Transfer.Builder tb =
+          Transfer.newBuilder()
+              .setComponentId(t.componentId())
+              .setKind(t.kind())
+              .setCity(t.city())
+              .setFromLocation(t.from())
+              .setToLocation(t.to())
+              .setTimeZone(t.zone().getId())
+              .setRequired(t.required())
+              .addAllDependsOn(t.dependsOn());
+      if (t.pickup() != null) {
+        tb.setPickup(ts(t.pickup()));
+      }
+      b.addTransfers(tb);
+    }
+    return b.build();
   }
 
   static Trip toProto(io.travelos.travelcore.trip.Trip t) {
@@ -207,6 +383,9 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
               .setTravelers(i.travelers());
       if (i.returnAfter() != null) {
         intent.setReturnAfter(ts(i.returnAfter())).setLatestReturn(ts(i.latestReturn()));
+      }
+      if (i.itinerary() != null) {
+        intent.setItinerary(toProto(i.itinerary()));
       }
       b.setIntent(intent);
     }

@@ -5,6 +5,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.travelos.common.idempotency.IdempotencyKey;
+import io.travelos.common.identity.Principal;
 import io.travelos.common.ids.IdPrefix;
 import io.travelos.common.ids.Ids;
 import io.travelos.common.money.Money;
@@ -16,15 +17,22 @@ import io.travelos.contracts.offer.v1.OfferType;
 import io.travelos.contracts.order.v1.CancelOrderCommand;
 import io.travelos.contracts.order.v1.ChangeOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.supplier.v1.BookingStatus;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
 import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
 import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
+import io.travelos.contracts.supplier.v1.GetBookingStatusRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferResponse;
+import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
+import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
+import io.travelos.contracts.supplier.v1.SupplierOrderStatus;
 import io.travelos.order.events.OrderEvents;
+import io.travelos.order.store.ExposureRecord;
+import io.travelos.order.store.ExposureRepository;
 import io.travelos.order.store.OrderChangeRecord;
 import io.travelos.order.store.OrderChangeRepository;
 import io.travelos.order.store.OrderRecord;
@@ -40,6 +48,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -60,6 +69,7 @@ public class OrderService {
 
   private final OrderRepository orders;
   private final OrderChangeRepository changes;
+  private final ExposureRepository exposures;
   private final SupplierClient suppliers;
   private final Outbox outbox;
   private final TransactionTemplate tx;
@@ -68,12 +78,14 @@ public class OrderService {
   public OrderService(
       OrderRepository orders,
       OrderChangeRepository changes,
+      ExposureRepository exposures,
       SupplierClient suppliers,
       Outbox outbox,
       TransactionTemplate tx,
       Clock clock) {
     this.orders = orders;
     this.changes = changes;
+    this.exposures = exposures;
     this.suppliers = suppliers;
     this.outbox = outbox;
     this.tx = tx;
@@ -108,12 +120,21 @@ public class OrderService {
           .asRuntimeException();
     }
     Bundle bundle = command.getBundle();
+    boolean tagged = false;
     for (Offer offer : bundle.getOffersList()) {
-      if (offer.getType() != OfferType.AIR) {
+      if (offer.getType() != OfferType.AIR
+          && offer.getType() != OfferType.HOTEL
+          && offer.getType() != OfferType.GROUND) {
         throw Status.FAILED_PRECONDITION
-            .withDescription("UNSUPPORTED_ITEM: only AIR items can be booked in this release")
+            .withDescription("UNSUPPORTED_ITEM: offer " + offer.getOfferId() + " has no type")
             .asRuntimeException();
       }
+      tagged |= !offer.getComponentId().isBlank();
+    }
+    if (tagged && bundle.getOffersList().stream().anyMatch(o -> o.getComponentId().isBlank())) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("every offer of an itinerary bundle needs a component_id")
+          .asRuntimeException();
     }
 
     // Idempotent replay, or resume of an interrupted saga.
@@ -144,7 +165,9 @@ public class OrderService {
     Money total = bundle.hasTotal() ? money(bundle.getTotal()) : null;
     List<Item> items = new ArrayList<>();
     int position = 0;
-    for (Offer offer : bundle.getOffersList()) {
+    // Booking order is dependency order: legs first, then the stays that follow them, then the
+    // transfers that meet them. Compensation walks the same list backwards.
+    for (Offer offer : inBookingOrder(bundle.getOffersList())) {
       Money itemTotal = money(offer.getTotal());
       total = total == null ? itemTotal : (bundle.hasTotal() ? total : total.plus(itemTotal));
       items.add(
@@ -160,7 +183,8 @@ public class OrderService {
               null,
               itemTotal,
               null,
-              now));
+              now,
+              blankToNull(offer.getComponentId())));
     }
     if (total == null) {
       throw Status.INVALID_ARGUMENT.withDescription("bundle has no offers").asRuntimeException();
@@ -244,39 +268,127 @@ public class OrderService {
         command.getCtx().toBuilder()
             .setIdempotencyKey(order.orderId() + ":" + item.itemId())
             .build();
-    // Re-price: offers expire and prices move. A higher price is not silently accepted.
-    PriceOfferResponse priced =
-        suppliers.price(
-            PriceOfferRequest.newBuilder()
-                .setCtx(supplierCtx)
-                .setProvider(item.provider())
-                .setProviderOfferId(item.providerOfferId())
-                .build());
-    Money repriced = money(priced.getOffer().getTotal());
-    if (priced.getPriceChanged() && repriced.isGreaterThan(item.total())) {
-      throw Status.FAILED_PRECONDITION
-          .withDescription(
-              "PRICE_CHANGED: " + item.total() + " is now " + repriced + "; re-evaluate policy")
-          .asRuntimeException();
+    // Re-validate: offers expire and prices move. A higher price is not silently accepted; an
+    // expired quote at the same price is re-quoted and booked as re-quoted.
+    String providerOfferId = revalidate(supplierCtx, item);
+    CreateOrderRequest request =
+        CreateOrderRequest.newBuilder()
+            .setCtx(supplierCtx)
+            .setProvider(item.provider())
+            .setProviderOfferId(providerOfferId)
+            .addAllPassengers(command.getPassengersList())
+            .setPaymentToken(command.getPaymentToken())
+            .build();
+    CreateOrderResponse created;
+    try {
+      created = suppliers.createOrder(request);
+    } catch (StatusRuntimeException e) {
+      if (!SupplierClient.isRetryable(e.getStatus())) {
+        throw e;
+      }
+      // The answer was lost after the client's own retries. Before treating that as a failure,
+      // ask the supplier what it did with our key: a booking it made is adopted, never made twice.
+      CreateOrderResponse reconciled = reconcile(supplierCtx, item);
+      if (reconciled == null) {
+        throw e;
+      }
+      log.warn(
+          "order {} item {}: supplier answer lost, booking {} reconciled by status lookup",
+          order.orderId(),
+          item.itemId(),
+          reconciled.getExternalOrderId());
+      created = reconciled;
     }
-    CreateOrderResponse created =
-        suppliers.createOrder(
-            CreateOrderRequest.newBuilder()
-                .setCtx(supplierCtx)
-                .setProvider(item.provider())
-                .setProviderOfferId(item.providerOfferId())
-                .addAllPassengers(command.getPassengersList())
-                .setPaymentToken(command.getPaymentToken())
-                .build());
+    CreateOrderResponse confirmed = created;
     tx.executeWithoutResult(
         s ->
             orders.updateItem(
                 item.itemId(),
                 ItemStatus.CONFIRMED,
-                created.getExternalOrderId(),
-                created.getRecordLocator(),
+                confirmed.getExternalOrderId(),
+                confirmed.getRecordLocator(),
                 null,
                 clock.instant()));
+  }
+
+  /** Returns the provider offer id to book: the original, or the re-quoted one after expiry. */
+  private String revalidate(RequestContext supplierCtx, Item item) {
+    if ("AIR".equals(item.offerType())) {
+      PriceOfferResponse priced =
+          suppliers.price(
+              PriceOfferRequest.newBuilder()
+                  .setCtx(supplierCtx)
+                  .setProvider(item.provider())
+                  .setProviderOfferId(item.providerOfferId())
+                  .build());
+      Money repriced = money(priced.getOffer().getTotal());
+      if (priced.getPriceChanged() && repriced.isGreaterThan(item.total())) {
+        throw Status.FAILED_PRECONDITION
+            .withDescription(
+                "PRICE_CHANGED: " + item.total() + " is now " + repriced + "; re-evaluate policy")
+            .asRuntimeException();
+      }
+      return item.providerOfferId();
+    }
+    QuoteOfferResponse quoted =
+        suppliers.quote(
+            QuoteOfferRequest.newBuilder()
+                .setCtx(supplierCtx)
+                .setProvider(item.provider())
+                .setProviderOfferId(item.providerOfferId())
+                .build());
+    Money requoted = money(quoted.getOffer().getTotal());
+    if (requoted.isGreaterThan(item.total())) {
+      throw Status.FAILED_PRECONDITION
+          .withDescription(
+              "PRICE_CHANGED: " + item.total() + " is now " + requoted + "; re-evaluate policy")
+          .asRuntimeException();
+    }
+    return quoted.getRequoted() && !quoted.getOffer().getProviderOfferId().isBlank()
+        ? quoted.getOffer().getProviderOfferId()
+        : item.providerOfferId();
+  }
+
+  /** What the supplier holds under our key, or null when it never recorded the command. */
+  private @Nullable CreateOrderResponse reconcile(RequestContext supplierCtx, Item item) {
+    BookingStatus status;
+    try {
+      status =
+          suppliers.bookingStatus(
+              GetBookingStatusRequest.newBuilder()
+                  .setCtx(supplierCtx)
+                  .setProvider(item.provider())
+                  .setIdempotencyKey(supplierCtx.getIdempotencyKey())
+                  .build());
+    } catch (StatusRuntimeException lookup) {
+      log.warn("status lookup at {} failed: {}", item.provider(), lookup.getStatus());
+      return null;
+    }
+    if (status.getStatus() != SupplierOrderStatus.CONFIRMED
+        && status.getStatus() != SupplierOrderStatus.CHANGED) {
+      return null;
+    }
+    return CreateOrderResponse.newBuilder()
+        .setExternalOrderId(status.getExternalOrderId())
+        .setRecordLocator(status.getRecordLocator())
+        .setStatus(status.getStatus())
+        .setCharged(status.getCharged())
+        .addAllTicketNumbers(status.getTicketNumbersList())
+        .build();
+  }
+
+  /** Legs, then stays, then transfers; ties keep the bundle's order. */
+  static List<Offer> inBookingOrder(List<Offer> offers) {
+    List<Offer> out = new ArrayList<>(offers);
+    out.sort(
+        java.util.Comparator.comparingInt(
+            o ->
+                switch (o.getType()) {
+                  case AIR -> 0;
+                  case HOTEL -> 1;
+                  default -> 2;
+                }));
+    return out;
   }
 
   /**
@@ -286,10 +398,13 @@ public class OrderService {
       RequestContexts.Validated ctx, OrderRecord order, String code, String message) {
     OrderRecord current = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
     boolean allReleased = true;
-    for (Item item : current.items()) {
-      if (item.status() != ItemStatus.CONFIRMED) {
-        continue;
-      }
+    List<ExposureRecord> exposed = new ArrayList<>();
+    // Reverse booking order: the last thing confirmed is the first thing released.
+    List<Item> confirmed =
+        new ArrayList<>(
+            current.items().stream().filter(i -> i.status() == ItemStatus.CONFIRMED).toList());
+    java.util.Collections.reverse(confirmed);
+    for (Item item : confirmed) {
       try {
         suppliers.cancelOrder(
             CancelOrderRequest.newBuilder()
@@ -316,6 +431,35 @@ public class OrderService {
             item.externalRef(),
             e);
         allReleased = false;
+        String cancelCode = failureCode(e);
+        ExposureRecord exposure =
+            new ExposureRecord(
+                Ids.newId(IdPrefix.EXPOSURE),
+                current.orderId(),
+                item.itemId(),
+                item.componentId(),
+                item.provider(),
+                item.externalRef() == null ? "" : item.externalRef(),
+                item.total(),
+                "COMPENSATION_FAILED",
+                cancelCode
+                    + ": "
+                    + (e.getStatus().getDescription() == null
+                        ? cancelCode
+                        : e.getStatus().getDescription()),
+                ExposureRecord.Status.OPEN,
+                null,
+                null,
+                null,
+                clock.instant(),
+                null);
+        exposed.add(exposure);
+        tx.executeWithoutResult(
+            s -> {
+              orders.updateItem(
+                  item.itemId(), ItemStatus.CANCEL_FAILED, null, null, cancelCode, clock.instant());
+              exposures.insert(ctx.tenant(), exposure);
+            });
       }
     }
     boolean compensated = allReleased;
@@ -325,8 +469,78 @@ public class OrderService {
           OrderStatus to = compensated ? OrderStatus.FAILED : OrderStatus.PARTIALLY_FAILED;
           orders.transition(fresh, to, code, null, code, message, compensated, clock.instant());
           OrderRecord failed = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
-          outbox.append(OrderEvents.failed(failed, code, message, compensated, null, clock));
+          outbox.append(
+              OrderEvents.failed(failed, code, message, compensated, exposed, null, clock));
+          if (!exposed.isEmpty()) {
+            outbox.append(
+                OrderEvents.compensationFailed(
+                    failed, exposed, "COMPENSATION_INCOMPLETE", message, null, clock));
+          }
           return failed;
+        });
+  }
+
+  // ------------------------------------------------------------------ Slice 3: exposures
+
+  public List<ExposureRecord> exposuresOf(TenantId tenant, String orderId) {
+    return exposures.byOrder(tenant, orderId);
+  }
+
+  /**
+   * A person closes an exposure (cancelled by phone, loss accepted, refund negotiated). Idempotent
+   * by the caller's key. When nothing is open any more the order is honest again: FAILED, fully
+   * compensated by people.
+   */
+  public ExposureRecord resolveExposure(
+      TenantId tenant,
+      String orderId,
+      String exposureId,
+      Principal by,
+      String resolution,
+      String idempotencyKey) {
+    ExposureRecord exposure =
+        exposures
+            .find(tenant, exposureId)
+            .filter(e -> e.orderId().equals(orderId))
+            .orElseThrow(
+                () ->
+                    Status.NOT_FOUND
+                        .withDescription("exposure " + exposureId + " not found")
+                        .asRuntimeException());
+    if (exposure.status() == ExposureRecord.Status.RESOLVED) {
+      if (idempotencyKey.equals(exposure.resolutionIdempotencyKey())) {
+        return exposure;
+      }
+      throw Status.FAILED_PRECONDITION
+          .withDescription("EXPOSURE_ALREADY_RESOLVED: by " + exposure.resolvedBy())
+          .asRuntimeException();
+    }
+    Instant now = clock.instant();
+    return tx.execute(
+        s -> {
+          if (!exposures.resolve(tenant, exposureId, by.id(), resolution, idempotencyKey, now)) {
+            throw Status.ABORTED
+                .withDescription("resolved concurrently; re-read")
+                .asRuntimeException();
+          }
+          ExposureRecord resolved = exposures.find(tenant, exposureId).orElseThrow();
+          OrderRecord order = orders.find(tenant, orderId).orElseThrow();
+          outbox.append(OrderEvents.exposureResolved(order, resolved, by, null, clock));
+          boolean anyOpen =
+              exposures.byOrder(tenant, orderId).stream()
+                  .anyMatch(e -> e.status() == ExposureRecord.Status.OPEN);
+          if (!anyOpen && order.status() == OrderStatus.PARTIALLY_FAILED) {
+            orders.transition(
+                order,
+                OrderStatus.FAILED,
+                "every exposure resolved by " + by.id(),
+                null,
+                order.failureCode(),
+                order.failureMessage(),
+                true,
+                now);
+          }
+          return resolved;
         });
   }
 
@@ -437,9 +651,15 @@ public class OrderService {
           .asRuntimeException();
     }
     Bundle replacement = command.getReplacement();
-    if (replacement.getOffersCount() != 1 || replacement.getOffers(0).getType() != OfferType.AIR) {
+    boolean byComponent =
+        replacement.getOffersCount() > 0
+            && replacement.getOffersList().stream().allMatch(o -> !o.getComponentId().isBlank());
+    if (!byComponent
+        && (replacement.getOffersCount() != 1
+            || replacement.getOffers(0).getType() != OfferType.AIR)) {
       throw Status.FAILED_PRECONDITION
-          .withDescription("UNSUPPORTED_CHANGE: a change replaces exactly one AIR item")
+          .withDescription(
+              "UNSUPPORTED_CHANGE: a change replaces exactly one AIR item, or components by id")
           .asRuntimeException();
     }
     if (command.getPassengersCount() == 0) {
@@ -476,7 +696,7 @@ public class OrderService {
               .reduce((a, b) -> b)
               .orElse("");
       if (order.bundleId().equals(replacement.getBundleId())
-          || currentOffer.equals(replacement.getOffers(0).getProviderOfferId())) {
+          || (!byComponent && currentOffer.equals(replacement.getOffers(0).getProviderOfferId()))) {
         throw Status.FAILED_PRECONDITION
             .withDescription("SAME_ITINERARY: the replacement is the current itinerary")
             .asRuntimeException();
@@ -484,7 +704,223 @@ public class OrderService {
       OrderRecord current = order;
       change = tx.execute(status -> requestChange(ctx, command, current, key));
     }
-    return applyChange(ctx, command, change);
+    return byComponent
+        ? applyComponentChange(ctx, command, change)
+        : applyChange(ctx, command, change);
+  }
+
+  /**
+   * Slice 3: change the components named by the replacement, preserve every other item. Each
+   * component is one supplier mutation under its own key (order:change:component), committed as
+   * soon as the supplier answers, so a crash between components resumes with nothing repeated: the
+   * supplier already holds the reissue for that key and returns it. A vendor that cannot change the
+   * booking is cancelled and rebooked under the same discipline.
+   */
+  private OrderRecord applyComponentChange(
+      RequestContexts.Validated ctx, ChangeOrderCommand command, OrderChangeRecord change) {
+    OrderRecord order = orders.find(ctx.tenant(), change.orderId()).orElseThrow();
+    Money incremental = Money.zero(order.total().currency());
+    String externalOrderId = null;
+    for (Offer offer : inBookingOrder(command.getReplacement().getOffersList())) {
+      String componentId = offer.getComponentId();
+      OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+      Item already =
+          fresh.items().stream()
+              .filter(i -> componentId.equals(i.componentId()))
+              .filter(i -> i.status() == ItemStatus.CONFIRMED)
+              .filter(i -> i.providerOfferId().equals(offer.getProviderOfferId()))
+              .findFirst()
+              .orElse(null);
+      if (already != null) {
+        continue; // this component was changed before the crash; nothing to repeat
+      }
+      Item current =
+          fresh.items().stream()
+              .filter(i -> componentId.equals(i.componentId()))
+              .filter(i -> i.status() == ItemStatus.CONFIRMED)
+              .reduce((a, b) -> b)
+              .orElse(null);
+      if (current == null || current.externalRef() == null) {
+        return failChange(
+            ctx,
+            fresh,
+            change,
+            "NO_CONFIRMED_ITEM",
+            "component " + componentId + " has no confirmed item to change");
+      }
+      RequestContext supplierCtx =
+          command.getCtx().toBuilder()
+              .setIdempotencyKey(order.orderId() + ":" + change.changeId() + ":" + componentId)
+              .build();
+      Money delta;
+      String newRef;
+      String newLocator;
+      try {
+        String providerOfferId = revalidate(supplierCtx, itemFor(offer, current, componentId));
+        if (offer.getProvider().equals(current.provider())) {
+          ChangeOrderResponse changed = null;
+          try {
+            changed =
+                suppliers.changeOrder(
+                    ChangeOrderRequest.newBuilder()
+                        .setCtx(supplierCtx)
+                        .setProvider(current.provider())
+                        .setExternalOrderId(current.externalRef())
+                        .setNewProviderOfferId(providerOfferId)
+                        .setPaymentToken(command.getPaymentToken())
+                        .build());
+          } catch (StatusRuntimeException e) {
+            if (!"CHANGE_NOT_SUPPORTED".equals(failureCode(e))) {
+              throw e;
+            }
+          }
+          if (changed != null) {
+            delta = money(changed.getIncrementalCost());
+            newRef = changed.getExternalOrderId();
+            newLocator = changed.getRecordLocator();
+          } else {
+            CreateOrderResponse rebooked =
+                cancelAndRebook(supplierCtx, command, current, offer, providerOfferId);
+            delta = money(rebooked.getCharged()).minus(current.total());
+            newRef = rebooked.getExternalOrderId();
+            newLocator = rebooked.getRecordLocator();
+          }
+        } else {
+          CreateOrderResponse rebooked =
+              cancelAndRebook(supplierCtx, command, current, offer, providerOfferId);
+          delta = money(rebooked.getCharged()).minus(current.total());
+          newRef = rebooked.getExternalOrderId();
+          newLocator = rebooked.getRecordLocator();
+        }
+      } catch (StatusRuntimeException e) {
+        if (isTransient(e.getStatus())) {
+          throw e; // the caller retries; components already changed are found and skipped
+        }
+        String code = failureCode(e);
+        log.warn(
+            "order {} change {} component {} failed: {}",
+            order.orderId(),
+            change.changeId(),
+            componentId,
+            e.getStatus());
+        return failChange(
+            ctx,
+            fresh,
+            change,
+            code,
+            e.getStatus().getDescription() == null ? code : e.getStatus().getDescription());
+      }
+      incremental = incremental.plus(delta);
+      if ("AIR".equals(current.offerType())) {
+        externalOrderId = newRef;
+      }
+      Instant now = clock.instant();
+      Item replacementItem =
+          new Item(
+              Ids.newId(IdPrefix.ORDER_ITEM),
+              fresh.items().stream().mapToInt(Item::position).max().orElse(-1) + 1,
+              offer.getType().name(),
+              offer.getProvider(),
+              offer.getProviderOfferId(),
+              toJson(offer),
+              ItemStatus.CONFIRMED,
+              newRef,
+              newLocator,
+              money(offer.getTotal()),
+              null,
+              now,
+              componentId);
+      tx.executeWithoutResult(
+          s -> {
+            orders.updateItem(current.itemId(), ItemStatus.CHANGED, null, null, null, now);
+            orders.insertItem(order.orderId(), ctx.tenant(), replacementItem);
+          });
+    }
+    Money finalIncremental = incremental;
+    String finalExternal = externalOrderId;
+    Instant now = clock.instant();
+    return tx.execute(
+        s -> {
+          OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+          Money newTotal =
+              fresh.items().stream()
+                  .filter(i -> i.status() == ItemStatus.CONFIRMED)
+                  .map(Item::total)
+                  .reduce(Money::plus)
+                  .orElse(fresh.total());
+          if (fresh.status() == OrderStatus.CHANGE_PENDING
+              && !orders.replaceItinerary(
+                  fresh,
+                  OrderStatus.CHANGED,
+                  change.replacementBundleId(),
+                  newTotal,
+                  finalExternal,
+                  "components changed (" + change.changeId() + ")",
+                  now)) {
+            throw Status.ABORTED
+                .withDescription("order changed concurrently; retry")
+                .asRuntimeException();
+          }
+          changes.complete(
+              change.changeId(),
+              OrderChangeRecord.Status.APPLIED,
+              finalIncremental.amountMinor(),
+              finalExternal,
+              null,
+              null,
+              null,
+              now);
+          OrderRecord done = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+          OrderChangeRecord applied = changes.find(ctx.tenant(), change.changeId()).orElseThrow();
+          outbox.append(
+              OrderEvents.changed(done, applied, command.getCtx().getCausationId(), clock));
+          return done;
+        });
+  }
+
+  /** A stand-in item for revalidating the replacement offer before touching the supplier. */
+  private static Item itemFor(Offer offer, Item current, String componentId) {
+    return new Item(
+        current.itemId(),
+        current.position(),
+        offer.getType().name(),
+        offer.getProvider(),
+        offer.getProviderOfferId(),
+        toJson(offer),
+        ItemStatus.PENDING,
+        null,
+        null,
+        money(offer.getTotal()),
+        null,
+        current.updatedAt(),
+        componentId);
+  }
+
+  /** Cancel the current booking and book the replacement, each under its own idempotent key. */
+  private CreateOrderResponse cancelAndRebook(
+      RequestContext supplierCtx,
+      ChangeOrderCommand command,
+      Item current,
+      Offer offer,
+      String providerOfferId) {
+    suppliers.cancelOrder(
+        CancelOrderRequest.newBuilder()
+            .setCtx(
+                supplierCtx.toBuilder()
+                    .setIdempotencyKey(supplierCtx.getIdempotencyKey() + ":CANCEL"))
+            .setProvider(current.provider())
+            .setExternalOrderId(current.externalRef())
+            .build());
+    return suppliers.createOrder(
+        CreateOrderRequest.newBuilder()
+            .setCtx(
+                supplierCtx.toBuilder()
+                    .setIdempotencyKey(supplierCtx.getIdempotencyKey() + ":CREATE"))
+            .setProvider(offer.getProvider())
+            .setProviderOfferId(providerOfferId)
+            .addAllPassengers(command.getPassengersList())
+            .setPaymentToken(command.getPaymentToken())
+            .build());
   }
 
   private OrderChangeRecord requestChange(

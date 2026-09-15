@@ -160,3 +160,105 @@ def test_no_feasible_candidate_selects_nothing(stub):
     )
     assert response.selected_bundle_id == ""
     assert response.ranking[0].feasible is False
+
+
+def _hotel_offer(offer_id: str, cents: int, check_in: str, check_out: str) -> offer_pb2.Offer:
+    return offer_pb2.Offer(
+        offer_id=offer_id,
+        provider="sandbox-hotel",
+        type=offer_pb2.HOTEL,
+        total=common_pb2.Money(currency="USD", amount_minor=cents),
+        refundable=True,
+        hotel=offer_pb2.HotelOffer(
+            property_id="HTL-SEA-2", check_in_date=check_in, check_out_date=check_out, nights=2
+        ),
+    )
+
+
+def _ground_offer(offer_id: str, cents: int, pickup: datetime) -> offer_pb2.Offer:
+    return offer_pb2.Offer(
+        offer_id=offer_id,
+        provider="sandbox-ground",
+        type=offer_pb2.GROUND,
+        total=common_pb2.Money(currency="USD", amount_minor=cents),
+        ground=offer_pb2.GroundOffer(
+            vendor_id="GRD-SEA-SHUTTLE",
+            pickup=ts(pickup),
+            dropoff=ts(pickup + timedelta(minutes=35)),
+        ),
+    )
+
+
+def test_optimize_itinerary_composes_one_offer_per_component(stub):
+    leg = bundle("bdl_leg", 38000, [("DL", "BOS", "SEA", 330, 0)]).offers[0]
+    late_leg = bundle(
+        "bdl_leg_late", 52000, [("UA", "BOS", "SEA", 330, 0)], start=T0 + timedelta(hours=6)
+    ).offers[0]
+    lands = T0 + timedelta(minutes=330)
+    request = optimization_pb2.OptimizeItineraryRequest(
+        ctx=ctx(),
+        trip_id="trip_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        components=[
+            optimization_pb2.ComponentCandidates(
+                component_id="cmp_leg1",
+                type=offer_pb2.AIR,
+                sequence=1,
+                required=True,
+                offers=[leg, late_leg],
+                not_before=ts(T0),
+                not_after=ts(T0 + timedelta(hours=13)),
+            ),
+            optimization_pb2.ComponentCandidates(
+                component_id="cmp_stay",
+                type=offer_pb2.HOTEL,
+                sequence=2,
+                required=True,
+                depends_on=["cmp_leg1"],
+                offers=[_hotel_offer("off_h1", 23800, "2026-10-06", "2026-10-08")],
+                check_in_date="2026-10-06",
+                check_out_date="2026-10-08",
+                time_zone="America/Los_Angeles",
+                arrival_leg_id="cmp_leg1",
+            ),
+            optimization_pb2.ComponentCandidates(
+                component_id="cmp_xfer",
+                type=offer_pb2.GROUND,
+                sequence=3,
+                required=True,
+                depends_on=["cmp_leg1"],
+                arrival_leg_id="cmp_leg1",
+                offers=[
+                    _ground_offer("off_r1", 3900, lands + timedelta(minutes=60)),
+                    _ground_offer("off_r2", 3900, lands + timedelta(hours=7)),
+                ],
+            ),
+        ],
+        constraints=optimization_pb2.ItineraryConstraints(
+            currency="USD", allowed_cabins=[common_pb2.ECONOMY]
+        ),
+    )
+    response = stub.OptimizeItinerary(request)
+    assert response.optimization_run_id.startswith("opt_")
+    assert response.selected.bundle_id.startswith("bdl_")
+    assert [o.component_id for o in response.selected.offers] == [
+        "cmp_leg1",
+        "cmp_stay",
+        "cmp_xfer",
+    ]
+    assert [o.offer_id for o in response.selected.offers] == ["off_bdl_leg", "off_h1", "off_r1"]
+    assert response.selected.total.amount_minor == 38000 + 23800 + 3900
+    assert [c.outcome for c in response.components] == ["SELECTED"] * 3
+    assert response.components[2].ranking[-1].bundle_id == "off_r2"
+    assert response.infeasibility_reasons == []
+    assert response.combinations_considered == 2 * 1 * 2
+    # a missing component id is a caller bug
+    bad = optimization_pb2.OptimizeItineraryRequest(
+        ctx=ctx(),
+        trip_id="trip_x",
+        components=[optimization_pb2.ComponentCandidates(type=offer_pb2.AIR)],
+    )
+    try:
+        stub.OptimizeItinerary(bad)
+        raise AssertionError("expected INVALID_ARGUMENT")
+    except grpc.RpcError as e:
+        assert e.code() == grpc.StatusCode.INVALID_ARGUMENT

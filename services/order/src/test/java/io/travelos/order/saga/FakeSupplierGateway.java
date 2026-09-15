@@ -5,14 +5,18 @@ import io.grpc.ServerBuilder;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.travelos.contracts.common.v1.Money;
+import io.travelos.contracts.supplier.v1.BookingStatus;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
 import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
 import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
+import io.travelos.contracts.supplier.v1.GetBookingStatusRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferResponse;
+import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
+import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
 import io.travelos.contracts.supplier.v1.SupplierOrderStatus;
 import java.io.IOException;
@@ -32,6 +36,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>{@code soldout-*}: FAILED_PRECONDITION SEAT_NO_LONGER_AVAILABLE
  *   <li>{@code pricier-*}: reprices 20% higher
  *   <li>{@code stuck-*}: books fine but cancellation fails (compensation cannot complete)
+ *   <li>{@code lost-*}: books fine at the supplier but every answer is lost (UNAVAILABLE); only a
+ *       status lookup by key reveals the booking
+ *   <li>{@code norefund-*}: books fine; cancellation is refused for good (CANCELLATION_REFUSED)
+ *   <li>{@code hotel-*} / {@code ground-*}: quoted as HOTEL / GROUND offers
  * </ul>
  */
 final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplBase {
@@ -42,6 +50,9 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
   final List<String> cancelled = new ArrayList<>();
   final Map<String, ChangeOrderResponse> changesByKey = new ConcurrentHashMap<>();
   final Map<String, AtomicInteger> changeAttempts = new ConcurrentHashMap<>();
+  final List<String> createLog = new ArrayList<>();
+  final List<String> cancelAttempts = new ArrayList<>();
+  final AtomicInteger statusLookups = new AtomicInteger();
   private Server server;
 
   int start() throws IOException {
@@ -89,6 +100,9 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
               .asRuntimeException());
       return;
     }
+    synchronized (createLog) {
+      createLog.add(id);
+    }
     CreateOrderResponse response =
         ordersByKey.computeIfAbsent(
             key,
@@ -101,7 +115,48 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
                     .addTicketNumbers("0067" + Math.abs(k.hashCode()))
                     .build());
     offerByExternalId.put(response.getExternalOrderId(), id);
+    if (id.startsWith("lost-")) {
+      observer.onError(
+          Status.UNAVAILABLE.withDescription("TIMEOUT: the answer was lost").asRuntimeException());
+      return;
+    }
     observer.onNext(response);
+    observer.onCompleted();
+  }
+
+  @Override
+  public void quoteOffer(QuoteOfferRequest request, StreamObserver<QuoteOfferResponse> observer) {
+    String id = request.getProviderOfferId();
+    long cents = cents(id);
+    if (id.startsWith("pricier-")) {
+      cents = cents * 12 / 10;
+    }
+    observer.onNext(
+        QuoteOfferResponse.newBuilder()
+            .setOffer(
+                io.travelos.contracts.offer.v1.Offer.newBuilder()
+                    .setProvider(request.getProvider())
+                    .setProviderOfferId(id)
+                    .setTotal(usd(cents)))
+            .setPriceChanged(id.startsWith("pricier-"))
+            .build());
+    observer.onCompleted();
+  }
+
+  @Override
+  public void getBookingStatus(
+      GetBookingStatusRequest request, StreamObserver<BookingStatus> observer) {
+    statusLookups.incrementAndGet();
+    CreateOrderResponse booked = ordersByKey.get(request.getIdempotencyKey());
+    observer.onNext(
+        booked == null
+            ? BookingStatus.newBuilder().setStatus(SupplierOrderStatus.NOT_FOUND).build()
+            : BookingStatus.newBuilder()
+                .setStatus(SupplierOrderStatus.CONFIRMED)
+                .setExternalOrderId(booked.getExternalOrderId())
+                .setRecordLocator(booked.getRecordLocator())
+                .setCharged(booked.getCharged())
+                .build());
     observer.onCompleted();
   }
 
@@ -109,6 +164,16 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
   public void cancelOrder(
       CancelOrderRequest request, StreamObserver<CancelOrderResponse> observer) {
     String external = request.getExternalOrderId();
+    synchronized (cancelAttempts) {
+      cancelAttempts.add(external);
+    }
+    if (offerByExternalId.getOrDefault(external, "").startsWith("norefund-")) {
+      observer.onError(
+          Status.FAILED_PRECONDITION
+              .withDescription("CANCELLATION_REFUSED: non-refundable rate")
+              .asRuntimeException());
+      return;
+    }
     if (offerByExternalId.getOrDefault(external, "").startsWith("stuck-")) {
       observer.onError(
           Status.UNAVAILABLE.withDescription("cancellation system down").asRuntimeException());

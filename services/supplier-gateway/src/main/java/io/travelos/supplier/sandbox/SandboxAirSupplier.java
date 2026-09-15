@@ -5,17 +5,21 @@ import io.travelos.common.ids.Ids;
 import io.travelos.contracts.common.v1.Cabin;
 import io.travelos.contracts.common.v1.TimeWindow;
 import io.travelos.contracts.offer.v1.Offer;
+import io.travelos.contracts.offer.v1.OfferType;
+import io.travelos.contracts.supplier.v1.BookingStatus;
 import io.travelos.contracts.supplier.v1.CancelOrderRequest;
 import io.travelos.contracts.supplier.v1.CancelOrderResponse;
 import io.travelos.contracts.supplier.v1.ChangeOrderRequest;
 import io.travelos.contracts.supplier.v1.ChangeOrderResponse;
 import io.travelos.contracts.supplier.v1.CreateOrderRequest;
 import io.travelos.contracts.supplier.v1.CreateOrderResponse;
+import io.travelos.contracts.supplier.v1.GetBookingStatusRequest;
 import io.travelos.contracts.supplier.v1.Passenger;
 import io.travelos.contracts.supplier.v1.PriceOfferRequest;
 import io.travelos.contracts.supplier.v1.PriceOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SupplierCapabilities;
 import io.travelos.contracts.supplier.v1.SupplierOrderStatus;
 import io.travelos.supplier.AirSupplier;
 import io.travelos.supplier.notification.SupplierNotification;
@@ -54,6 +58,45 @@ public class SandboxAirSupplier implements AirSupplier {
     this.orders = orders;
     this.disruptions = disruptions;
     this.clock = clock;
+  }
+
+  @Override
+  public SupplierCapabilities capabilities() {
+    return SupplierCapabilities.newBuilder()
+        .setProvider(provider())
+        .addTypes(OfferType.AIR)
+        .setChangeSupported(true)
+        .setCancelSupported(true)
+        .setStatusLookupSupported(true)
+        .setNotificationsSupported(true)
+        .setIntegration("SIMULATED")
+        .build();
+  }
+
+  /** The airline's own ledger answers by our key or by its order id. */
+  @Override
+  public BookingStatus bookingStatus(GetBookingStatusRequest request) {
+    String tenant = request.getCtx().getTenantId();
+    Optional<SandboxOrderRepository.SandboxOrder> order =
+        request.getExternalOrderId().isBlank()
+            ? orders.byIdempotencyKey(tenant, request.getIdempotencyKey())
+            : orders.byId(request.getExternalOrderId()).filter(o -> o.tenantId().equals(tenant));
+    if (order.isEmpty()) {
+      return BookingStatus.newBuilder().setStatus(SupplierOrderStatus.NOT_FOUND).build();
+    }
+    SandboxOrderRepository.SandboxOrder o = order.get();
+    return BookingStatus.newBuilder()
+        .setStatus(
+            switch (o.status()) {
+              case "CANCELLED" -> SupplierOrderStatus.CANCELLED;
+              case "CHANGED" -> SupplierOrderStatus.CHANGED;
+              default -> SupplierOrderStatus.CONFIRMED;
+            })
+        .setExternalOrderId(o.externalOrderId())
+        .setRecordLocator(o.recordLocator())
+        .setCharged(SandboxInventory.usd(o.chargedMinor()))
+        .addAllTicketNumbers(o.ticketNumbers())
+        .build();
   }
 
   @Override
@@ -456,7 +499,13 @@ public class SandboxAirSupplier implements AirSupplier {
     Cabin cabin = Cabin.valueOf(id.cabin());
     Optional<SandboxReaccommodation> overlay =
         reaccommodation(ctx.getTenantId(), id.origin(), id.destination(), id.outboundDate(), cabin);
-    if (overlay.isPresent() && overlay.get().cancelledSlot() == id.slot()) {
+    // A cancelled flight is recognised by its number: slots are numbered per generated schedule
+    // and a one-way search numbers them differently from a round trip on the same day.
+    if (overlay.isPresent()
+        && overlay
+            .get()
+            .cancelledFlight()
+            .equals(baseSchedule(id).outbound().getFirst().flightNumber())) {
       throw new SupplierException(
           "FLIGHT_CANCELLED", "this flight was cancelled by the airline; search again", false);
     }

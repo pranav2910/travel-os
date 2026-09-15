@@ -27,6 +27,8 @@ make kind-e2e           # the full Slice 1 E2E flow against the cluster (E2E_BAC
 make kind-chaos         # kill pods mid-workflow, prove one order per trip; prove NetworkPolicies bite
 make kind-e2e2          # Slice 2: autonomous + approved disruption recovery, injection, duplicates, trace
 make kind-chaos2        # Slice 2: order + optimizer outages parked at proven points, worker killed mid-ChangeOrder; one recovery
+make kind-e2e3          # Slice 3: multi-city itineraries (hotels, ground), revalidation, compensation, connected recovery
+make kind-chaos3        # Slice 3: a 7-component booking and its recovery held at proven points, worker killed; one booking each
 make kind-rollback-demo # deploy a stand-in "next" release, roll back with helm, verify
 make kind-down
 ```

@@ -37,7 +37,9 @@ public record OrderRecord(
     FAILED,
     CANCELLED,
     /** Replaced by a later item through a change (disruption recovery); kept for the history. */
-    CHANGED
+    CHANGED,
+    /** Slice 3: confirmed at the supplier, and our cancellation was refused: exposure recorded. */
+    CANCEL_FAILED
   }
 
   /**
@@ -55,5 +57,35 @@ public record OrderRecord(
       @Nullable String recordLocator,
       Money total,
       @Nullable String failureCode,
-      Instant updatedAt) {}
+      Instant updatedAt,
+      @Nullable String componentId) {
+    public Item(
+        String itemId,
+        int position,
+        String offerType,
+        String provider,
+        String providerOfferId,
+        String offerJson,
+        ItemStatus status,
+        @Nullable String externalRef,
+        @Nullable String recordLocator,
+        Money total,
+        @Nullable String failureCode,
+        Instant updatedAt) {
+      this(
+          itemId,
+          position,
+          offerType,
+          provider,
+          providerOfferId,
+          offerJson,
+          status,
+          externalRef,
+          recordLocator,
+          total,
+          failureCode,
+          updatedAt,
+          null);
+    }
+  }
 }

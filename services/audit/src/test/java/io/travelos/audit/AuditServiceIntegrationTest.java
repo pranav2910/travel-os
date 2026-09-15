@@ -254,6 +254,42 @@ class AuditServiceIntegrationTest {
   // ---------------------------------------------------------------- helpers
 
   /** The contract example for a type, with a fresh event id and a strictly increasing clock. */
+  @Test
+  @org.junit.jupiter.api.Order(5)
+  void slice3EventsAreLedgeredAsReplansComponentsAndCompensation() throws Exception {
+    // a stale approval, a failed compensation and its resolution, all on the same trip
+    for (String type :
+        List.of(
+            "travel.trip.replanned",
+            "travel.order.compensation-failed",
+            "travel.order.exposure-resolved")) {
+      publish(type, example(type));
+    }
+    producer.flush();
+    await()
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () ->
+                assertThat(repository.trail(TenantId.of("acme"), TRIP))
+                    .hasSizeGreaterThanOrEqualTo(14));
+    JsonNode ledger =
+        json.readTree(
+            get("/api/v1/audit/trips/" + TRIP + "/decisions", TestTokens.alice()).getBody());
+    assertThat(ledger.get("replans")).hasSize(1);
+    assertThat(ledger.get("replans").get(0).get("reason").asString()).isEqualTo("PRICE_CHANGED");
+    assertThat(ledger.get("compensation").get("open").asLong()).isZero();
+    JsonNode exposure = ledger.get("compensation").get("exposures").get(0);
+    assertThat(exposure.get("status").asString()).isEqualTo("RESOLVED");
+    assertThat(exposure.get("resolvedBy").asString()).isEqualTo("human/carol");
+    assertThat(exposure.get("amount").get("amountMinor").asLong()).isEqualTo(46800);
+    List<String> narrative = new java.util.ArrayList<>();
+    ledger.get("narrative").forEach(n -> narrative.add(n.asString()));
+    assertThat(narrative)
+        .anySatisfy(n -> assertThat(n).contains("Revalidation").contains("PRICE_CHANGED"))
+        .anySatisfy(n -> assertThat(n).contains("Compensation could not release everything"))
+        .anySatisfy(n -> assertThat(n).contains("resolved by human/carol"));
+  }
+
   private String example(String type) {
     ObjectNode node = (ObjectNode) json.readTree(EventSchemas.example(type));
     clock = clock.plusSeconds(1);

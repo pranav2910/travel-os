@@ -6,69 +6,289 @@
   "$defs": {
     "travel.trip.created": {
       "type": "object",
-      "required": ["tripId", "travelerId", "status", "source"],
+      "required": [
+        "tripId",
+        "travelerId",
+        "status",
+        "source"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "travelerId": { "type": "string", "minLength": 1 },
-        "status": { "const": "SUBMITTED" },
-        "source": { "enum": ["WEB", "API", "AGENT", "CALENDAR", "EMAIL"] },
-        "requestedBy": { "$ref": "common.schema.json#/$defs/principal" }
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "const": "SUBMITTED"
+        },
+        "source": {
+          "enum": [
+            "WEB",
+            "API",
+            "AGENT",
+            "CALENDAR",
+            "EMAIL"
+          ]
+        },
+        "requestedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
       }
     },
     "travel.trip.planned": {
       "type": "object",
-      "required": ["tripId", "selectedBundleId", "optimizationRunId", "policyDecisionId", "requiresApproval", "total", "status"],
+      "required": [
+        "tripId",
+        "selectedBundleId",
+        "optimizationRunId",
+        "policyDecisionId",
+        "requiresApproval",
+        "total",
+        "status"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "selectedBundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
-        "optimizationRunId": { "$ref": "common.schema.json#/$defs/optimizationRunId" },
-        "policyDecisionId": { "$ref": "common.schema.json#/$defs/policyDecisionId" },
-        "requiresApproval": { "type": "boolean" },
-        "total": { "$ref": "common.schema.json#/$defs/money" },
-        "status": { "enum": ["AWAITING_APPROVAL", "APPROVED"] }
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "selectedBundleId": {
+          "$ref": "common.schema.json#/$defs/bundleId"
+        },
+        "optimizationRunId": {
+          "$ref": "common.schema.json#/$defs/optimizationRunId"
+        },
+        "policyDecisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "requiresApproval": {
+          "type": "boolean"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "AWAITING_APPROVAL",
+            "APPROVED"
+          ]
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        }
       }
     },
     "travel.trip.booked": {
       "type": "object",
-      "required": ["tripId", "orderId", "total"],
+      "required": [
+        "tripId",
+        "orderId",
+        "total"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "orderId": { "$ref": "common.schema.json#/$defs/orderId" },
-        "approvalId": { "$ref": "common.schema.json#/$defs/approvalId" },
-        "total": { "$ref": "common.schema.json#/$defs/money" }
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "approvalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        }
       }
     },
     "travel.trip.cancelled": {
       "type": "object",
-      "required": ["tripId", "reason", "cancelledBy"],
+      "required": [
+        "tripId",
+        "reason",
+        "cancelledBy"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "reason": { "type": "string", "maxLength": 1000 },
-        "cancelledBy": { "$ref": "common.schema.json#/$defs/principal" }
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "cancelledBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
       }
     },
     "travel.trip.failed": {
       "type": "object",
-      "required": ["tripId", "stage", "reasonCode"],
+      "required": [
+        "tripId",
+        "stage",
+        "reasonCode"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "stage": { "enum": ["INTENT", "CONTEXT", "SEARCH", "POLICY", "OPTIMIZATION", "APPROVAL", "BOOKING"] },
-        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" },
-        "message": { "type": "string", "maxLength": 2000 }
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "stage": {
+          "enum": [
+            "INTENT",
+            "CONTEXT",
+            "SEARCH",
+            "POLICY",
+            "OPTIMIZATION",
+            "APPROVAL",
+            "REVALIDATION",
+            "BOOKING",
+            "COMPENSATION"
+          ]
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        }
       }
     },
     "travel.trip.completed": {
       "type": "object",
-      "required": ["tripId", "orderId"],
+      "required": [
+        "tripId",
+        "orderId"
+      ],
       "additionalProperties": false,
       "properties": {
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "orderId": { "$ref": "common.schema.json#/$defs/orderId" }
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "required": [
+        "componentId",
+        "type",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "componentId": {
+          "type": "string",
+          "pattern": "^cmp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "type": {
+          "enum": [
+            "AIR",
+            "HOTEL",
+            "GROUND"
+          ]
+        },
+        "status": {
+          "enum": [
+            "PLANNED",
+            "QUOTED",
+            "REVALIDATING",
+            "BOOKING",
+            "CONFIRMED",
+            "FAILED",
+            "CANCELLED",
+            "CANCEL_FAILED",
+            "CHANGED",
+            "SKIPPED"
+          ]
+        },
+        "provider": {
+          "type": "string"
+        },
+        "externalRef": {
+          "type": "string"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "failureCode": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "travel.trip.replanned": {
+      "type": "object",
+      "required": [
+        "tripId",
+        "reason",
+        "previousTotal",
+        "newTotal",
+        "requiresApproval"
+      ],
+      "additionalProperties": false,
+      "description": "Slice 3: revalidation before booking found a material change; the approved plan is stale and the trip goes back through policy (and approval when required).",
+      "properties": {
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "reason": {
+          "enum": [
+            "QUOTE_EXPIRED",
+            "PRICE_CHANGED",
+            "OFFER_GONE"
+          ]
+        },
+        "previousTotal": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "newTotal": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "requiresApproval": {
+          "type": "boolean"
+        },
+        "previousApprovalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "policyDecisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "changedComponents": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^cmp_[0-9A-HJKMNP-TV-Z]{26}$"
+          }
+        },
+        "selectedBundleId": {
+          "$ref": "common.schema.json#/$defs/bundleId"
+        }
       }
     }
   }

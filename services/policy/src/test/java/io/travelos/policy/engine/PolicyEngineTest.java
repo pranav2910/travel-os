@@ -17,6 +17,7 @@ import io.travelos.policy.engine.Facts.Hotel;
 import io.travelos.policy.engine.Facts.Trip;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -79,6 +80,8 @@ class PolicyEngineTest {
               "MAX_STOPS",
               "LOWEST_LOGICAL_FARE",
               "HOTEL_NIGHTLY_LIMIT",
+              "GROUND_TRANSFER_LIMIT",
+              "TRIP_BUDGET",
               "MANAGER_APPROVAL_THRESHOLD",
               "INCENTIVE_SHARE");
 
@@ -391,7 +394,8 @@ class PolicyEngineTest {
           .noneMatch(t -> t == String.class && false);
       assertThat(Action.class.getRecordComponents())
           .extracting(c -> c.getName())
-          .containsExactly("action", "incrementalCost", "proposed", "constraints", "itinerary");
+          .containsExactly(
+              "action", "incrementalCost", "proposed", "constraints", "itinerary", "legTimings");
     }
 
     @Test
@@ -469,6 +473,199 @@ class PolicyEngineTest {
               HUMAN);
       assertThat(decision.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
       assertThat(decision.approverRoles()).containsExactly("MANAGER");
+    }
+  }
+
+  /** Slice 3: itineraries with several stays and transfers, budgets, currencies, leg windows. */
+  @Nested
+  class Itineraries {
+    private static final Instant T = Instant.parse("2026-10-06T10:00:00Z");
+
+    private static Candidate itinerary(
+        String id, long airCents, List<Hotel> hotels, List<Facts.Ground> ground) {
+      long total =
+          airCents
+              + hotels.stream().mapToLong(h -> h.nightlyRate().amountMinor() * h.nights()).sum()
+              + ground.stream().mapToLong(g -> g.fare().amountMinor()).sum();
+      return new Candidate(
+          id,
+          Money.usd(total),
+          new Air(Money.usd(airCents), Cabin.ECONOMY, 0),
+          hotels.isEmpty() ? null : hotels.getFirst(),
+          hotels,
+          ground);
+    }
+
+    @Test
+    void everyStayIsHeldToTheNightlyLimitAndTheObjectionNamesIt() {
+      Candidate secondStayTooDear =
+          itinerary(
+              "two-stays",
+              60000,
+              List.of(
+                  new Hotel(Money.usd(11900), 2, "cmp_sea"),
+                  new Hotel(Money.usd(27900), 1, "cmp_sfo")),
+              List.of());
+      Decision d =
+          engine.evaluateTrip(POLICY, DOMESTIC, List.of(secondStayTooDear)).getFirst().decision();
+      assertThat(d.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(d.violations())
+          .singleElement()
+          .satisfies(
+              v -> {
+                assertThat(v.code()).isEqualTo("HOTEL_RATE_ABOVE_LIMIT");
+                assertThat(v.message()).contains("cmp_sfo").contains("USD 279.00");
+              });
+    }
+
+    @Test
+    void groundTransfersHaveTheirOwnLimit() {
+      Candidate limo =
+          itinerary(
+              "limo",
+              60000,
+              List.of(new Hotel(Money.usd(11900), 2, "cmp_sea")),
+              List.of(
+                  new Facts.Ground(Money.usd(3900), "SHUTTLE", "cmp_x1"),
+                  new Facts.Ground(Money.usd(15000), "LIMO", "cmp_x2")));
+      Decision d = engine.evaluateTrip(POLICY, DOMESTIC, List.of(limo)).getFirst().decision();
+      assertThat(d.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(d.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("GROUND_TRANSFER_ABOVE_LIMIT");
+      assertThat(d.violations().getFirst().message()).contains("cmp_x2").contains("USD 120.00");
+      assertThat(d.rulesEvaluated()).contains("GROUND_TRANSFER_LIMIT", "TRIP_BUDGET");
+    }
+
+    @Test
+    void theWholeTripIsHeldToTheBudgetEveryComponentIncluded() {
+      // USD 600 air + 2 x USD 119 + USD 39 + USD 65 = USD 942 < the USD 4000 seed budget
+      Candidate fine =
+          itinerary(
+              "fine",
+              60000,
+              List.of(new Hotel(Money.usd(11900), 2, "cmp_sea")),
+              List.of(
+                  new Facts.Ground(Money.usd(3900), "SHUTTLE", "cmp_x1"),
+                  new Facts.Ground(Money.usd(6500), "SEDAN", "cmp_x2")));
+      assertThat(
+              engine.evaluateTrip(POLICY, DOMESTIC, List.of(fine)).getFirst().decision().outcome())
+          .isEqualTo(Outcome.ALLOW);
+      PolicyDocument tight =
+          new PolicyDocument(
+              POLICY.policyId(),
+              POLICY.name(),
+              POLICY.currency(),
+              POLICY.flight(),
+              POLICY.hotel(),
+              POLICY.approval(),
+              POLICY.autonomy(),
+              POLICY.incentives(),
+              POLICY.ground(),
+              new PolicyDocument.TripBudget(90000L, PolicyDocument.Consequence.DENY));
+      Decision denied = engine.evaluateTrip(tight, DOMESTIC, List.of(fine)).getFirst().decision();
+      assertThat(denied.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(denied.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("TRIP_TOTAL_ABOVE_BUDGET");
+      assertThat(denied.violations().getFirst().message())
+          .contains("USD 942.00")
+          .contains("USD 900.00");
+    }
+
+    @Test
+    void aComponentInAnotherCurrencyIsRefusedNotConverted() {
+      Candidate sterlingStay =
+          itinerary(
+              "gbp", 60000, List.of(new Hotel(Money.of("GBP", 15900), 1, "cmp_lhr")), List.of());
+      Decision d =
+          engine.evaluateTrip(POLICY, DOMESTIC, List.of(sterlingStay)).getFirst().decision();
+      assertThat(d.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(d.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("CURRENCY_MISMATCH");
+      assertThat(d.violations().getFirst().message()).contains("GBP").contains("does not convert");
+    }
+
+    @Test
+    void everyLegOfAReplacementMustFlyInsideItsOwnWindow() {
+      Facts.Constraints windows =
+          new Facts.Constraints(
+              null,
+              null,
+              null,
+              null,
+              Map.of(
+                  "cmp_leg1", new Facts.Window(T, T.plusSeconds(13 * 3600)),
+                  "cmp_leg2",
+                      new Facts.Window(T.plusSeconds(48 * 3600), T.plusSeconds(60 * 3600))));
+      Candidate proposed = air("r", 52000, Cabin.ECONOMY, 0);
+      Decision ok =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Facts.Action(
+                  "order.change",
+                  Money.usd(7300),
+                  proposed,
+                  windows,
+                  null,
+                  List.of(
+                      new Facts.LegTiming("cmp_leg1", T.plusSeconds(3600), T.plusSeconds(6 * 3600)),
+                      new Facts.LegTiming(
+                          "cmp_leg2", T.plusSeconds(50 * 3600), T.plusSeconds(56 * 3600)))),
+              AGENT);
+      assertThat(ok.outcome()).isEqualTo(Outcome.ALLOW);
+      assertThat(ok.rulesEvaluated()).contains("REPLACEMENT_ITINERARY_CONSTRAINTS");
+      Decision late =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Facts.Action(
+                  "order.change",
+                  Money.usd(7300),
+                  proposed,
+                  windows,
+                  null,
+                  List.of(
+                      new Facts.LegTiming("cmp_leg1", T.plusSeconds(3600), T.plusSeconds(6 * 3600)),
+                      new Facts.LegTiming(
+                          "cmp_leg2", T.plusSeconds(50 * 3600), T.plusSeconds(61 * 3600)))),
+              AGENT);
+      assertThat(late.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(late.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("LEG_ARRIVES_AFTER_DEADLINE");
+      assertThat(late.violations().getFirst().message()).contains("cmp_leg2");
+    }
+
+    @Test
+    void theAutonomyLimitAppliesToTheSumOfEveryAffectedComponent() {
+      // a USD 73 flight delta plus a USD 26 transfer re-timing is USD 99: autonomous
+      Candidate replacement =
+          itinerary(
+              "r",
+              52000,
+              List.of(new Hotel(Money.usd(11900), 2, "cmp_sea")),
+              List.of(new Facts.Ground(Money.usd(6500), "SEDAN", "cmp_x1")));
+      Decision within =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Facts.Action("order.change", Money.usd(7300 + 2600), replacement),
+              AGENT);
+      assertThat(within.outcome()).isEqualTo(Outcome.ALLOW);
+      // one more dollar on the hotel side tips the same change to a person
+      Decision above =
+          engine.evaluateAction(
+              POLICY,
+              DOMESTIC,
+              new Facts.Action("order.change", Money.usd(7300 + 2600 + 200), replacement),
+              AGENT);
+      assertThat(above.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(above.violations())
+          .extracting(Decision.Violation::code)
+          .containsExactly("INCREMENTAL_COST_ABOVE_AUTONOMY_LIMIT");
     }
   }
 }

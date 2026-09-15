@@ -14,6 +14,10 @@ option java_outer_classname = "OptimizationProto";
 // so "why this one?" is answerable without re-running anything.
 service OptimizationService {
   rpc OptimizeTrip(OptimizeTripRequest) returns (OptimizeTripResponse);
+  // Slice 3: choose one offer per itinerary component so the whole itinerary is feasible
+  // (chronology, transfer buffers, hotel-night coverage, budget, one currency) and cheapest by the
+  // weighted objectives. Infeasibility is explained per component with stable reason codes.
+  rpc OptimizeItinerary(OptimizeItineraryRequest) returns (OptimizeItineraryResponse);
 }
 
 // Hard constraints: violating any one makes a candidate infeasible, regardless of score.
@@ -75,4 +79,80 @@ message OptimizeTripResponse {
   repeated RankedCandidate ranking = 3;
   string solver = 4;
   int64 solve_time_ms = 5;
+}
+
+// ---------------------------------------------------------------- Slice 3
+
+// The offers a supplier search returned for one component of the itinerary.
+message ComponentCandidates {
+  string component_id = 1;
+  travelos.offer.v1.OfferType type = 2;
+  int32 sequence = 3;
+  bool required = 4;
+  repeated string depends_on = 5;
+  repeated travelos.offer.v1.Offer offers = 6;
+  // AIR: the leg must depart at/after not_before and land at/before not_after.
+  // GROUND: the pickup must fall in the window. HOTEL: unused (dates are on the stay).
+  google.protobuf.Timestamp not_before = 7;
+  google.protobuf.Timestamp not_after = 8;
+  // HOTEL: the stay's local dates and zone, for night coverage.
+  string check_in_date = 9;
+  string check_out_date = 10;
+  string time_zone = 11;
+  // GROUND: AIRPORT_TO_HOTEL pickups follow the arriving leg; HOTEL_TO_AIRPORT drop-offs precede
+  // the departing leg. Named so the solver can tie the transfer to the chosen flight.
+  string arrival_leg_id = 12;
+  string departure_leg_id = 13;
+}
+
+message ItineraryConstraints {
+  travelos.common.v1.Money max_total = 1;
+  repeated travelos.common.v1.Cabin allowed_cabins = 2;
+  repeated string permitted_providers = 3;
+  // Legs: the next leg departs at least this long after the previous one lands. Default 60.
+  int32 min_connection_minutes = 4;
+  // Transfers: pickup at least this long after landing; drop-off at least this long before
+  // departure. Defaults 45 / 90.
+  int32 transfer_after_arrival_minutes = 5;
+  int32 transfer_before_departure_minutes = 6;
+  string currency = 7;
+  optional int32 max_stops = 8;
+}
+
+message OptimizeItineraryRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  repeated ComponentCandidates components = 3;
+  ItineraryConstraints constraints = 4;
+  OptimizationPreferences preferences = 5;
+}
+
+message ComponentSelection {
+  string component_id = 1;
+  // Empty when the component was skipped (optional and unfulfillable) or the itinerary is
+  // infeasible.
+  string offer_id = 2;
+  double score = 3;
+  ScoreBreakdown breakdown = 4;
+  // Alternatives for this component, best first, each with why it was not chosen or why it was
+  // infeasible in any combination.
+  repeated RankedCandidate ranking = 5;
+  // SELECTED | SKIPPED | INFEASIBLE
+  string outcome = 6;
+  repeated string infeasibility_reasons = 7;
+}
+
+message OptimizeItineraryResponse {
+  string optimization_run_id = 1;
+  // One offer per fulfilled component, tagged with component_id; absent when infeasible.
+  travelos.offer.v1.Bundle selected = 2;
+  repeated ComponentSelection components = 3;
+  // Whole-itinerary reasons when nothing fits, e.g. "LEG_CHRONOLOGY:cmp_a->cmp_b",
+  // "NO_HOTEL_COVERS_NIGHTS:cmp_c", "TOTAL_ABOVE_MAX".
+  repeated string infeasibility_reasons = 4;
+  double score = 5;
+  ScoreBreakdown breakdown = 6;
+  string solver = 7;
+  int64 solve_time_ms = 8;
+  int32 combinations_considered = 9;
 }

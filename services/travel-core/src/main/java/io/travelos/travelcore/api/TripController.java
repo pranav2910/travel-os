@@ -66,7 +66,16 @@ public class TripController {
       @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
     Trip trip = trips.get(me, tripId);
     return TripResponse.from(
-        trip, trips.latestApproval(trip.tenantId(), trip.tripId()).orElse(null));
+        trip,
+        trips.latestApproval(trip.tenantId(), trip.tripId()).orElse(null),
+        trips.components(trip.tenantId(), trip.tripId()));
+  }
+
+  /** Slice 3: component status, total and supplier references, one row per leg/stay/transfer. */
+  @GetMapping("/{tripId}/components")
+  public List<TripResponse.ComponentView> components(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    return trips.components(me, tripId).stream().map(TripResponse.ComponentView::from).toList();
   }
 
   @GetMapping

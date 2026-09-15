@@ -19,7 +19,7 @@ topics:
 
   - name: travel.trip
     slice: 1
-    events: [travel.trip.created, travel.trip.planned, travel.trip.booked, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
+    events: [travel.trip.created, travel.trip.planned, travel.trip.replanned, travel.trip.booked, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
 
   - name: travel.search
     slice: 1
@@ -39,7 +39,7 @@ topics:
 
   - name: travel.order
     slice: 1
-    events: [travel.order.created, travel.order.confirmed, travel.order.change-requested, travel.order.changed, travel.order.cancelled, travel.order.failed]
+    events: [travel.order.created, travel.order.confirmed, travel.order.change-requested, travel.order.changed, travel.order.cancelled, travel.order.failed, travel.order.compensation-failed, travel.order.exposure-resolved]
 
   - name: travel.disruption
     slice: 2

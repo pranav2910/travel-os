@@ -17,6 +17,10 @@ import io.travelos.contracts.policy.v1.EvaluateTripResponse;
 import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SearchGroundRequest;
+import io.travelos.contracts.supplier.v1.SearchGroundResponse;
+import io.travelos.contracts.supplier.v1.SearchHotelsRequest;
+import io.travelos.contracts.supplier.v1.SearchHotelsResponse;
 import io.travelos.contracts.trip.v1.Trip;
 
 /**
@@ -51,4 +55,10 @@ public interface RecoveryActivities {
   Order changeOrder(ChangeOrderCommand command);
 
   Disruption recordOutcome(RecordRecoveryOutcomeRequest request);
+
+  // ---------------------------------------------------------------- Slice 3: dependants
+
+  SearchHotelsResponse searchHotels(SearchHotelsRequest request);
+
+  SearchGroundResponse searchGround(SearchGroundRequest request);
 }

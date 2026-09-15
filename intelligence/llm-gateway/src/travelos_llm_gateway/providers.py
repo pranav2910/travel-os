@@ -366,7 +366,9 @@ class FakeProvider:
             return self._explain_disruption(f)
         parts = [
             f"For the {f.get('route', 'trip')} we chose {f.get('selected', 'the selected option')} "
-            f"at {f.get('total', 'the quoted total')}.",
+            f"at {f.get('total', 'the quoted total')}"
+            + (f" ({f['components']})" if f.get("components") else "")
+            + ".",
             f"{f.get('searched', 0)} options were searched and {f.get('permitted', 0)} were "
             f"permitted by policy {f.get('policy', '')}.",
             f"It ranked first with a score of {f.get('score', 'n/a')}"

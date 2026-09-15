@@ -30,6 +30,7 @@ public class TripService {
 
   private final TripRepository trips;
   private final ApprovalRepository approvals;
+  private final TripComponentRepository components;
   private final AgentDecisionRepository ledger;
   private final ApprovalSignaler signaler;
   private final Outbox outbox;
@@ -41,13 +42,15 @@ public class TripService {
       AgentDecisionRepository ledger,
       ApprovalSignaler signaler,
       Outbox outbox,
-      Clock clock) {
+      Clock clock,
+      TripComponentRepository components) {
     this.trips = trips;
     this.approvals = approvals;
     this.ledger = ledger;
     this.signaler = signaler;
     this.outbox = outbox;
     this.clock = clock;
+    this.components = components;
   }
 
   /**
@@ -229,6 +232,8 @@ public class TripService {
     if (t.to() == TripStatus.FAILED) {
       next = next.withFailure(t.failureStage(), t.failureCode());
     }
+    boolean replanned =
+        t.to() == TripStatus.AWAITING_APPROVAL && trip.status() == TripStatus.APPROVED;
     if (t.explanation() != null && !t.explanation().isBlank()) {
       next = next.withExplanation(t.explanation());
     }
@@ -238,6 +243,17 @@ public class TripService {
     trips.appendHistory(trip, trip.status(), t.to(), t.reason(), actor, now);
     switch (t.to()) {
       case AWAITING_APPROVAL -> {
+        if (replanned) {
+          outbox.append(
+              TripEvents.replanned(
+                  next,
+                  t.replanReason() == null ? "PRICE_CHANGED" : t.replanReason(),
+                  trip.total(),
+                  true,
+                  trip.evidence().approvalId(),
+                  t.causationId(),
+                  clock));
+        }
         outbox.append(TripEvents.planned(next, true, t.causationId(), clock));
         outbox.append(TripEvents.approvalRequested(next, approval, clock));
       }
@@ -246,11 +262,20 @@ public class TripService {
           outbox.append(TripEvents.planned(next, false, t.causationId(), clock));
         }
       }
-      case BOOKED -> outbox.append(TripEvents.booked(next, t.causationId(), clock));
+      case BOOKED ->
+          outbox.append(
+              TripEvents.booked(
+                  next, components.list(tenant, trip.tripId()), t.causationId(), clock));
       case FAILED ->
           outbox.append(
               TripEvents.failed(
-                  next, t.failureStage(), t.failureCode(), t.reason(), t.causationId(), clock));
+                  next,
+                  t.failureStage(),
+                  t.failureCode(),
+                  t.reason(),
+                  components.list(tenant, trip.tripId()),
+                  t.causationId(),
+                  clock));
       case CANCELLED ->
           outbox.append(
               TripEvents.cancelled(
@@ -429,7 +454,7 @@ public class TripService {
               resolvedTravelerId,
               source.name(),
               requestText == null ? "" : requestText.strip(),
-              intent == null ? "" : intent.toString());
+              intent == null ? "" : intent.canonical());
       return Fingerprints.sha256Hex(canonical);
     }
   }
@@ -448,5 +473,60 @@ public class TripService {
       @Nullable String failureStage,
       @Nullable String failureCode,
       @Nullable String causationId,
-      @Nullable String explanation) {}
+      @Nullable String explanation,
+      @Nullable String replanReason) {
+    public Transition(
+        String tripId,
+        TripStatus to,
+        @Nullable String reason,
+        @Nullable String selectedBundleId,
+        @Nullable String optimizationRunId,
+        @Nullable String policyDecisionId,
+        @Nullable String orderId,
+        @Nullable Money total,
+        @Nullable String approverRole,
+        @Nullable String failureStage,
+        @Nullable String failureCode,
+        @Nullable String causationId,
+        @Nullable String explanation) {
+      this(
+          tripId,
+          to,
+          reason,
+          selectedBundleId,
+          optimizationRunId,
+          policyDecisionId,
+          orderId,
+          total,
+          approverRole,
+          failureStage,
+          failureCode,
+          causationId,
+          explanation,
+          null);
+    }
+  }
+
+  // ------------------------------------------------------------------ Slice 3: components
+
+  /** The workflow reports where each component stands; the same report twice changes nothing. */
+  @Transactional
+  public Trip updateComponents(TenantId tenant, String tripId, List<TripComponent> states) {
+    Trip trip = getInternal(tenant, tripId);
+    for (TripComponent c : states) {
+      components.upsert(tenant, tripId, c);
+    }
+    return trip;
+  }
+
+  @Transactional(readOnly = true)
+  public List<TripComponent> components(TenantId tenant, String tripId) {
+    return components.list(tenant, tripId);
+  }
+
+  @Transactional(readOnly = true)
+  public List<TripComponent> components(RequestPrincipal me, String tripId) {
+    Trip trip = get(me, tripId);
+    return components.list(trip.tenantId(), trip.tripId());
+  }
 }

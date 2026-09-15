@@ -31,13 +31,24 @@
             "CONFIRMED",
             "FAILED",
             "CANCELLED",
-            "CHANGED"
+            "CHANGED",
+            "CANCEL_FAILED"
           ]
         },
         "externalRef": {
           "type": "string"
         },
         "recordLocator": {
+          "type": "string"
+        },
+        "componentId": {
+          "type": "string",
+          "pattern": "^cmp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "failureCode": {
           "type": "string"
         }
       }
@@ -259,6 +270,12 @@
           "items": {
             "$ref": "#/$defs/orderItem"
           }
+        },
+        "exposures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/exposure"
+          }
         }
       }
     },
@@ -312,6 +329,130 @@
         },
         "requestedBy": {
           "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    },
+    "exposure": {
+      "type": "object",
+      "required": [
+        "exposureId",
+        "itemId",
+        "provider",
+        "externalRef",
+        "amount",
+        "reason",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "exposureId": {
+          "type": "string",
+          "pattern": "^exp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "itemId": {
+          "type": "string",
+          "pattern": "^itm_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "componentId": {
+          "type": "string",
+          "pattern": "^cmp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "externalRef": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "reason": {
+          "enum": [
+            "COMPENSATION_FAILED",
+            "NON_REFUNDABLE"
+          ]
+        },
+        "detail": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "RESOLVED"
+          ]
+        }
+      }
+    },
+    "travel.order.compensation-failed": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "tripId",
+        "exposures"
+      ],
+      "additionalProperties": false,
+      "description": "Slice 3: a confirmed component could not be released after a later component failed; the money at risk is recorded and a person must act.",
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "exposures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/exposure"
+          }
+        },
+        "requiredRole": {
+          "enum": [
+            "TRAVEL_ADMIN",
+            "FINANCE"
+          ]
+        }
+      }
+    },
+    "travel.order.exposure-resolved": {
+      "type": "object",
+      "required": [
+        "orderId",
+        "tripId",
+        "exposureId",
+        "resolvedBy",
+        "resolution"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "exposureId": {
+          "type": "string",
+          "pattern": "^exp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "resolvedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "resolution": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
         }
       }
     }

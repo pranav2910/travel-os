@@ -6,6 +6,7 @@ import io.travelos.events.EventEnvelope;
 import io.travelos.travelcore.approval.Approval;
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
@@ -42,7 +43,8 @@ final class TripEvents {
     return envelope("travel.trip.planned", trip, causationId, data, clock);
   }
 
-  static EventEnvelope booked(Trip trip, @Nullable String causationId, Clock clock) {
+  static EventEnvelope booked(
+      Trip trip, List<TripComponent> components, @Nullable String causationId, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("tripId", trip.tripId());
     data.put("orderId", trip.evidence().orderId());
@@ -50,7 +52,64 @@ final class TripEvents {
       data.put("approvalId", trip.evidence().approvalId());
     }
     data.put("total", money(trip.total()));
+    if (!components.isEmpty()) {
+      data.put("components", components(components));
+    }
     return envelope("travel.trip.booked", trip, causationId, data, clock);
+  }
+
+  /** Slice 3: revalidation before booking found a material change; the plan goes back to policy. */
+  static EventEnvelope replanned(
+      Trip trip,
+      String reason,
+      @Nullable Money previousTotal,
+      boolean requiresApproval,
+      @Nullable String previousApprovalId,
+      @Nullable String causationId,
+      Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("reason", reason);
+    data.put("previousTotal", money(previousTotal == null ? trip.total() : previousTotal));
+    data.put("newTotal", money(trip.total()));
+    data.put("requiresApproval", requiresApproval);
+    if (previousApprovalId != null) {
+      data.put("previousApprovalId", previousApprovalId);
+    }
+    if (trip.evidence().policyDecisionId() != null) {
+      data.put("policyDecisionId", trip.evidence().policyDecisionId());
+    }
+    if (trip.evidence().selectedBundleId() != null) {
+      data.put("selectedBundleId", trip.evidence().selectedBundleId());
+    }
+    return envelope("travel.trip.replanned", trip, causationId, data, clock);
+  }
+
+  static List<Map<String, Object>> components(List<TripComponent> components) {
+    List<Map<String, Object>> out = new java.util.ArrayList<>();
+    for (TripComponent c : components) {
+      Map<String, Object> m = new LinkedHashMap<>();
+      m.put("componentId", c.componentId());
+      m.put("type", c.type());
+      m.put("status", c.status());
+      if (c.provider() != null) {
+        m.put("provider", c.provider());
+      }
+      if (c.externalRef() != null) {
+        m.put("externalRef", c.externalRef());
+      }
+      if (c.total() != null) {
+        m.put("total", money(c.total()));
+      }
+      if (c.failureCode() != null) {
+        m.put("failureCode", c.failureCode());
+      }
+      if (c.summary() != null) {
+        m.put("summary", c.summary());
+      }
+      out.add(m);
+    }
+    return out;
   }
 
   static EventEnvelope failed(
@@ -58,6 +117,7 @@ final class TripEvents {
       String stage,
       String code,
       @Nullable String message,
+      List<TripComponent> components,
       @Nullable String causationId,
       Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
@@ -66,6 +126,9 @@ final class TripEvents {
     data.put("reasonCode", code);
     if (message != null && !message.isBlank()) {
       data.put("message", message.length() > 2000 ? message.substring(0, 2000) : message);
+    }
+    if (!components.isEmpty()) {
+      data.put("components", components(components));
     }
     return envelope("travel.trip.failed", trip, causationId, data, clock);
   }
@@ -132,6 +195,9 @@ final class TripEvents {
     }
     intent.put("hotelRequired", i.hotelRequired());
     intent.put("travelers", i.travelers());
+    if (i.itinerary() != null) {
+      intent.put("itinerary", ItineraryCodec.toMap(i.itinerary()));
+    }
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("tripId", trip.tripId());
     data.put("method", "FREE_TEXT");

@@ -19,7 +19,9 @@ import io.travelos.policy.engine.Facts;
 import io.travelos.policy.engine.RouteClassifier;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /** The only place protobuf and the engine's vocabulary meet. */
@@ -72,6 +74,8 @@ final class ProtoMapping {
     Cabin highest = Cabin.ECONOMY;
     int maxStops = 0;
     Facts.Hotel hotel = null;
+    List<Facts.Hotel> hotels = new ArrayList<>();
+    List<Facts.Ground> ground = new ArrayList<>();
     for (Offer offer : bundle.getOffersList()) {
       if (offer.getType() == OfferType.AIR && offer.hasAir()) {
         Money fare = money(offer.getTotal());
@@ -87,9 +91,22 @@ final class ProtoMapping {
             }
           }
         }
-      } else if (offer.getType() == OfferType.HOTEL && offer.hasHotel() && hotel == null) {
-        hotel =
-            new Facts.Hotel(money(offer.getHotel().getNightlyRate()), offer.getHotel().getNights());
+      } else if (offer.getType() == OfferType.HOTEL && offer.hasHotel()) {
+        Facts.Hotel h =
+            new Facts.Hotel(
+                money(offer.getHotel().getNightlyRate()),
+                offer.getHotel().getNights(),
+                offer.getComponentId().isBlank() ? null : offer.getComponentId());
+        hotels.add(h);
+        if (hotel == null) {
+          hotel = h;
+        }
+      } else if (offer.getType() == OfferType.GROUND && offer.hasGround()) {
+        ground.add(
+            new Facts.Ground(
+                money(offer.getTotal()),
+                offer.getGround().getVehicleClass(),
+                offer.getComponentId().isBlank() ? null : offer.getComponentId()));
       }
     }
     Money total =
@@ -100,16 +117,50 @@ final class ProtoMapping {
                 .reduce(Money::plus)
                 .orElse(Money.zero(currencyFallback));
     Facts.Air air = airFare == null ? null : new Facts.Air(airFare, highest, maxStops);
-    return new Facts.Candidate(bundle.getBundleId(), total, air, hotel);
+    return new Facts.Candidate(bundle.getBundleId(), total, air, hotel, hotels, ground);
+  }
+
+  /** Slice 3: when each leg of a multi-leg proposal flies, keyed by component id. */
+  static List<Facts.LegTiming> legTimings(Bundle bundle) {
+    List<Facts.LegTiming> out = new ArrayList<>();
+    for (Offer offer : bundle.getOffersList()) {
+      if (!offer.hasAir() || offer.getComponentId().isBlank()) {
+        continue;
+      }
+      Journey out0 = offer.getAir().getOutbound();
+      if (out0.getSegmentsCount() == 0) {
+        continue;
+      }
+      FlightSegment first = out0.getSegments(0);
+      FlightSegment last = out0.getSegments(out0.getSegmentsCount() - 1);
+      if (first.hasDeparture() && last.hasArrival()) {
+        out.add(
+            new Facts.LegTiming(
+                offer.getComponentId(), instant(first.getDeparture()), instant(last.getArrival())));
+      }
+    }
+    return out;
   }
 
   /** The trip's time constraints from its frozen intent; absent timestamps stay null. */
   static Facts.Constraints constraints(TravelIntent intent) {
+    Map<String, Facts.Window> windows = new HashMap<>();
+    if (intent.hasItinerary()) {
+      for (io.travelos.contracts.trip.v1.Leg leg : intent.getItinerary().getLegsList()) {
+        if (leg.hasEarliestDeparture() && leg.hasArrivalDeadline()) {
+          windows.put(
+              leg.getComponentId(),
+              new Facts.Window(
+                  instant(leg.getEarliestDeparture()), instant(leg.getArrivalDeadline())));
+        }
+      }
+    }
     return new Facts.Constraints(
         intent.hasEarliestDeparture() ? instant(intent.getEarliestDeparture()) : null,
         intent.hasArrivalDeadline() ? instant(intent.getArrivalDeadline()) : null,
         intent.hasReturnAfter() ? instant(intent.getReturnAfter()) : null,
-        intent.hasLatestReturn() ? instant(intent.getLatestReturn()) : null);
+        intent.hasLatestReturn() ? instant(intent.getLatestReturn()) : null,
+        windows);
   }
 
   /** When the bundle's air component flies, or null when it has no timed segments. */

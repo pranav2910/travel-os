@@ -25,12 +25,13 @@ public final class SupplierRegistry {
 
   private static final Logger log = LoggerFactory.getLogger(SupplierRegistry.class);
 
-  private record Guarded(AirSupplier supplier, RateLimiter limiter, CircuitBreaker breaker) {}
+  private record Guarded(SupplierAdapter supplier, RateLimiter limiter, CircuitBreaker breaker) {}
 
   private final Map<String, Guarded> adapters = new LinkedHashMap<>();
 
-  public SupplierRegistry(List<AirSupplier> suppliers, SupplierProperties properties) {
-    for (AirSupplier supplier : suppliers) {
+  public SupplierRegistry(
+      List<? extends SupplierAdapter> suppliers, SupplierProperties properties) {
+    for (SupplierAdapter supplier : suppliers) {
       SupplierProperties.Adapter settings = properties.adapter(supplier.provider());
       RateLimiter limiter =
           RateLimiter.of(
@@ -64,20 +65,49 @@ public final class SupplierRegistry {
     return List.copyOf(adapters.keySet());
   }
 
-  public Optional<AirSupplier> find(String provider) {
+  /** Providers that sell the given kind, in registration order. */
+  public <A extends SupplierAdapter> List<String> providersOf(Class<A> kind) {
+    return adapters.values().stream()
+        .map(Guarded::supplier)
+        .filter(kind::isInstance)
+        .map(SupplierAdapter::provider)
+        .toList();
+  }
+
+  public Optional<SupplierAdapter> find(String provider) {
     return Optional.ofNullable(adapters.get(provider)).map(Guarded::supplier);
   }
 
+  public Optional<AirSupplier> findAir(String provider) {
+    return find(provider).filter(AirSupplier.class::isInstance).map(AirSupplier.class::cast);
+  }
+
   /** Runs {@code call} against the named adapter under its limiter and breaker. */
-  public <T> T call(String provider, java.util.function.Function<AirSupplier, T> call) {
+  public <T> T call(String provider, java.util.function.Function<SupplierAdapter, T> call) {
+    return call(provider, SupplierAdapter.class, call);
+  }
+
+  /**
+   * Same, for an adapter of a specific kind: asking a hotel adapter for flights is a caller bug
+   * (INVALID_ARGUMENT), not a supplier fault.
+   */
+  public <A extends SupplierAdapter, T> T call(
+      String provider, Class<A> kind, java.util.function.Function<A, T> call) {
     Guarded guarded = adapters.get(provider);
     if (guarded == null) {
       throw new SupplierException("PROVIDER_UNKNOWN", "no adapter for provider " + provider, false);
     }
+    if (!kind.isInstance(guarded.supplier())) {
+      throw new SupplierException(
+          "PROVIDER_KIND_MISMATCH",
+          provider + " does not sell " + kind.getSimpleName().replace("Supplier", "").toLowerCase(),
+          false);
+    }
     Supplier<T> decorated =
         CircuitBreaker.decorateSupplier(
             guarded.breaker(),
-            RateLimiter.decorateSupplier(guarded.limiter(), () -> call.apply(guarded.supplier())));
+            RateLimiter.decorateSupplier(
+                guarded.limiter(), () -> call.apply(kind.cast(guarded.supplier()))));
     try {
       return decorated.get();
     } catch (CallNotPermittedException e) {

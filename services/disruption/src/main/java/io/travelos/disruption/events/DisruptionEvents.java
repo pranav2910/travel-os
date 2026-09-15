@@ -55,7 +55,43 @@ public final class DisruptionEvents {
       int policyVersion,
       String optimizationRunId,
       String autonomyOutcome,
-      List<String> reasonCodes) {}
+      List<String> reasonCodes,
+      @Nullable List<Map<String, Object>> componentChanges) {
+    public DecisionSummary(
+        int candidatesSearched,
+        int candidatesPermitted,
+        int candidatesFeasible,
+        List<Map<String, Object>> rejected,
+        String selectedBundleId,
+        @Nullable Double selectedScore,
+        @Nullable Money originalTotal,
+        @Nullable Money replacementTotal,
+        Money incrementalCost,
+        String policyDecisionId,
+        String policyId,
+        int policyVersion,
+        String optimizationRunId,
+        String autonomyOutcome,
+        List<String> reasonCodes) {
+      this(
+          candidatesSearched,
+          candidatesPermitted,
+          candidatesFeasible,
+          rejected,
+          selectedBundleId,
+          selectedScore,
+          originalTotal,
+          replacementTotal,
+          incrementalCost,
+          policyDecisionId,
+          policyId,
+          policyVersion,
+          optimizationRunId,
+          autonomyOutcome,
+          reasonCodes,
+          null);
+    }
+  }
 
   public static EventEnvelope decisionReady(Disruption d, DecisionSummary s, Clock clock) {
     Map<String, Object> data = base(d);
@@ -82,6 +118,12 @@ public final class DisruptionEvents {
     data.put("optimizationRunId", s.optimizationRunId());
     data.put("autonomyOutcome", s.autonomyOutcome());
     data.put("reasonCodes", s.reasonCodes());
+    if (s.componentChanges() != null && !s.componentChanges().isEmpty()) {
+      data.put("componentChanges", s.componentChanges());
+      data.put(
+          "affectedComponentIds",
+          s.componentChanges().stream().map(c -> c.get("componentId")).toList());
+    }
     return envelope("travel.disruption.decision-ready", d, d.disruptionId(), data, clock);
   }
 

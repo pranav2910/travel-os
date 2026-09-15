@@ -26,6 +26,17 @@ class TripStatusTest {
   }
 
   @Test
+  void aStaleApprovalGoesBackToAPersonOnlyFromApproved() {
+    assertThat(TripStatus.APPROVED.canTransitionTo(TripStatus.AWAITING_APPROVAL))
+        .as("revalidation before booking found a material change")
+        .isTrue();
+    assertThat(TripStatus.BOOKING.canTransitionTo(TripStatus.AWAITING_APPROVAL))
+        .as("once a supplier mutation may have started there is no way back to approval")
+        .isFalse();
+    assertThat(TripStatus.BOOKED.canTransitionTo(TripStatus.AWAITING_APPROVAL)).isFalse();
+  }
+
+  @Test
   void noShortcuts() {
     assertThat(TripStatus.SUBMITTED.canTransitionTo(TripStatus.BOOKED)).isFalse();
     assertThat(TripStatus.BOOKED.canTransitionTo(TripStatus.PLANNING)).isFalse();

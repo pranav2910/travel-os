@@ -19,6 +19,18 @@ service SupplierGateway {
   // Slice 2 (disruption recovery). Adapters may return UNIMPLEMENTED until then.
   rpc ChangeOrder(ChangeOrderRequest) returns (ChangeOrderResponse);
   rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse);
+
+  // Slice 3. Typed searches for the other component kinds.
+  rpc SearchHotels(SearchHotelsRequest) returns (SearchHotelsResponse);
+  rpc SearchGround(SearchGroundRequest) returns (SearchGroundResponse);
+  // Revalidate ANY offer (air, hotel, ground) before a mutation: is it still sold, at what price,
+  // until when. PriceOffer stays for air callers; QuoteOffer is the general form.
+  rpc QuoteOffer(QuoteOfferRequest) returns (QuoteOfferResponse);
+  // What a supplier did with a command whose answer we never saw: by its external id or by the
+  // idempotency key we sent. The reconciliation step before any retry of a mutation.
+  rpc GetBookingStatus(GetBookingStatusRequest) returns (BookingStatus);
+  // What an adapter can do, so callers change what can be changed and cancel + rebook the rest.
+  rpc GetCapabilities(GetCapabilitiesRequest) returns (SupplierCapabilities);
 }
 
 message SearchAirRequest {
@@ -73,6 +85,8 @@ enum SupplierOrderStatus {
   FAILED = 3;
   CANCELLED = 4;
   CHANGED = 5;
+  // Slice 3: the supplier has no record of the command (safe to retry).
+  NOT_FOUND = 6;
 }
 
 message CreateOrderRequest {
@@ -122,4 +136,88 @@ message CancelOrderResponse {
   string external_order_id = 1;
   SupplierOrderStatus status = 2;
   travelos.common.v1.Money refund = 3;
+}
+
+// ---------------------------------------------------------------- Slice 3
+
+message SearchHotelsRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  // IATA city/airport code.
+  string city = 2;
+  // ISO local dates on the property's calendar.
+  string check_in_date = 3;
+  string check_out_date = 4;
+  int32 guests = 5;
+}
+
+message SearchHotelsResponse {
+  string search_session_id = 1;
+  repeated travelos.offer.v1.Offer offers = 2;
+  repeated SupplierError errors = 3;
+}
+
+message SearchGroundRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string city = 2;
+  // AIRPORT_TO_HOTEL | HOTEL_TO_AIRPORT | POINT_TO_POINT
+  string kind = 3;
+  string from_location = 4;
+  string to_location = 5;
+  // The pickup must fall in this window (UTC instants).
+  travelos.common.v1.TimeWindow pickup = 6;
+  int32 passengers = 7;
+}
+
+message SearchGroundResponse {
+  string search_session_id = 1;
+  repeated travelos.offer.v1.Offer offers = 2;
+  repeated SupplierError errors = 3;
+}
+
+message QuoteOfferRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+  string provider_offer_id = 3;
+}
+
+message QuoteOfferResponse {
+  // The offer as the supplier sells it now (new expiry, current price).
+  travelos.offer.v1.Offer offer = 1;
+  bool price_changed = 2;
+  // The offer's original expiry had passed; the supplier re-quoted it (offer.expires_at is new).
+  bool requoted = 3;
+}
+
+message GetBookingStatusRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+  // One of the two identifies the booking.
+  string external_order_id = 3;
+  string idempotency_key = 4;
+}
+
+message BookingStatus {
+  // NOT_FOUND when the supplier never recorded the command.
+  SupplierOrderStatus status = 1;
+  string external_order_id = 2;
+  string record_locator = 3;
+  travelos.common.v1.Money charged = 4;
+  repeated string ticket_numbers = 5;
+}
+
+message GetCapabilitiesRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string provider = 2;
+}
+
+message SupplierCapabilities {
+  string provider = 1;
+  repeated travelos.offer.v1.OfferType types = 2;
+  // ChangeOrder is supported (otherwise a change is cancel + create).
+  bool change_supported = 3;
+  bool cancel_supported = 4;
+  bool status_lookup_supported = 5;
+  bool notifications_supported = 6;
+  // SIMULATED | LIVE: the sandbox adapters are simulations and say so.
+  string integration = 7;
 }

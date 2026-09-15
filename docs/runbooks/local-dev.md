@@ -191,3 +191,34 @@ cancellation (impact is deferred, not dropped), parks the recovery at `Optimize`
 optimizer, removes the order service underneath it, lets the optimizer back so `ChangeOrder` retries
 with nobody to call, kills the recovery worker mid-retry, and proves one logical recovery. Each hold
 is confirmed by a Temporal pending-activity tripwire (attempt ≥ 2) before the next fault is injected.
+
+## Slice 3: hotels, ground and multi-city itineraries
+
+`POST /api/v1/trips` accepts an `intent.itinerary` (ordered `legs`, `stays` with local dates,
+`transfers` by kind) instead of origin/destination; the response echoes it with stable `cmp_`
+component ids and, once planning starts, `components` with a status, supplier reference and total
+per leg, stay and transfer (`GET /api/v1/trips/{id}/components`). Orders carry one item per
+component with `hotel` / `ground` views and, after a failed compensation, `exposures` that a
+TRAVEL_ADMIN or FINANCE person resolves with
+`POST /api/v1/orders/{id}/exposures/{exposureId}/resolution`.
+
+The SIMULATED hotel (`sandbox-hotel`) and ground (`sandbox-ground`) adapters live in the Supplier
+Gateway. Hotels are priced per property and night; ground offers are pickups on the quarter hour
+every 30 minutes across the whole requested window (the workflow asks for a window wide enough for
+any flight the optimizer may still choose; the optimizer then pairs each flight with a pickup 45
+minutes to 4 hours after landing, or a drop-off 90 minutes before departure). Their faults are
+catalog fixtures chosen by city, always the city's cheapest entry:
+
+| City | Fixture |
+|---|---|
+| SFO | cheapest hotel re-prices +USD 40/night on revalidation (stale approval) |
+| ORD | cheapest hotel's quote lives ten seconds (re-quoted at the same price) |
+| DEN | cheapest hotel and shuttle commit the booking, then lose the answer (status lookup) |
+| AUS | cheapest hotel refuses the booking (compensation of the legs) |
+| LAX | cheapest hotel refuses cancellation, cheapest shuttle refuses the booking (exposure) |
+| MIA | cheapest hotel's description tries to instruct the platform (data, never an order) |
+| LHR | rates in GBP (an unsupported currency combination, denied explicitly) |
+| ZZZ | simulated outage (retryable UNAVAILABLE) |
+
+`scripts/e2e-slice3.sh` walks every acceptance scenario (`make stack-e2e3` against the Docker
+stack, `make kind-e2e3` against kind); `make kind-chaos3` is the deterministic chaos run.

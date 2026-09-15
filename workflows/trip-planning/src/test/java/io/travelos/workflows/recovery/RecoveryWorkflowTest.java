@@ -31,6 +31,8 @@ import io.travelos.contracts.llm.v1.ExplainDisruptionResponse;
 import io.travelos.contracts.offer.v1.AirOffer;
 import io.travelos.contracts.offer.v1.Bundle;
 import io.travelos.contracts.offer.v1.FlightSegment;
+import io.travelos.contracts.offer.v1.GroundOffer;
+import io.travelos.contracts.offer.v1.HotelOffer;
 import io.travelos.contracts.offer.v1.Journey;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
@@ -52,6 +54,14 @@ import io.travelos.contracts.policy.v1.Outcome;
 import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.policy.v1.ReasonCode;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SearchGroundRequest;
+import io.travelos.contracts.supplier.v1.SearchGroundResponse;
+import io.travelos.contracts.supplier.v1.SearchHotelsRequest;
+import io.travelos.contracts.supplier.v1.SearchHotelsResponse;
+import io.travelos.contracts.trip.v1.Itinerary;
+import io.travelos.contracts.trip.v1.Leg;
+import io.travelos.contracts.trip.v1.Stay;
+import io.travelos.contracts.trip.v1.Transfer;
 import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.contracts.trip.v1.TravelerSnapshot;
 import io.travelos.contracts.trip.v1.Trip;
@@ -517,6 +527,311 @@ class RecoveryWorkflowTest {
 
   private RecoveryWorkflow.Outcome run() {
     return stub().run(new DisruptionRecovery.Input(TENANT, DISRUPTION));
+  }
+
+  // ------------------------------------------------------------------ Slice 3: dependants
+
+  private static final String LEG = "cmp_01ARZ3NDEKTSV4RRFFQ69G5FL1";
+  private static final String STAY = "cmp_01ARZ3NDEKTSV4RRFFQ69G5FS1";
+  private static final String RIDE = "cmp_01ARZ3NDEKTSV4RRFFQ69G5FR1";
+
+  /**
+   * A booked itinerary: the cancelled leg (DL240, lands hour 16), a stay from the 6th, a shuttle at
+   * hour 17.
+   */
+  private static Order itineraryOrder() {
+    Offer leg =
+        offer(ORIGINAL_OFFER, ORIGINAL_TOTAL, "DL240", Cabin.ECONOMY, 10, 16).toBuilder()
+            .setComponentId(LEG)
+            .build();
+    Offer stay =
+        Offer.newBuilder()
+            .setOfferId("off_stay")
+            .setProvider("sandbox-hotel")
+            .setProviderOfferId("SBH-stay")
+            .setType(OfferType.HOTEL)
+            .setComponentId(STAY)
+            .setTotal(usd(23800))
+            .setHotel(
+                HotelOffer.newBuilder()
+                    .setPropertyId("HTL-SEA-2")
+                    .setName("Budget Inn")
+                    .setCity("SEA")
+                    .setCheckInDate("2026-10-06")
+                    .setCheckOutDate("2026-10-08")
+                    .setNights(2)
+                    .setTimeZone("America/Los_Angeles"))
+            .build();
+    Offer ride =
+        Offer.newBuilder()
+            .setOfferId("off_ride")
+            .setProvider("sandbox-ground")
+            .setProviderOfferId("SBG-ride")
+            .setType(OfferType.GROUND)
+            .setComponentId(RIDE)
+            .setTotal(usd(3900))
+            .setGround(
+                GroundOffer.newBuilder()
+                    .setVendorId("GRD-SEA-SHUTTLE")
+                    .setVendorName("CityShuttle")
+                    .setPickup(hours(17))
+                    .setDropoff(hours(17).toBuilder().setSeconds(hours(17).getSeconds() + 2100)))
+            .build();
+    return order(OrderStatus.CONFIRMED, List.of()).toBuilder()
+        .clearItems()
+        .setTotal(usd(ORIGINAL_TOTAL + 23800 + 3900))
+        .addItems(
+            OrderItem.newBuilder()
+                .setItemId("itm_1")
+                .setComponentId(LEG)
+                .setStatus(OrderItemStatus.ITEM_CONFIRMED)
+                .setExternalRef("SBX-1")
+                .setTotal(usd(ORIGINAL_TOTAL))
+                .setOffer(leg))
+        .addItems(
+            OrderItem.newBuilder()
+                .setItemId("itm_2")
+                .setComponentId(STAY)
+                .setStatus(OrderItemStatus.ITEM_CONFIRMED)
+                .setExternalRef("SBH-1")
+                .setTotal(usd(23800))
+                .setOffer(stay))
+        .addItems(
+            OrderItem.newBuilder()
+                .setItemId("itm_3")
+                .setComponentId(RIDE)
+                .setStatus(OrderItemStatus.ITEM_CONFIRMED)
+                .setExternalRef("SBG-1")
+                .setTotal(usd(3900))
+                .setOffer(ride))
+        .build();
+  }
+
+  private static Trip itineraryTrip() {
+    return trip().toBuilder()
+        .setIntent(
+            trip().getIntent().toBuilder()
+                .setItinerary(
+                    Itinerary.newBuilder()
+                        .setCurrency("USD")
+                        .addLegs(
+                            Leg.newBuilder()
+                                .setComponentId(LEG)
+                                .setSequence(1)
+                                .setOrigin("BOS")
+                                .setDestination("SEA")
+                                .setEarliestDeparture(ts("2026-10-06T10:00:00Z"))
+                                .setArrivalDeadline(ts("2026-10-06T23:00:00Z"))
+                                .setOriginTimeZone("America/New_York")
+                                .setDestinationTimeZone("America/Los_Angeles"))
+                        .addStays(
+                            Stay.newBuilder()
+                                .setComponentId(STAY)
+                                .setCity("SEA")
+                                .setCheckInDate("2026-10-06")
+                                .setCheckOutDate("2026-10-08")
+                                .setTimeZone("America/Los_Angeles")
+                                .setNights(2)
+                                .setRequired(true)
+                                .addDependsOn(LEG))
+                        .addTransfers(
+                            Transfer.newBuilder()
+                                .setComponentId(RIDE)
+                                .setKind("AIRPORT_TO_HOTEL")
+                                .setCity("SEA")
+                                .setFromLocation("SEA airport")
+                                .setToLocation("hotel")
+                                .setTimeZone("America/Los_Angeles")
+                                .setRequired(true)
+                                .addDependsOn(LEG))))
+        .build();
+  }
+
+  private void dependantStubs(int replacementArrivalHour, long replacementCents) {
+    org.mockito.Mockito.reset(activities);
+    when(activities.loadDisruption(anyString(), anyString())).thenAnswer(inv -> current);
+    when(activities.loadOrder(anyString(), anyString(), anyString())).thenReturn(itineraryOrder());
+    when(activities.loadTrip(anyString(), anyString())).thenReturn(itineraryTrip());
+    when(activities.transition(any()))
+        .thenAnswer(
+            inv -> {
+              TransitionDisruptionRequest r = inv.getArgument(0);
+              transitions.add(r);
+              RecoveryState.Builder state =
+                  (r.hasRecovery() ? r.getRecovery() : current.getRecovery()).toBuilder();
+              if (r.getTo() == DisruptionStatus.HUMAN_REQUIRED) {
+                state.setApprovalId("apr_01ARZ3NDEKTSV4RRFFQ69G5FAV").setApprovalStatus("PENDING");
+              }
+              current = disruption(r.getTo(), state.build());
+              return current;
+            });
+    // one replacement flight, landing at the given hour
+    when(activities.search(any()))
+        .thenReturn(
+            SearchAirResponse.newBuilder()
+                .addOffers(
+                    offer(
+                        CHEAP,
+                        replacementCents,
+                        "DL242",
+                        Cabin.ECONOMY,
+                        replacementArrivalHour - 6,
+                        replacementArrivalHour))
+                .build());
+    when(activities.evaluatePolicy(any())).thenAnswer(inv -> policy(inv.getArgument(0)));
+    when(activities.optimize(any()))
+        .thenAnswer(
+            inv ->
+                optimized(
+                    inv.getArgument(0),
+                    "bdl_" + CHEAP.substring(4),
+                    replacementCents - ORIGINAL_TOTAL));
+    when(activities.searchGround(any()))
+        .thenAnswer(
+            inv -> {
+              SearchGroundRequest r = inv.getArgument(0);
+              Timestamp pickup = r.getPickup().getNotBefore();
+              return SearchGroundResponse.newBuilder()
+                  .addOffers(
+                      Offer.newBuilder()
+                          .setOfferId("off_ride2")
+                          .setProvider("sandbox-ground")
+                          .setProviderOfferId("SBG-ride2")
+                          .setType(OfferType.GROUND)
+                          .setTotal(usd(3900))
+                          .setGround(
+                              GroundOffer.newBuilder()
+                                  .setVendorId("GRD-SEA-SHUTTLE")
+                                  .setVendorName("CityShuttle")
+                                  .setPickup(pickup)
+                                  .setDropoff(
+                                      pickup.toBuilder().setSeconds(pickup.getSeconds() + 2100))))
+                  .build();
+            });
+    when(activities.searchHotels(any()))
+        .thenAnswer(
+            inv -> {
+              SearchHotelsRequest r = inv.getArgument(0);
+              return SearchHotelsResponse.newBuilder()
+                  .addOffers(
+                      Offer.newBuilder()
+                          .setOfferId("off_stay2")
+                          .setProvider("sandbox-hotel")
+                          .setProviderOfferId("SBH-stay2")
+                          .setType(OfferType.HOTEL)
+                          .setTotal(usd(42000))
+                          .setHotel(
+                              HotelOffer.newBuilder()
+                                  .setPropertyId("HTL-SEA-2")
+                                  .setName("Budget Inn")
+                                  .setCity("SEA")
+                                  .setCheckInDate(r.getCheckInDate())
+                                  .setCheckOutDate(r.getCheckOutDate())
+                                  .setNights(1)))
+                  .build();
+            });
+    when(activities.evaluateAction(any()))
+        .thenAnswer(
+            inv -> {
+              EvaluateActionRequest r = inv.getArgument(0);
+              return r.getIncrementalCost().getAmountMinor() <= 10000
+                  ? allow(r)
+                  : requireApproval(r, r.getIncrementalCost().getAmountMinor());
+            });
+    when(activities.recordDecision(any()))
+        .thenAnswer(
+            inv -> {
+              RecordRecoveryDecisionRequest r = inv.getArgument(0);
+              decisions.add(r);
+              current = disruption(DisruptionStatus.DECISION_READY, current.getRecovery());
+              return current;
+            });
+    when(activities.explain(any()))
+        .thenReturn(ExplainDisruptionResponse.newBuilder().setExplanation("ok").build());
+    when(activities.changeOrder(any()))
+        .thenAnswer(inv -> changed(inv.getArgument(0), "APPLIED", ""));
+    when(activities.recordOutcome(any()))
+        .thenAnswer(
+            inv -> {
+              RecordRecoveryOutcomeRequest r = inv.getArgument(0);
+              outcomes.add(r);
+              current = disruption(r.getOutcome().getStatus(), current.getRecovery());
+              return current;
+            });
+  }
+
+  private final List<RecordRecoveryDecisionRequest> decisions = new CopyOnWriteArrayList<>();
+
+  @Test
+  void aLaterFlightReTimesTheTransferAndKeepsTheHotelAutonomously() {
+    // lands at hour 20 instead of 16, same local date: the shuttle at hour 17 no longer meets it
+    dependantStubs(20, ORIGINAL_TOTAL + 7300);
+    RecoveryWorkflow.Outcome outcome = run();
+    assertThat(outcome.finalStatus()).isEqualTo("RESOLVED");
+    ArgumentCaptor<ChangeOrderCommand> change = ArgumentCaptor.forClass(ChangeOrderCommand.class);
+    verify(activities, times(1)).changeOrder(change.capture());
+    Bundle replacement = change.getValue().getReplacement();
+    assertThat(replacement.getOffersList())
+        .extracting(Offer::getComponentId)
+        .containsExactly(LEG, RIDE);
+    assertThat(replacement.getOffers(1).getGround().getPickup().getSeconds())
+        .as("the new pickup follows the new landing plus the buffer")
+        .isEqualTo(hours(20).getSeconds() + 45 * 60);
+    ArgumentCaptor<EvaluateActionRequest> action =
+        ArgumentCaptor.forClass(EvaluateActionRequest.class);
+    verify(activities).evaluateAction(action.capture());
+    assertThat(action.getValue().getIncrementalCost().getAmountMinor()).isEqualTo(7300);
+    assertThat(action.getValue().getProposed().getOffersCount()).isEqualTo(2);
+    assertThat(decisions.getFirst().getDecision().getComponentChangesList())
+        .extracting(c -> c.getComponentId() + ":" + c.getAction())
+        .containsExactly(LEG + ":REPLACED", RIDE + ":RETIMED", STAY + ":PRESERVED");
+    verify(activities, never()).searchHotels(any());
+    assertThat(transitions)
+        .extracting(TransitionDisruptionRequest::getTo)
+        .contains(DisruptionStatus.AUTO_ALLOWED);
+  }
+
+  @Test
+  void aNextDayFlightMovesTheStayAndTheWholeChangeNeedsAManager() {
+    // lands at hour 36 (05:00 Pacific on the 7th): the first night is gone, the hotel is re-dated
+    dependantStubs(36, ORIGINAL_TOTAL + 7300);
+    RecoveryWorkflow stub = stub();
+    WorkflowClient.start(stub::run, new DisruptionRecovery.Input(TENANT, DISRUPTION));
+    env.sleep(Duration.ofMinutes(5));
+    assertThat(stub.stage()).isEqualTo(DisruptionRecovery.Stage.AWAITING_APPROVAL);
+    assertThat(transitions.getLast().getTo()).isEqualTo(DisruptionStatus.HUMAN_REQUIRED);
+    verify(activities, never()).changeOrder(any());
+    stub.approvalDecided(
+        new DisruptionRecovery.ApprovalDecision(
+            "apr_01ARZ3NDEKTSV4RRFFQ69G5FAV", "APPROVED", "human/bob", "ok"));
+    RecoveryWorkflow.Outcome outcome =
+        client.newUntypedWorkflowStub(DISRUPTION).getResult(RecoveryWorkflow.Outcome.class);
+    assertThat(outcome.finalStatus()).isEqualTo("RESOLVED");
+    ArgumentCaptor<SearchHotelsRequest> hotels = ArgumentCaptor.forClass(SearchHotelsRequest.class);
+    verify(activities).searchHotels(hotels.capture());
+    assertThat(hotels.getValue().getCheckInDate()).isEqualTo("2026-10-07");
+    assertThat(hotels.getValue().getCheckOutDate()).isEqualTo("2026-10-08");
+    ArgumentCaptor<EvaluateActionRequest> action =
+        ArgumentCaptor.forClass(EvaluateActionRequest.class);
+    verify(activities).evaluateAction(action.capture());
+    // flight +73.00, hotel 238.00 -> 420.00 (+182.00), transfer re-timed +0: the sum is what
+    // policy sees, and USD 255.00 is above the USD 100 autonomy limit
+    assertThat(action.getValue().getIncrementalCost().getAmountMinor())
+        .isEqualTo(7300 + 42000 - 23800);
+    assertThat(action.getValue().getProposed().getOffersList())
+        .extracting(Offer::getComponentId)
+        .containsExactly(LEG, RIDE, STAY);
+    assertThat(decisions.getFirst().getDecision().getComponentChangesList())
+        .extracting(c -> c.getComponentId() + ":" + c.getAction())
+        .containsExactly(LEG + ":REPLACED", RIDE + ":RETIMED", STAY + ":RETIMED");
+    ArgumentCaptor<ChangeOrderCommand> change = ArgumentCaptor.forClass(ChangeOrderCommand.class);
+    verify(activities, times(1)).changeOrder(change.capture());
+    assertThat(change.getValue().getReplacement().getOffersCount()).isEqualTo(3);
+    assertThat(change.getValue().getApprovalId()).isEqualTo("apr_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+    assertThat(transitions)
+        .extracting(TransitionDisruptionRequest::getTo)
+        .contains(DisruptionStatus.HUMAN_REQUIRED)
+        .doesNotContain(DisruptionStatus.AUTO_ALLOWED);
   }
 
   private static Disruption disruption(DisruptionStatus status, RecoveryState state) {

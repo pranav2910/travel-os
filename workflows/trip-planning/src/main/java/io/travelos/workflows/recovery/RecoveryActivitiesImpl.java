@@ -27,6 +27,10 @@ import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.policy.v1.PolicyServiceGrpc;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SearchGroundRequest;
+import io.travelos.contracts.supplier.v1.SearchGroundResponse;
+import io.travelos.contracts.supplier.v1.SearchHotelsRequest;
+import io.travelos.contracts.supplier.v1.SearchHotelsResponse;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
@@ -139,6 +143,18 @@ public class RecoveryActivitiesImpl implements RecoveryActivities {
         () ->
             stub(DisruptionServiceGrpc::newBlockingStub, "disruption")
                 .recordRecoveryOutcome(request));
+  }
+
+  @Override
+  public SearchHotelsResponse searchHotels(SearchHotelsRequest request) {
+    return call(
+        () -> stub(SupplierGatewayGrpc::newBlockingStub, "supplier-gateway").searchHotels(request));
+  }
+
+  @Override
+  public SearchGroundResponse searchGround(SearchGroundRequest request) {
+    return call(
+        () -> stub(SupplierGatewayGrpc::newBlockingStub, "supplier-gateway").searchGround(request));
   }
 
   static RequestContext ctx(String tenantId, String correlationId, String idempotencyKey) {

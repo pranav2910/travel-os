@@ -1,0 +1,33 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.order.compensation-failed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "data": {
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "reasonCode": "COMPENSATION_INCOMPLETE",
+    "message": "sandbox-hotel refused to cancel HTL-9; the transfer booking had failed",
+    "requiredRole": "TRAVEL_ADMIN",
+    "exposures": [
+      {
+        "exposureId": "exp_01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+        "itemId": "itm_01K4Q0N7S6Z2X8G5H3J9M1P7RJ",
+        "componentId": "cmp_01K4Q0N7S6Z2X8G5H3J9M1P7RF",
+        "provider": "sandbox-hotel",
+        "externalRef": "SBH-01K4Q0N7S6Z2X8G5H3J9M1P7RK",
+        "amount": {
+          "currency": "USD",
+          "amountMinor": 46800
+        },
+        "reason": "COMPENSATION_FAILED",
+        "detail": "CANCELLATION_REFUSED: property does not accept cancellations within 24h",
+        "status": "OPEN"
+      }
+    ]
+  }
+}

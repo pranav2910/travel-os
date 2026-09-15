@@ -11,7 +11,8 @@ import grpc
 from travelos.common.v1 import common_pb2
 from travelos.offer.v1 import offer_pb2
 from travelos.optimization.v1 import optimization_pb2, optimization_pb2_grpc
-from travelos_optimization import events, ids, solver, tracing
+from travelos_optimization import events, ids, itinerary, solver, tracing
+from travelos_optimization.itinerary import Component, ComponentOffer, ItineraryConstraints
 from travelos_optimization.model import (
     UTC,
     Cabin,
@@ -116,6 +117,113 @@ def preferences(p: optimization_pb2.OptimizationPreferences) -> Preferences:
     )
 
 
+def _component_offer(o: offer_pb2.Offer) -> ComponentOffer:
+    if o.HasField("air"):
+        journeys = [j for j in (_journey(o.air.outbound), _journey(o.air.inbound)) if j is not None]
+        if not journeys:
+            raise ValueError(f"offer {o.offer_id} has no timed segments")
+        first, last = journeys[0], journeys[-1]
+        return ComponentOffer(
+            offer_id=o.offer_id,
+            provider=o.provider,
+            total=_money(o.total),
+            kind="AIR",
+            departure=first.departure,
+            arrival=last.arrival,
+            cabins=frozenset(s.cabin for j in journeys for s in j.segments),
+            stops=max(j.stops for j in journeys),
+            carriers=frozenset(s.carrier for j in journeys for s in j.segments),
+            refundable=o.refundable,
+            duration_minutes=sum(j.duration_minutes for j in journeys),
+        )
+    if o.HasField("hotel"):
+        h = o.hotel
+        return ComponentOffer(
+            offer_id=o.offer_id,
+            provider=o.provider,
+            total=_money(o.total),
+            kind="HOTEL",
+            check_in_date=h.check_in_date or None,
+            check_out_date=h.check_out_date or None,
+            hotel_id=h.property_id or None,
+            refundable=o.refundable,
+            duration_minutes=0,
+        )
+    if o.HasField("ground"):
+        g = o.ground
+        pickup, dropoff = _ts(g.pickup), _ts(g.dropoff)
+        return ComponentOffer(
+            offer_id=o.offer_id,
+            provider=o.provider,
+            total=_money(o.total),
+            kind="GROUND",
+            departure=pickup,
+            arrival=dropoff,
+            refundable=o.refundable,
+            duration_minutes=int((dropoff - pickup).total_seconds() // 60)
+            if pickup and dropoff
+            else 0,
+        )
+    raise ValueError(f"offer {o.offer_id} is neither air, hotel nor ground")
+
+
+def component(c: optimization_pb2.ComponentCandidates) -> Component:
+    if not c.component_id:
+        raise ValueError("every component needs a component_id")
+    kind = {offer_pb2.AIR: "AIR", offer_pb2.HOTEL: "HOTEL", offer_pb2.GROUND: "GROUND"}.get(c.type)
+    if kind is None:
+        raise ValueError(f"component {c.component_id} has no type")
+    offers = tuple(_component_offer(o) for o in c.offers)
+    for o in offers:
+        if o.kind != kind:
+            raise ValueError(f"component {c.component_id} ({kind}) holds a {o.kind} offer")
+    return Component(
+        component_id=c.component_id,
+        kind=kind,
+        sequence=c.sequence,
+        required=c.required,
+        offers=offers,
+        depends_on=tuple(c.depends_on),
+        not_before=_ts(c.not_before),
+        not_after=_ts(c.not_after),
+        check_in_date=c.check_in_date or None,
+        check_out_date=c.check_out_date or None,
+        time_zone=c.time_zone or None,
+        arrival_leg_id=c.arrival_leg_id or None,
+        departure_leg_id=c.departure_leg_id or None,
+    )
+
+
+def itinerary_constraints(k: optimization_pb2.ItineraryConstraints) -> ItineraryConstraints:
+    return ItineraryConstraints(
+        max_total=_money(k.max_total) if k.HasField("max_total") else None,
+        allowed_cabins=frozenset(_cabin(c) for c in k.allowed_cabins),
+        permitted_providers=frozenset(k.permitted_providers),
+        min_connection_minutes=k.min_connection_minutes or 60,
+        transfer_after_arrival_minutes=k.transfer_after_arrival_minutes or 45,
+        transfer_before_departure_minutes=k.transfer_before_departure_minutes or 90,
+        currency=k.currency or None,
+        max_stops=k.max_stops if k.HasField("max_stops") else -1,
+    )
+
+
+def _ranked(r) -> optimization_pb2.RankedCandidate:
+    return optimization_pb2.RankedCandidate(
+        bundle_id=r.bundle_id,
+        score=r.score,
+        breakdown=_breakdown(r.breakdown),
+        feasible=r.feasible,
+        infeasibility_reasons=list(r.infeasibility_reasons),
+        rank=r.rank,
+    )
+
+
+def _breakdown(b) -> optimization_pb2.ScoreBreakdown:
+    return optimization_pb2.ScoreBreakdown(
+        cost=b.cost, time=b.time, risk=b.risk, preference=b.preference, experience=b.experience
+    )
+
+
 class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
     def __init__(self, publisher: events.EventPublisher | None = None) -> None:
         self._publisher = publisher or events.NoopPublisher()
@@ -167,6 +275,106 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
             )
         self._publish_completed(request, run_id, result, len(candidates), feasible, context)
         return response
+
+    def OptimizeItinerary(self, request, context):  # noqa: N802 (gRPC naming)
+        require_context(request.ctx, context)
+        if not request.trip_id:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "trip_id is required")
+        if not request.components:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "at least one component is required")
+        try:
+            components = [component(c) for c in request.components]
+            k = itinerary_constraints(request.constraints)
+            p = preferences(request.preferences)
+        except ValueError as e:
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
+            raise  # unreachable; keeps type checkers happy
+
+        result = itinerary.optimize_itinerary(components, k, p)
+        run_id = ids.new_id("opt")
+        offers_by_id = {o.offer_id: o for c in request.components for o in c.offers}
+        log.info(
+            "optimized itinerary trip=%s tenant=%s components=%d combinations=%d"
+            " feasible=%s in %dms",
+            request.trip_id,
+            request.ctx.tenant_id,
+            len(components),
+            result.combinations,
+            result.feasible,
+            result.solve_time_ms,
+        )
+        response = optimization_pb2.OptimizeItineraryResponse(
+            optimization_run_id=run_id,
+            infeasibility_reasons=list(result.reasons),
+            score=result.score,
+            breakdown=_breakdown(result.breakdown),
+            solver=result.solver,
+            solve_time_ms=result.solve_time_ms,
+            combinations_considered=result.combinations,
+        )
+        bundle_id = ""
+        if result.feasible:
+            bundle_id = ids.new_id("bdl")
+            bundle = response.selected
+            bundle.bundle_id = bundle_id
+            total: Money | None = None
+            for c in components:
+                oid = result.selected.get(c.component_id)
+                if not oid:
+                    continue
+                chosen = offer_pb2.Offer()
+                chosen.CopyFrom(offers_by_id[oid])
+                chosen.component_id = c.component_id
+                bundle.offers.append(chosen)
+                money = _money(chosen.total)
+                total = (
+                    money
+                    if total is None
+                    else Money(total.currency, total.amount_minor + money.amount_minor)
+                )
+            if total is not None:
+                bundle.total.currency = total.currency
+                bundle.total.amount_minor = total.amount_minor
+        for sel in result.selections:
+            response.components.add(
+                component_id=sel.component_id,
+                offer_id=sel.offer_id,
+                score=sel.score,
+                breakdown=_breakdown(sel.breakdown),
+                ranking=[_ranked(r) for r in sel.ranking],
+                outcome=sel.outcome,
+                infeasibility_reasons=list(sel.reasons),
+            )
+        self._publish_itinerary_completed(request, run_id, result, bundle_id, context)
+        return response
+
+    def _publish_itinerary_completed(self, request, run_id, result, bundle_id, context):
+        data = {
+            "optimizationRunId": run_id,
+            "tripId": request.trip_id,
+            "candidatesEvaluated": int(result.combinations),
+            "feasibleCandidates": 1 if result.feasible else 0,
+            "solver": result.solver,
+            "solveTimeMs": int(result.solve_time_ms),
+        }
+        if bundle_id:
+            data["selectedBundleId"] = bundle_id
+            data["selectedScore"] = round(float(result.score), 3)
+        event = events.envelope(
+            "travel.optimization.completed",
+            request.ctx.tenant_id,
+            request.ctx.correlation_id,
+            data,
+            causation_id=request.ctx.causation_id or request.ctx.idempotency_key or None,
+        )
+        try:
+            self._publisher.publish(event)
+        except Exception as e:  # noqa: BLE001 — any publish failure means the run is not on record
+            log.error("itinerary run %s completed but its event was not published: %s", run_id, e)
+            context.abort(
+                grpc.StatusCode.UNAVAILABLE,
+                f"OPTIMIZATION_EVENT_NOT_PUBLISHED: {e}",
+            )
 
     def _publish_completed(self, request, run_id, result, evaluated, feasible, context):
         """travel.optimization.completed: the run is a domain fact, not just a return value."""

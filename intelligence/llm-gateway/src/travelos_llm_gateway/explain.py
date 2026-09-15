@@ -35,10 +35,40 @@ def _bundle_summary(b: offer_pb2.Bundle) -> str:
                 desc += " / return " + ", ".join(back)
             parts.append(f"{desc} via {o.provider}" if o.provider else desc)
         elif o.HasField("hotel"):
-            parts.append(f"hotel {o.hotel.name} ({o.hotel.nights} nights)")
+            nights = f"{o.hotel.nights} night" + ("s" if o.hotel.nights != 1 else "")
+            where = f" in {o.hotel.city}" if o.hotel.city else ""
+            parts.append(
+                f"hotel {o.hotel.name}{where} ({nights}, {o.hotel.check_in_date or 'dates n/a'})"
+            )
+        elif o.HasField("ground"):
+            parts.append(
+                f"{o.ground.vehicle_class.lower() or 'transfer'} transfer "
+                f"{o.ground.pickup_location} to {o.ground.dropoff_location} "
+                f"by {o.ground.vendor_name}"
+            )
         else:
             parts.append(o.provider or "offer")
     return "; ".join(parts) or b.bundle_id
+
+
+def _components(b: offer_pb2.Bundle) -> str:
+    kinds = {"AIR": 0, "HOTEL": 0, "GROUND": 0}
+    for o in b.offers:
+        if o.HasField("air"):
+            kinds["AIR"] += 1
+        elif o.HasField("hotel"):
+            kinds["HOTEL"] += 1
+        elif o.HasField("ground"):
+            kinds["GROUND"] += 1
+    return ", ".join(
+        f"{n} {name}"
+        for name, n in (
+            ("legs", kinds["AIR"]),
+            ("stays", kinds["HOTEL"]),
+            ("transfers", kinds["GROUND"]),
+        )
+        if n
+    )
 
 
 def _breakdown(rc: optimization_pb2.RankedCandidate) -> str:
@@ -58,8 +88,12 @@ def evidence(request: llm_pb2.ExplainTripRequest) -> Evidence:
     chosen = next((r for r in ranking if r.bundle_id == sel.bundle_id), None)
     runner_up = next((r for r in ranking if r.bundle_id != sel.bundle_id and r.feasible), None)
     reasons = "; ".join(f"{r.code}: {r.message}" if r.message else r.code for r in pd.reasons)
+    if i.HasField("itinerary") and i.itinerary.legs:
+        legs = i.itinerary.legs
+        route = " to ".join([legs[0].origin] + [leg.destination for leg in legs])
     facts: dict[str, Any] = {
         "route": route,
+        "components": _components(sel) if len(sel.offers) > 1 else "",
         "selected": _bundle_summary(sel),
         "total": money(sel.total),
         "searched": request.candidates_searched,
@@ -81,6 +115,8 @@ def evidence(request: llm_pb2.ExplainTripRequest) -> Evidence:
         f"{request.candidates_permitted}",
         f"Selected: {facts['selected']} at {facts['total']}",
     ]
+    if facts["components"]:
+        lines.append(f"Itinerary components: {facts['components']}")
     if chosen:
         lines.append(f"Optimizer score: {chosen.score:.1f} of 100 ({_breakdown(chosen)})")
     if runner_up:

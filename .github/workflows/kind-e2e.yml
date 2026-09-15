@@ -81,6 +81,10 @@ jobs:
         run: make kind-e2e2
       - name: slice 2 chaos (recovery worker + order service killed during ChangeOrder)
         run: make kind-chaos2
+      - name: slice 3 end-to-end (multi-city itineraries, hotels, ground, revalidation, compensation, connected recovery)
+        run: make kind-e2e3
+      - name: slice 3 chaos (7-component booking and its recovery held at proven points, worker killed)
+        run: make kind-chaos3
       - name: diagnostics
         if: failure()
         run: |

@@ -23,9 +23,29 @@ public record PolicyDocument(
     Hotel hotel,
     Approval approval,
     Autonomy autonomy,
-    Incentives incentives) {
+    Incentives incentives,
+    @Nullable Ground ground,
+    @Nullable TripBudget trip) {
 
   private static final Pattern POLICY_ID = Pattern.compile("^[A-Z][A-Z0-9_]{0,63}$");
+
+  /** Slice 1/2 documents have no ground or trip section: both mean "unconstrained". */
+  public PolicyDocument {
+    ground = ground == null ? new Ground(null, null) : ground;
+    trip = trip == null ? new TripBudget(null, null) : trip;
+  }
+
+  public PolicyDocument(
+      String policyId,
+      String name,
+      String currency,
+      Flight flight,
+      Hotel hotel,
+      Approval approval,
+      Autonomy autonomy,
+      Incentives incentives) {
+    this(policyId, name, currency, flight, hotel, approval, autonomy, incentives, null, null);
+  }
 
   /** What happens when a rule is violated. */
   public enum Consequence {
@@ -78,6 +98,30 @@ public record PolicyDocument(
    * @param managerRequiredAbove trip total above which a MANAGER must approve; null = never
    */
   public record Approval(@Nullable Long managerRequiredAbove) {}
+
+  /**
+   * Slice 3: ground transport.
+   *
+   * @param perTransferLimit maximum price of one transfer; null = unconstrained
+   * @param onViolation defaults to REQUIRE_APPROVAL
+   */
+  public record Ground(@Nullable Long perTransferLimit, @Nullable Consequence onViolation) {
+    public Consequence consequence() {
+      return onViolation == null ? Consequence.REQUIRE_APPROVAL : onViolation;
+    }
+  }
+
+  /**
+   * Slice 3: the whole trip, every component included.
+   *
+   * @param maxTotal budget for the whole itinerary; null = unconstrained
+   * @param onViolation defaults to REQUIRE_APPROVAL
+   */
+  public record TripBudget(@Nullable Long maxTotal, @Nullable Consequence onViolation) {
+    public Consequence consequence() {
+      return onViolation == null ? Consequence.REQUIRE_APPROVAL : onViolation;
+    }
+  }
 
   /** What autonomous agents may do without a human. Defaults are closed. */
   public record Autonomy(Rebooking flightRebooking, Toggle cancellation) {}
@@ -142,6 +186,12 @@ public record PolicyDocument(
       problems.add("hotel section is required");
     } else if (hotel.nightlyLimit() != null && hotel.nightlyLimit() < 0) {
       problems.add("hotel.nightlyLimit must be >= 0");
+    }
+    if (ground.perTransferLimit() != null && ground.perTransferLimit() < 0) {
+      problems.add("ground.perTransferLimit must be >= 0");
+    }
+    if (trip.maxTotal() != null && trip.maxTotal() < 0) {
+      problems.add("trip.maxTotal must be >= 0");
     }
     if (approval == null) {
       problems.add("approval section is required");

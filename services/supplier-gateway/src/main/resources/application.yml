@@ -53,6 +53,19 @@ travelos:
         failure-rate-threshold: 50
         sliding-window-size: 20
         wait-in-open-state: 30s
+    # Slice 3: the SIMULATED hotel and ground suppliers (no webhooks, so no secret).
+    sandbox-hotel:
+      rate-limit-per-second: 50
+      circuit-breaker:
+        failure-rate-threshold: 50
+        sliding-window-size: 20
+        wait-in-open-state: 30s
+    sandbox-ground:
+      rate-limit-per-second: 50
+      circuit-breaker:
+        failure-rate-threshold: 50
+        sliding-window-size: 20
+        wait-in-open-state: 30s
 
 management:
   tracing:

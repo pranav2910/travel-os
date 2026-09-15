@@ -39,6 +39,87 @@ message TravelIntent {
   bool hotel_required = 8;
   // Slice 1: always 1.
   int32 travelers = 9;
+
+  // Slice 3: the ordered components of a multi-city itinerary. When present, origin/destination
+  // and the four timestamps above describe the first leg and the last leg for compatibility, and
+  // planning reasons over the itinerary. Absent for Slice 1/2 shaped trips.
+  Itinerary itinerary = 10;
+}
+
+// Ordered, dependency-linked components with stable ids. Every instant is UTC; every component
+// also carries the IANA zone its local calendar lives in (nights, pickup times, deadlines are
+// local facts).
+message Itinerary {
+  repeated Leg legs = 1;
+  repeated Stay stays = 2;
+  repeated Transfer transfers = 3;
+  // The single currency every component must be quoted in (policy rejects anything else).
+  string currency = 4;
+}
+
+// One flight leg (one-way). Multi-city = an ordered list of legs.
+message Leg {
+  string component_id = 1;
+  int32 sequence = 2;
+  string origin = 3;
+  string destination = 4;
+  google.protobuf.Timestamp earliest_departure = 5;
+  google.protobuf.Timestamp arrival_deadline = 6;
+  string origin_time_zone = 7;
+  string destination_time_zone = 8;
+  // The leg (if any) that must have landed before this one departs.
+  repeated string depends_on = 9;
+}
+
+// A hotel stay in one city between two legs.
+message Stay {
+  string component_id = 1;
+  // IATA city/airport code the stay serves.
+  string city = 2;
+  // ISO local dates on the property's calendar.
+  string check_in_date = 3;
+  string check_out_date = 4;
+  string time_zone = 5;
+  int32 nights = 6;
+  // A required component fails the itinerary when it cannot be fulfilled; optional ones are skipped.
+  bool required = 7;
+  // The arriving leg (check-in follows its arrival) and the departing leg (check-out precedes it).
+  repeated string depends_on = 8;
+}
+
+// A scheduled ground transfer tied to a leg's arrival or departure.
+message Transfer {
+  string component_id = 1;
+  // AIRPORT_TO_HOTEL | HOTEL_TO_AIRPORT | POINT_TO_POINT
+  string kind = 2;
+  string city = 3;
+  string from_location = 4;
+  string to_location = 5;
+  // Planned pickup. For AIRPORT_TO_HOTEL it is derived from the arriving leg's landing time plus
+  // the transfer buffer at planning time and re-derived whenever that leg changes.
+  google.protobuf.Timestamp pickup = 6;
+  string time_zone = 7;
+  bool required = 8;
+  repeated string depends_on = 9;
+}
+
+// Slice 3: where each component of the itinerary stands. Reported by the workflow (coordination
+// state) and reconciled with the Order service (transactional state) through idempotent calls.
+message ComponentState {
+  string component_id = 1;
+  // AIR | HOTEL | GROUND
+  string type = 2;
+  // PLANNED | QUOTED | REVALIDATING | BOOKING | CONFIRMED | FAILED | CANCELLED | CANCEL_FAILED |
+  // CHANGED | SKIPPED
+  string status = 3;
+  string offer_id = 4;
+  string provider = 5;
+  string external_ref = 6;
+  travelos.common.v1.Money total = 7;
+  string failure_code = 8;
+  // One line a person can read: "DL240 BOS-SEA 06 Oct 08:30 -> 11:45 local".
+  string summary = 9;
+  google.protobuf.Timestamp updated_at = 10;
 }
 
 message Trip {
@@ -73,6 +154,8 @@ message Trip {
   // Plain-language narration of the plan, produced from the decision evidence at planning time.
   // Empty when the LLM gateway was unavailable: narration degrades, transactions do not.
   string explanation = 20;
+  // Slice 3: component-level status, empty for Slice 1/2 shaped trips.
+  repeated ComponentState components = 21;
 }
 
 message TravelerSnapshot {
@@ -91,6 +174,14 @@ service TravelCoreService {
   // Records what intent extraction concluded. EXTRACTED freezes the intent on a SUBMITTED trip;
   // every outcome lands in the agent-decision ledger with its model-call evidence.
   rpc ApplyIntentExtraction(ApplyIntentExtractionRequest) returns (Trip);
+  // Slice 3: upserts component states (idempotent: the same state twice is one row).
+  rpc UpdateComponents(UpdateComponentsRequest) returns (Trip);
+}
+
+message UpdateComponentsRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  repeated ComponentState components = 3;
 }
 
 message GetTripRequest {
@@ -119,6 +210,9 @@ message TransitionTripRequest {
   string failure_code = 12;
   // AWAITING_APPROVAL / APPROVED: narration generated from the evidence, if any.
   string explanation = 13;
+  // Slice 3: a second AWAITING_APPROVAL after a material change on revalidation names why.
+  // QUOTE_EXPIRED | PRICE_CHANGED
+  string replan_reason = 14;
 }
 
 message ApplyIntentExtractionRequest {

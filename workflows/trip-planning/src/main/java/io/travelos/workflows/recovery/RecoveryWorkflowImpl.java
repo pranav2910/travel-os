@@ -11,6 +11,7 @@ import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
 import io.travelos.contracts.common.v1.TimeWindow;
+import io.travelos.contracts.disruption.v1.ComponentChange;
 import io.travelos.contracts.disruption.v1.Disruption;
 import io.travelos.contracts.disruption.v1.DisruptionStatus;
 import io.travelos.contracts.disruption.v1.RecordRecoveryDecisionRequest;
@@ -320,6 +321,27 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
                   selected.getTotal().getAmountMinor() - order.getTotal().getAmountMinor())
               .build();
 
+      // ---- Slice 3: an itinerary drags its dependants along (transfers, stays, the next leg)
+      Bundle replacement = selected;
+      List<ComponentChange> componentChanges = List.of();
+      OrderItem affectedItem = intent.hasItinerary() ? Dependants.affectedItem(order, d) : null;
+      if (affectedItem != null) {
+        Dependants.Plan plan =
+            Dependants.plan(
+                activities,
+                key0 -> ctx(tenant, tripId, key0),
+                intent.getItinerary(),
+                order,
+                affectedItem,
+                selected.getOffers(0));
+        replacement = plan.replacement();
+        incremental = plan.incremental();
+        componentChanges = plan.changes();
+        state.clearAffectedComponentIds().addAllAffectedComponentIds(plan.affectedComponentIds());
+      }
+      final Bundle proposed = replacement;
+      final List<ComponentChange> accounted = componentChanges;
+
       // ---- may the agent do this? Policy decides; nothing here does.
       stage = Stage.DECIDING;
       PolicyDecision verdict =
@@ -330,13 +352,13 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
                   .setTravelerId(trip.getTravelerId())
                   .setAction(ACTION)
                   .setIncrementalCost(incremental)
-                  .setProposed(selected)
+                  .setProposed(proposed)
                   .setIntent(intent)
                   .setContextRef(disruptionId)
                   .build());
       String autonomy = verdict.getOutcome().name();
       state
-          .setReplacementBundleId(selected.getBundleId())
+          .setReplacementBundleId(proposed.getBundleId())
           .setIncrementalCost(incremental)
           .setPolicyDecisionId(verdict.getDecisionId())
           .setOptimizationRunId(optimized.getOptimizationRunId())
@@ -356,17 +378,18 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
                       .setCandidatesPermitted(permitted.size())
                       .setCandidatesFeasible(feasible)
                       .addAllRejected(rejected)
-                      .setSelected(selected)
+                      .setSelected(proposed)
                       .setSelectedRanking(selectedRanking)
                       .setOptimizationRunId(optimized.getOptimizationRunId())
                       .setOriginalTotal(order.getTotal())
-                      .setReplacementTotal(selected.getTotal())
+                      .setReplacementTotal(proposed.getTotal())
                       .setIncrementalCost(incremental)
                       .setPolicyDecision(verdict)
                       .setAutonomyOutcome(autonomy)
                       .setAgentPrincipal(DisruptionRecovery.AGENT)
                       .setWorkflowType(DisruptionRecovery.WORKFLOW_TYPE)
-                      .setWorkflowVersion(DisruptionRecovery.WORKFLOW_VERSION))
+                      .setWorkflowVersion(DisruptionRecovery.WORKFLOW_VERSION)
+                      .addAllComponentChanges(accounted))
               .build());
 
       // ---- narrate (optional; the decision is the decision with or without a paragraph)
@@ -376,7 +399,7 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
               tripId,
               d,
               original,
-              selected,
+              proposed,
               optimized,
               verdict,
               incremental,
@@ -465,7 +488,7 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
               .setCtx(ctx(tenant, tripId, key))
               .setOrderId(order.getOrderId())
               .setDisruptionId(disruptionId)
-              .setReplacement(selected)
+              .setReplacement(proposed)
               .setPolicyDecisionId(verdict.getDecisionId())
               .setOptimizationRunId(optimized.getOptimizationRunId())
               .addPassengers(

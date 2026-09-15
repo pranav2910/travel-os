@@ -8,6 +8,7 @@ import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.order.v1.CancelOrderCommand;
 import io.travelos.contracts.order.v1.ChangeOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.order.v1.Exposure;
 import io.travelos.contracts.order.v1.FindOrderByExternalRefRequest;
 import io.travelos.contracts.order.v1.GetOrderRequest;
 import io.travelos.contracts.order.v1.Order;
@@ -17,6 +18,7 @@ import io.travelos.contracts.order.v1.OrderItemStatus;
 import io.travelos.contracts.order.v1.OrderServiceGrpc;
 import io.travelos.contracts.order.v1.OrderStatus;
 import io.travelos.order.saga.OrderService;
+import io.travelos.order.store.ExposureRecord;
 import io.travelos.order.store.OrderChangeRecord;
 import io.travelos.order.store.OrderRecord;
 import io.travelos.spring.grpc.RequestContexts;
@@ -34,14 +36,14 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
 
   @Override
   public void createOrder(CreateOrderCommand request, StreamObserver<Order> observer) {
-    observer.onNext(toProto(orders.create(request)));
+    observer.onNext(withChanges(orders.create(request)));
     observer.onCompleted();
   }
 
   @Override
   public void getOrder(GetOrderRequest request, StreamObserver<Order> observer) {
     RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
-    observer.onNext(toProto(orders.get(ctx.tenant(), request.getOrderId())));
+    observer.onNext(withChanges(orders.get(ctx.tenant(), request.getOrderId())));
     observer.onCompleted();
   }
 
@@ -78,6 +80,30 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
     Order.Builder b = toProto(o).toBuilder();
     for (OrderChangeRecord c : orders.changesOf(o.tenant(), o.orderId())) {
       b.addChanges(toProto(c));
+    }
+    for (ExposureRecord e : orders.exposuresOf(o.tenant(), o.orderId())) {
+      b.addExposures(toProto(e));
+    }
+    return b.build();
+  }
+
+  public static Exposure toProto(ExposureRecord e) {
+    Exposure.Builder b =
+        Exposure.newBuilder()
+            .setExposureId(e.exposureId())
+            .setItemId(e.itemId())
+            .setComponentId(nullToEmpty(e.componentId()))
+            .setProvider(e.provider())
+            .setExternalRef(e.externalRef())
+            .setAmount(money(e.amount()))
+            .setReason(e.reason())
+            .setDetail(nullToEmpty(e.detail()))
+            .setStatus(e.status().name())
+            .setResolvedBy(nullToEmpty(e.resolvedBy()))
+            .setResolution(nullToEmpty(e.resolution()))
+            .setCreatedAt(ts(e.createdAt()));
+    if (e.resolvedAt() != null) {
+      b.setResolvedAt(ts(e.resolvedAt()));
     }
     return b.build();
   }
@@ -136,7 +162,10 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
               .setOffer(offer(item.offerJson()))
               .setStatus(OrderItemStatus.valueOf("ITEM_" + item.status().name()))
               .setExternalRef(nullToEmpty(item.externalRef()))
-              .setRecordLocator(nullToEmpty(item.recordLocator())));
+              .setRecordLocator(nullToEmpty(item.recordLocator()))
+              .setComponentId(nullToEmpty(item.componentId()))
+              .setTotal(money(item.total()))
+              .setFailureCode(nullToEmpty(item.failureCode())));
     }
     return b.build();
   }

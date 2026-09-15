@@ -21,6 +21,7 @@ import io.travelos.contracts.optimization.v1.ConstraintSet;
 import io.travelos.contracts.optimization.v1.OptimizationPreferences;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
+import io.travelos.contracts.optimization.v1.RankedCandidate;
 import io.travelos.contracts.optimization.v1.Weights;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
 import io.travelos.contracts.order.v1.Order;
@@ -202,6 +203,11 @@ public class TripWorkflowImpl implements TripWorkflow {
       TravelIntent intent = trip.getIntent();
 
       transition(tenant, tripId, TripStatus.PLANNING, b -> b.setReason("planning started"));
+
+      // ---- Slice 3: an itinerary of legs, stays and transfers takes its own path
+      if (intent.hasItinerary() && intent.getItinerary().getLegsCount() > 0) {
+        return new ItineraryFlow(activities, booking, new Bridge(), log).run(tenant, tripId, trip);
+      }
 
       // ---- search
       stage = TripPlanning.Stage.SEARCHING;
@@ -427,6 +433,75 @@ public class TripWorkflowImpl implements TripWorkflow {
     return stage;
   }
 
+  /** The itinerary flow's window into this workflow's helpers and state. */
+  private final class Bridge implements ItineraryFlow.Host {
+    @Override
+    public Trip transition(
+        String tenant,
+        String tripId,
+        TripStatus to,
+        java.util.function.Consumer<TransitionTripRequest.Builder> customize) {
+      return TripWorkflowImpl.this.transition(tenant, tripId, to, customize);
+    }
+
+    @Override
+    public @Nullable String awaitDecision(String tenant, String tripId) {
+      return TripWorkflowImpl.this.awaitDecision(tenant, tripId);
+    }
+
+    @Override
+    public TripPlanning.@Nullable ApprovalDecision decision() {
+      return decision;
+    }
+
+    @Override
+    public void forgetDecision() {
+      decision = null;
+    }
+
+    @Override
+    public Outcome fail(
+        String tenant, String tripId, String stageName, String code, String message) {
+      return TripWorkflowImpl.this.fail(tenant, tripId, stageName, code, message);
+    }
+
+    @Override
+    public void stage(TripPlanning.Stage next) {
+      stage = next;
+    }
+
+    @Override
+    public String paymentToken() {
+      return TripWorkflowImpl.this.paymentToken();
+    }
+
+    @Override
+    public @Nullable String explain(
+        String tenant,
+        String tripId,
+        TravelIntent intent,
+        Bundle selected,
+        List<RankedCandidate> ranking,
+        PolicyDecision decision,
+        int searched,
+        int permitted) {
+      return TripWorkflowImpl.this.explain(
+          tenant,
+          tripId,
+          intent,
+          selected,
+          OptimizeTripResponse.newBuilder().addAllRanking(ranking).build(),
+          decision,
+          searched,
+          permitted);
+    }
+
+    @Override
+    public RequestContext ctx(String tenant, String tripId, String idempotencyKey) {
+      return TripWorkflowImpl.ctx(tenant, tripId, idempotencyKey);
+    }
+  }
+
   // ------------------------------------------------------------------ helpers
 
   private static boolean hasIntent(Trip trip) {
@@ -637,6 +712,8 @@ public class TripWorkflowImpl implements TripWorkflow {
       case EVALUATING_POLICY -> "POLICY";
       case OPTIMIZING -> "OPTIMIZATION";
       case AWAITING_APPROVAL -> "APPROVAL";
+      case REVALIDATING -> "REVALIDATION";
+      case COMPENSATING -> "COMPENSATION";
       default -> "BOOKING";
     };
   }

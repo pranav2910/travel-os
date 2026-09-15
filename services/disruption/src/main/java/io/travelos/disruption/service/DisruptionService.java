@@ -8,6 +8,7 @@ import io.travelos.common.ids.IdPrefix;
 import io.travelos.common.ids.Ids;
 import io.travelos.common.money.Money;
 import io.travelos.common.tenant.TenantId;
+import io.travelos.contracts.disruption.v1.ComponentChange;
 import io.travelos.contracts.disruption.v1.DisruptionStatus;
 import io.travelos.contracts.disruption.v1.RecoveryDecision;
 import io.travelos.contracts.disruption.v1.RecoveryOutcome;
@@ -255,6 +256,26 @@ public class DisruptionService {
     for (ReasonCode rc : stored.getPolicyDecision().getReasonsList()) {
       codes.add(rc.getCode());
     }
+    List<Map<String, Object>> componentChanges = new ArrayList<>();
+    for (ComponentChange c : stored.getComponentChangesList()) {
+      Map<String, Object> m = new LinkedHashMap<>();
+      m.put("componentId", c.getComponentId());
+      m.put("type", c.getType());
+      m.put("action", c.getAction());
+      if (c.hasPreviousTotal()) {
+        m.put("previousTotal", DisruptionEvents.money(money(c.getPreviousTotal())));
+      }
+      if (c.hasReplacementTotal()) {
+        m.put("replacementTotal", DisruptionEvents.money(money(c.getReplacementTotal())));
+      }
+      if (c.hasDelta()) {
+        m.put("delta", DisruptionEvents.money(money(c.getDelta())));
+      }
+      if (!c.getReason().isBlank()) {
+        m.put("reason", c.getReason());
+      }
+      componentChanges.add(m);
+    }
     outbox.append(
         DisruptionEvents.decisionReady(
             ready,
@@ -273,7 +294,8 @@ public class DisruptionService {
                 stored.getPolicyDecision().getPolicyVersion(),
                 stored.getOptimizationRunId(),
                 stored.getAutonomyOutcome(),
-                codes),
+                codes,
+                componentChanges),
             clock));
     return ready;
   }

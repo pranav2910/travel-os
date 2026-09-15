@@ -25,7 +25,8 @@ public class OrderRepository {
           + " created_at, updated_at";
   private static final String ITEM_COLUMNS =
       "item_id, position, offer_type, provider, provider_offer_id, offer::text AS offer, status,"
-          + " external_ref, record_locator, currency, total_minor, failure_code, updated_at";
+          + " external_ref, record_locator, currency, total_minor, failure_code, updated_at,"
+          + " component_id";
 
   private final JdbcClient jdbc;
 
@@ -64,10 +65,11 @@ public class OrderRepository {
       jdbc.sql(
               """
               INSERT INTO order_item (item_id, order_id, tenant_id, position, offer_type, provider,
-                provider_offer_id, offer, status, currency, total_minor, updated_at)
+                provider_offer_id, offer, status, currency, total_minor, updated_at, component_id)
               VALUES (:itemId, :orderId, :tenantId, :position, :type, :provider, :providerOfferId,
-                CAST(:offer AS jsonb), :status, :currency, :total, :updatedAt)
+                CAST(:offer AS jsonb), :status, :currency, :total, :updatedAt, :componentId)
               """)
+          .param("componentId", item.componentId())
           .param("itemId", item.itemId())
           .param("orderId", o.orderId())
           .param("tenantId", o.tenant().value())
@@ -129,10 +131,11 @@ public class OrderRepository {
     jdbc.sql(
             """
             INSERT INTO order_item (item_id, order_id, tenant_id, position, offer_type, provider, provider_offer_id, offer,
-              status, external_ref, record_locator, currency, total_minor, failure_code, updated_at)
+              status, external_ref, record_locator, currency, total_minor, failure_code, updated_at, component_id)
             VALUES (:id, :order, :t, :position, :type, :provider, :offerId, CAST(:offer AS jsonb), :status, :ref,
-              :locator, :currency, :total, :failureCode, :now)
+              :locator, :currency, :total, :failureCode, :now, :component)
             """)
+        .param("component", item.componentId())
         .param("id", item.itemId())
         .param("order", orderId)
         .param("t", tenant.value())
@@ -320,7 +323,8 @@ public class OrderRepository {
         rs.getString("record_locator"),
         Money.of(rs.getString("currency"), rs.getLong("total_minor")),
         rs.getString("failure_code"),
-        instant(rs, "updated_at"));
+        instant(rs, "updated_at"),
+        rs.getString("component_id"));
   }
 
   private static Instant instant(ResultSet rs, String column) throws SQLException {

@@ -11,6 +11,8 @@ import io.travelos.contracts.llm.v1.ExtractIntentRequest;
 import io.travelos.contracts.llm.v1.ExtractIntentResponse;
 import io.travelos.contracts.llm.v1.LlmGatewayGrpc;
 import io.travelos.contracts.optimization.v1.OptimizationServiceGrpc;
+import io.travelos.contracts.optimization.v1.OptimizeItineraryRequest;
+import io.travelos.contracts.optimization.v1.OptimizeItineraryResponse;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
@@ -19,14 +21,21 @@ import io.travelos.contracts.order.v1.OrderServiceGrpc;
 import io.travelos.contracts.policy.v1.EvaluateTripRequest;
 import io.travelos.contracts.policy.v1.EvaluateTripResponse;
 import io.travelos.contracts.policy.v1.PolicyServiceGrpc;
+import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
+import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SearchGroundRequest;
+import io.travelos.contracts.supplier.v1.SearchGroundResponse;
+import io.travelos.contracts.supplier.v1.SearchHotelsRequest;
+import io.travelos.contracts.supplier.v1.SearchHotelsResponse;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
 import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
 import io.travelos.contracts.trip.v1.Trip;
+import io.travelos.contracts.trip.v1.UpdateComponentsRequest;
 import io.travelos.spring.grpc.GrpcChannels;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -96,6 +105,37 @@ public class TripActivitiesImpl implements TripActivities {
   @Override
   public Order createOrder(CreateOrderCommand command) {
     return call(() -> stub(OrderServiceGrpc::newBlockingStub, "order").createOrder(command));
+  }
+
+  @Override
+  public SearchHotelsResponse searchHotels(SearchHotelsRequest request) {
+    return call(
+        () -> stub(SupplierGatewayGrpc::newBlockingStub, "supplier-gateway").searchHotels(request));
+  }
+
+  @Override
+  public SearchGroundResponse searchGround(SearchGroundRequest request) {
+    return call(
+        () -> stub(SupplierGatewayGrpc::newBlockingStub, "supplier-gateway").searchGround(request));
+  }
+
+  @Override
+  public OptimizeItineraryResponse optimizeItinerary(OptimizeItineraryRequest request) {
+    return call(
+        () ->
+            stub(OptimizationServiceGrpc::newBlockingStub, "optimization")
+                .optimizeItinerary(request));
+  }
+
+  @Override
+  public QuoteOfferResponse quote(QuoteOfferRequest request) {
+    return call(
+        () -> stub(SupplierGatewayGrpc::newBlockingStub, "supplier-gateway").quoteOffer(request));
+  }
+
+  @Override
+  public Trip updateComponents(UpdateComponentsRequest request) {
+    return call(() -> travelCore().updateComponents(request));
   }
 
   /** The workflow's identity on every call. */

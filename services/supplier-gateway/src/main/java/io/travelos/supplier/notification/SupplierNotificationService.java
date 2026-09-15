@@ -57,7 +57,7 @@ public class SupplierNotificationService {
   public Outcome ingest(String provider, String rawPayload) {
     AirSupplier adapter =
         registry
-            .find(provider)
+            .findAir(provider)
             .orElseThrow(
                 () ->
                     new AirSupplier.SupplierException(

@@ -1,0 +1,21 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RA",
+  "eventType": "travel.order.exposure-resolved",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "data": {
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "exposureId": "exp_01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+    "resolvedBy": "human/carol",
+    "resolution": "cancelled by phone with the property, refund confirmed",
+    "amount": {
+      "currency": "USD",
+      "amountMinor": 46800
+    }
+  }
+}
