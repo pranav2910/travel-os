@@ -89,7 +89,8 @@ tripwire "$DSR" ChangeOrder
 kill_pods trip-planning
 kubectl -n travelos scale deploy/order --replicas=1 >/dev/null; echo "  order service scaled back to 1"
 wait_ready trip-planning order; pass "recovery worker and order service are back"
-[ "$(disruption_status "$DSR")" = CHANGING ] && pass "state survived: $DSR still CHANGING, not FAILED" || fail "state lost: $(disruption_status "$DSR")"
+# A fast replacement worker may already have finished: CHANGING or RESOLVED are both the persisted state carried on; FAILED would be the loss.
+S=$(disruption_status "$DSR"); case "$S" in CHANGING|RESOLVED) pass "state survived: $DSR is $S, not FAILED";; *) fail "state lost: $S";; esac
 [ "$(wait_disruption "$DSR" RESOLVED 240)" = RESOLVED ] && pass "$DSR RESOLVED by the replacement worker once the order service returned" || fail "$DSR ended $(disruption_status "$DSR")"
 FINAL=$(tmp_show "$DSR" | python3 -c 'import sys,json; ev=json.load(sys.stdin).get("events",[]); a=[e["activityTaskStartedEventAttributes"]["attempt"] for e in ev if e["eventType"]=="EVENT_TYPE_ACTIVITY_TASK_STARTED" and e["activityTaskStartedEventAttributes"].get("attempt",1)>1]; print(max(a, default=1))')
 [ "$FINAL" -ge 2 ] && pass "tripwire: Temporal history records ChangeOrder succeeding on attempt $FINAL (continued from persisted history)" || fail "no retried activity in history"
