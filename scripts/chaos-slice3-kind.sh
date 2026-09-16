@@ -82,7 +82,8 @@ ATT=0; for i in $(seq 1 120); do ATT=$(pending_attempt "$TRIP" CreateOrder); [ "
 kill_pods trip-planning
 scale_back order
 wait_ready trip-planning order; pass "worker and order service are back"
-[ "$(status_of "$TRIP")" = BOOKING ] && pass "state survived: still BOOKING, not FAILED" || fail "state lost: $(status_of "$TRIP")"
+# A fast replacement worker may already have finished: BOOKING or BOOKED are both the persisted state carried on; FAILED would be the loss.
+S=$(status_of "$TRIP"); case "$S" in BOOKING|BOOKED) pass "state survived: $S, not FAILED";; *) fail "state lost: $S";; esac
 [ "$(wait_status "$TRIP" BOOKED 300)" = BOOKED ] && pass "$TRIP BOOKED by the replacement worker once the order service returned" || fail "$TRIP ended $(status_of "$TRIP")"
 FINAL=$(tmp_show "$TRIP" | python3 -c 'import sys,json; ev=json.load(sys.stdin).get("events",[]); a=[e["activityTaskStartedEventAttributes"]["attempt"] for e in ev if e["eventType"]=="EVENT_TYPE_ACTIVITY_TASK_STARTED" and e["activityTaskStartedEventAttributes"].get("attempt",1)>1]; print(max(a, default=1))')
 [ "$FINAL" -ge 2 ] && pass "tripwire: Temporal history records activities succeeding on attempt $FINAL (continued from persisted history)" || fail "no retried activity in history"
@@ -112,7 +113,7 @@ tripwire "$DSR" ChangeOrder
 kill_pods trip-planning
 scale_back order
 wait_ready trip-planning order; pass "recovery worker and order service are back"
-[ "$(disruption_status "$DSR")" = CHANGING ] && pass "state survived: $DSR still CHANGING" || fail "state lost: $(disruption_status "$DSR")"
+S=$(disruption_status "$DSR"); case "$S" in CHANGING|RESOLVED) pass "state survived: $DSR is $S (a fast replacement worker may already have finished the change)";; *) fail "state lost: $S";; esac
 [ "$(wait_disruption "$DSR" RESOLVED 240)" = RESOLVED ] && pass "$DSR RESOLVED by the replacement worker" || fail "$DSR ended $(disruption_status "$DSR")"
 curl -s "$DISRUPTION/api/v1/disruptions/$DSR" -H "Authorization: Bearer $BOB" | check "
 r=d['recovery']; assert r['autonomyOutcome']=='ALLOW' and int(r['incrementalCost']['amountMinor'])==7300, r
