@@ -133,6 +133,19 @@ disruption:
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress: *awsEgress
+enterprise-context:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: ENTERPRISE_CONTEXT_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/enterprise-context/db, property: password }
+      - secretKey: SANDBOX_CONNECTOR_WEBHOOK_SECRET
+        remoteRef: { key: travelos/ENV/enterprise-context/sandbox-connector, property: webhook_secret }
+  networkPolicy:
+    httpFrom: *httpFromVpc
+    extraEgress: *awsEgress
 trip-planning:
   <<: *prodScale
   networkPolicy:

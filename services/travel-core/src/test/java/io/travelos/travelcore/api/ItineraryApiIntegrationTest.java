@@ -337,6 +337,54 @@ class ItineraryApiIntegrationTest {
   }
 
   @Test
+  void aLegacyHotelRequestIsHonouredAsAStayOrRefusedBeforePlanning() {
+    // Slice 1/2 shape with hotelRequired: the response echoes an itinerary with one required stay
+    ResponseEntity<String> created =
+        post(
+            TestTokens.alice(),
+            """
+            {"intent": {"origin": "BOS", "destination": "SEA",
+              "earliestDeparture": "2026-10-06T10:00:00Z", "arrivalDeadline": "2026-10-06T23:00:00Z",
+              "returnAfter": "2026-10-08T13:00:00Z", "latestReturn": "2026-10-09T02:00:00Z",
+              "hotelRequired": true, "purpose": "legacy hotel"}, "source": "API"}
+            """);
+    assertThat(created.getStatusCode().value()).isEqualTo(202);
+    JsonNode intent = json.readTree(created.getBody()).get("intent");
+    assertThat(intent.get("hotelRequired").asBoolean()).isTrue();
+    assertThat(intent.get("origin").asString()).isEqualTo("BOS");
+    JsonNode stays = intent.get("itinerary").get("stays");
+    assertThat(stays).hasSize(1);
+    assertThat(stays.get(0).get("city").asString()).isEqualTo("SEA");
+    assertThat(stays.get(0).get("checkInDate").asString()).isEqualTo("2026-10-06");
+    assertThat(stays.get(0).get("checkOutDate").asString()).isEqualTo("2026-10-08");
+    assertThat(stays.get(0).get("required").asBoolean()).isTrue();
+    assertThat(intent.get("itinerary").get("legs")).hasSize(2);
+    // the same request without a return cannot say which nights: refused, actionably, up front
+    ResponseEntity<String> refused =
+        post(
+            TestTokens.alice(),
+            """
+            {"intent": {"origin": "BOS", "destination": "SEA",
+              "earliestDeparture": "2026-10-06T10:00:00Z", "arrivalDeadline": "2026-10-06T23:00:00Z",
+              "hotelRequired": true}, "source": "API"}
+            """);
+    assertThat(refused.getStatusCode().value()).isEqualTo(422);
+    assertThat(refused.getBody()).contains("HOTEL_DETAILS_INSUFFICIENT").contains("return window");
+    // hotelRequired=false keeps the Slice 1 shape exactly
+    ResponseEntity<String> plain =
+        post(
+            TestTokens.alice(),
+            """
+            {"intent": {"origin": "BOS", "destination": "SEA",
+              "earliestDeparture": "2026-10-06T10:00:00Z", "arrivalDeadline": "2026-10-06T23:00:00Z",
+              "hotelRequired": false}, "source": "API"}
+            """);
+    assertThat(plain.getStatusCode().value()).isEqualTo(202);
+    JsonNode plainItinerary = json.readTree(plain.getBody()).get("intent").get("itinerary");
+    assertThat(plainItinerary == null || plainItinerary.isNull()).isTrue();
+  }
+
+  @Test
   void malformedItinerariesAreRefusedExplicitly() {
     String[] bad = {
       // leg 2 does not depart where leg 1 lands

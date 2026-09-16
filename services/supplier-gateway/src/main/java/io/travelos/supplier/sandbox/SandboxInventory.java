@@ -104,6 +104,24 @@ final class SandboxInventory {
       Set<Cabin> cabins,
       @Nullable SandboxReaccommodation reaccommodation,
       boolean reprice) {
+    return schedules(
+        origin, destination, outboundDate, inboundDate, cabins, reaccommodation, reprice, false);
+  }
+
+  /**
+   * @param spill the reaccommodation belongs to the PREVIOUS date and moved the passenger to this
+   *     one ({@code nextDay}): nothing is cancelled on this date, but for the disrupted trip every
+   *     flight carries the reaccommodation fares
+   */
+  static List<Schedule> schedules(
+      String origin,
+      String destination,
+      LocalDate outboundDate,
+      LocalDate inboundDate,
+      Set<Cabin> cabins,
+      @Nullable SandboxReaccommodation reaccommodation,
+      boolean reprice,
+      boolean spill) {
     List<Schedule> result = new ArrayList<>();
     for (Cabin cabin : cabins.isEmpty() ? Set.of(Cabin.ECONOMY) : cabins) {
       if (cabin == Cabin.CABIN_UNSPECIFIED || cabin == Cabin.UNRECOGNIZED) {
@@ -115,9 +133,13 @@ final class SandboxInventory {
         continue;
       }
       boolean repriced = reprice && reaccommodation.cabin().equals(cabin.name());
+      if (!spill && repriced && reaccommodation.nextDay()) {
+        continue; // nothing left today for this passenger: the airline moved them to tomorrow
+      }
       int rank = 0;
       for (Schedule s : generated) {
-        if (s.outbound().getFirst().flightNumber().equals(reaccommodation.cancelledFlight())) {
+        if (!spill
+            && s.outbound().getFirst().flightNumber().equals(reaccommodation.cancelledFlight())) {
           continue; // a cancelled flight is gone in every cabin and on every itinerary that used it
         }
         if (!repriced) {
@@ -154,6 +176,21 @@ final class SandboxInventory {
       SandboxOfferId cancelled,
       Cabin cabin,
       long deltaMinor) {
+    return reaccommodate(tenantId, correlationId, cancelled, cabin, deltaMinor, false);
+  }
+
+  /**
+   * @param nextDay the airline has no seat left on the cancelled date: the designated replacement
+   *     is the same carrier's first nonstop on the following date and every same-day flight is full
+   *     for this passenger
+   */
+  static SandboxReaccommodation reaccommodate(
+      String tenantId,
+      String correlationId,
+      SandboxOfferId cancelled,
+      Cabin cabin,
+      long deltaMinor,
+      boolean nextDay) {
     List<Schedule> all =
         generate(
             cancelled.origin(),
@@ -174,10 +211,17 @@ final class SandboxInventory {
         java.util.Comparator.comparing((Schedule s) -> s.outbound().getFirst().departure())
             .thenComparingInt(Schedule::slot);
     List<Schedule> survivors =
-        all.stream()
-            .filter(s -> s.slot() != gone.slot())
-            .filter(s -> !s.outbound().getFirst().flightNumber().equals(flight))
-            .toList();
+        nextDay
+            ? generate(
+                cancelled.origin(),
+                cancelled.destination(),
+                cancelled.outboundDate().plusDays(1),
+                cancelled.inboundDate(),
+                cabin)
+            : all.stream()
+                .filter(s -> s.slot() != gone.slot())
+                .filter(s -> !s.outbound().getFirst().flightNumber().equals(flight))
+                .toList();
     Optional<Schedule> replacement =
         survivors.stream()
             .filter(s -> s.outbound().size() == 1)
@@ -206,7 +250,8 @@ final class SandboxInventory {
         flight,
         replacement.orElseThrow().slot(),
         gone.fareMinor(),
-        deltaMinor);
+        deltaMinor,
+        nextDay);
   }
 
   private static List<Schedule> generate(

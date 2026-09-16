@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package travelos.context.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.context.v1";
+option java_outer_classname = "ContextProto";
+
+// Enterprise Context (Slice 4): the verified employee directory, the enterprise connectors
+// (calendar, CRM, HRIS, expense) and travel-demand detection. The sync workflow drives one
+// connector run page by page through this service; everything the page does (fetch, persist items
+// and revisions, detect and correlate candidates, publish events, advance the checkpoint) is one
+// transaction, so a retried page is a no-op and a crash between pages loses nothing.
+service EnterpriseContextService {
+  rpc SyncPage(SyncPageRequest) returns (SyncPageResponse);
+  rpc CompleteSync(CompleteSyncRequest) returns (SyncRun);
+  rpc FailSync(FailSyncRequest) returns (SyncRun);
+  // Trusted directory lookup for other services (identity, work location, manager).
+  rpc GetEmployee(GetEmployeeRequest) returns (Employee);
+}
+
+message SyncPageRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string connector_id = 2;
+  string run_id = 3;
+  string cursor = 4;          // empty = first page
+}
+
+message SyncPageResponse {
+  string next_cursor = 1;
+  bool done = 2;
+  int32 items_seen = 3;
+  int32 items_changed = 4;
+  int32 candidates_touched = 5;
+}
+
+message CompleteSyncRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string connector_id = 2;
+  string run_id = 3;
+}
+
+message FailSyncRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string connector_id = 2;
+  string run_id = 3;
+  string code = 4;
+  string message = 5;
+}
+
+message SyncRun {
+  string run_id = 1;
+  string connector_id = 2;
+  string status = 3;          // RUNNING | COMPLETED | FAILED
+  google.protobuf.Timestamp started_at = 4;
+  google.protobuf.Timestamp finished_at = 5;
+  int32 pages = 6;
+  int32 items_seen = 7;
+  int32 items_changed = 8;
+  int32 candidates_touched = 9;
+  string failure_code = 10;
+}
+
+message GetEmployeeRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string employee_id = 2;
+}
+
+message Employee {
+  string employee_id = 1;
+  string display_name = 2;
+  string email = 3;
+  string work_location = 4;   // IATA of the nearest airport, the origin of their trips
+  string time_zone = 5;
+  string manager_employee_id = 6;
+  bool active = 7;
+}

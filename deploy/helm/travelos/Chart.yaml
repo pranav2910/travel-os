@@ -41,3 +41,7 @@ dependencies:
     alias: disruption
     version: 0.1.0
     repository: file://../travelos-service
+  - name: travelos-service
+    alias: enterprise-context
+    version: 0.1.0
+    repository: file://../travelos-service

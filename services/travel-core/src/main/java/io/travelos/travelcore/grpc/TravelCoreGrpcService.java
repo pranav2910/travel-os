@@ -7,6 +7,7 @@ import io.travelos.common.money.Money;
 import io.travelos.contracts.common.v1.ModelCall;
 import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.ComponentState;
+import io.travelos.contracts.trip.v1.CreateTripRequest;
 import io.travelos.contracts.trip.v1.GetTripRequest;
 import io.travelos.contracts.trip.v1.Itinerary;
 import io.travelos.contracts.trip.v1.Leg;
@@ -20,10 +21,12 @@ import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.contracts.trip.v1.UpdateComponentsRequest;
 import io.travelos.spring.grpc.RequestContexts;
+import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
 import io.travelos.travelcore.trip.AgentDecision;
 import io.travelos.travelcore.trip.TripComponent;
 import io.travelos.travelcore.trip.TripService;
+import io.travelos.travelcore.trip.TripSource;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -55,6 +58,74 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
     } catch (ApiException.NotFound e) {
       throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();
     }
+    observer.onCompleted();
+  }
+
+  /**
+   * Slice 4: a trusted service (Enterprise Context) creates a trip for a person it authenticated.
+   * The person's roles and employee id travel with the request; Travel Core applies the same
+   * arranger rule it applies at the API. Idempotent by ctx.idempotency_key within the tenant.
+   */
+  @Override
+  public void createTrip(CreateTripRequest request, StreamObserver<Trip> observer) {
+    RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
+    if (request.getCtx().getIdempotencyKey().isBlank()) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("ctx.idempotency_key is required")
+          .asRuntimeException();
+    }
+    if (!request.hasIntent()) {
+      throw Status.INVALID_ARGUMENT.withDescription("intent is required").asRuntimeException();
+    }
+    TripSource source;
+    try {
+      source =
+          request.getSource().isBlank() ? TripSource.API : TripSource.valueOf(request.getSource());
+    } catch (IllegalArgumentException e) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("unknown source " + request.getSource())
+          .asRuntimeException();
+    }
+    RequestPrincipal me =
+        new RequestPrincipal(
+            ctx.principal(),
+            ctx.tenant(),
+            blankToNull(request.getActorEmployeeId()),
+            new java.util.HashSet<>(request.getActorRolesList()),
+            null,
+            null,
+            null);
+    TripService.CreateTrip command;
+    try {
+      command =
+          new TripService.CreateTrip(
+              blankToNull(request.getTravelerId()),
+              source,
+              blankToNull(request.getRequestText()),
+              fromSpecs(request.getIntent()).withExplicitStay());
+    } catch (io.travelos.travelcore.trip.TravelIntent.HotelRequestException e) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription(e.code() + ": " + e.getMessage())
+          .asRuntimeException();
+    } catch (IllegalArgumentException e) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription("INTENT_INVALID: " + e.getMessage())
+          .asRuntimeException();
+    }
+    io.travelos.travelcore.trip.Trip trip;
+    try {
+      trip =
+          trips.create(
+              me,
+              command,
+              request.getCtx().getIdempotencyKey(),
+              blankToNull(request.getSourceReference()));
+    } catch (ApiException.Forbidden e) {
+      throw Status.PERMISSION_DENIED.withDescription(e.getMessage()).asRuntimeException();
+    } catch (ApiException.Unprocessable e) {
+      throw Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException();
+    }
+    observer.onNext(withComponents(ctx.tenant(), trip));
     observer.onCompleted();
   }
 
@@ -248,6 +319,54 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
         p.hasLatestReturn() ? instant(p.getLatestReturn()) : null,
         blankToNull(p.getPurpose()),
         p.getHotelRequired(),
+        p.getTravelers() == 0 ? 1 : p.getTravelers());
+  }
+
+  /**
+   * An external caller's intent: legs, stays and transfers as specs, so component ids are minted
+   * and zones derived here (the caller need not know either), exactly like the REST API.
+   */
+  static io.travelos.travelcore.trip.TravelIntent fromSpecs(TravelIntent p) {
+    if (!p.hasItinerary()) {
+      return fromProto(p);
+    }
+    Itinerary it = p.getItinerary();
+    List<io.travelos.travelcore.trip.Itinerary.LegSpec> legs = new ArrayList<>();
+    for (Leg l : it.getLegsList()) {
+      legs.add(
+          new io.travelos.travelcore.trip.Itinerary.LegSpec(
+              blankToNull(l.getComponentId()),
+              l.getOrigin(),
+              l.getDestination(),
+              instant(l.getEarliestDeparture()),
+              instant(l.getArrivalDeadline())));
+    }
+    List<io.travelos.travelcore.trip.Itinerary.StaySpec> stays = new ArrayList<>();
+    for (Stay st : it.getStaysList()) {
+      stays.add(
+          new io.travelos.travelcore.trip.Itinerary.StaySpec(
+              blankToNull(st.getComponentId()),
+              st.getCity(),
+              java.time.LocalDate.parse(st.getCheckInDate()),
+              java.time.LocalDate.parse(st.getCheckOutDate()),
+              st.getRequired()));
+    }
+    List<io.travelos.travelcore.trip.Itinerary.TransferSpec> transfers = new ArrayList<>();
+    for (Transfer t : it.getTransfersList()) {
+      transfers.add(
+          new io.travelos.travelcore.trip.Itinerary.TransferSpec(
+              blankToNull(t.getComponentId()),
+              t.getKind(),
+              t.getCity(),
+              blankToNull(t.getFromLocation()),
+              blankToNull(t.getToLocation()),
+              t.hasPickup() ? instant(t.getPickup()) : null,
+              t.getRequired()));
+    }
+    return io.travelos.travelcore.trip.TravelIntent.of(
+        io.travelos.travelcore.trip.Itinerary.of(
+            legs, stays, transfers, blankToNull(it.getCurrency())),
+        blankToNull(p.getPurpose()),
         p.getTravelers() == 0 ? 1 : p.getTravelers());
   }
 

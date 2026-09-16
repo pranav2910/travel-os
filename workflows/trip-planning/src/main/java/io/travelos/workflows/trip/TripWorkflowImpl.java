@@ -170,6 +170,13 @@ public class TripWorkflowImpl implements TripWorkflow {
         ExtractIntentResponse extracted =
             understanding.extractIntent(extractRequest(tenant, tripId, trip));
         Trip applied = activities.applyIntentExtraction(applyRequest(tenant, tripId, extracted));
+        if (applied.getStatus() == TripStatus.FAILED) {
+          // Travel Core refused the understood intent (e.g. HOTEL_DETAILS_INSUFFICIENT) and has
+          // already recorded stage, code and reason; nothing to add and nothing to plan.
+          stage = TripPlanning.Stage.FAILED;
+          return new Outcome(
+              tripId, "FAILED", null, applied.getFailureStage(), applied.getFailureCode());
+        }
         switch (extracted.getResult()) {
           case EXTRACTED -> trip = applied;
           case NEEDS_CLARIFICATION -> {

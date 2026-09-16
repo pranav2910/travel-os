@@ -17,6 +17,7 @@ ORDER_DB_PASSWORD=$(gen)
 AUDIT_DB_PASSWORD=$(gen)
 DISRUPTION_DB_PASSWORD=$(gen)
 SANDBOX_AIR_WEBHOOK_SECRET=$(gen)
+SANDBOX_CONNECTOR_WEBHOOK_SECRET=$(gen)
 KEYCLOAK_ADMIN_PASSWORD=$(gen)
 PAYMENT_TOKEN=tok_corp_visa_sandbox
 ENV
@@ -24,6 +25,9 @@ ENV
   echo "generated $ENV_FILE"
 fi
 set -a; . "./$ENV_FILE"; set +a
+if [ -z "${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-}" ]; then
+  SANDBOX_CONNECTOR_WEBHOOK_SECRET=$(openssl rand -hex 16); echo "SANDBOX_CONNECTOR_WEBHOOK_SECRET=$SANDBOX_CONNECTOR_WEBHOOK_SECRET" >> "$ENV_FILE"; export SANDBOX_CONNECTOR_WEBHOOK_SECRET
+fi
 
 apply() { kubectl create secret generic "$@" --dry-run=client -o yaml | kubectl apply -f - >/dev/null; }
 # infra namespace
@@ -44,6 +48,7 @@ apply travel-core-secrets -n travelos --from-literal=TRAVEL_CORE_DB_PASSWORD="$T
 apply policy-secrets -n travelos --from-literal=POLICY_DB_PASSWORD="$POLICY_DB_PASSWORD"
 apply supplier-gateway-secrets -n travelos --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD" --from-literal=SANDBOX_AIR_WEBHOOK_SECRET="$SANDBOX_AIR_WEBHOOK_SECRET"
 apply disruption-secrets -n travelos --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
+apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_DB_PASSWORD="$ENTERPRISE_CONTEXT_DB_PASSWORD" --from-literal=SANDBOX_CONNECTOR_WEBHOOK_SECRET="${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-$(openssl rand -hex 16)}"
 apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD"
 apply audit-secrets -n travelos --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"
 apply trip-planning-secrets -n travelos --from-literal=PAYMENT_TOKEN="$PAYMENT_TOKEN"

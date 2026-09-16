@@ -73,6 +73,18 @@ public class AuditIngestService {
             event.occurredAt());
       }
     }
+    // Slice 4: a demand candidate's trail is read like a trip's (same index, its own id prefix).
+    if ("travel.demand.candidate-detected".equals(event.eventType())) {
+      Object candidateId = event.data().get("candidateId");
+      Object travelerId = event.data().get("travelerId");
+      if (candidateId != null && travelerId != null) {
+        repository.indexTrip(
+            TenantId.of(event.tenantId()),
+            String.valueOf(candidateId),
+            String.valueOf(travelerId),
+            event.occurredAt());
+      }
+    }
     stored.increment();
     return Outcome.STORED;
   }

@@ -151,6 +151,29 @@ services:
       order:
         condition: service_healthy
 
+  enterprise-context:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/enterprise-context:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/enterprise-context/build/libs/enterprise-context-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8090
+      GRPC_PORT: 9090
+      ENTERPRISE_CONTEXT_DB_URL: jdbc:postgresql://postgres:5432/enterprise_context
+      TRAVEL_CORE_ADDRESS: travel-core:9081
+      CONTEXT_SYNC_INTERVAL: 30s
+    ports:
+      - "8090:8090"
+      - "9090:9090"
+    depends_on:
+      <<: *infra-ready
+      travel-core:
+        condition: service_healthy
+
   trip-planning:
     <<: *java
     image: ghcr.io/pranav2910/travel-os/trip-planning:${TAG:-local}
@@ -169,6 +192,7 @@ services:
       ORDER_ADDRESS: order:9085
       LLM_GATEWAY_ADDRESS: llm-gateway:9087
       DISRUPTION_ADDRESS: disruption:9089
+      ENTERPRISE_CONTEXT_ADDRESS: enterprise-context:9090
     ports:
       - "8086:8086"
     depends_on:

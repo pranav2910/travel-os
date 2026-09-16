@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
@@ -129,46 +130,83 @@ public class SandboxAirSupplier implements AirSupplier {
             : EnumSet.copyOf(request.getCabinsList());
     String session = Ids.newId(IdPrefix.SEARCH_SESSION);
     SearchAirResponse.Builder response = SearchAirResponse.newBuilder().setSearchSessionId(session);
-    List<SandboxInventory.Schedule> schedules = new ArrayList<>();
-    for (Cabin cabin : cabins) {
-      Optional<SandboxReaccommodation> overlay =
-          reaccommodation(
-              request.getCtx().getTenantId(),
-              request.getOrigin(),
-              request.getDestination(),
-              outboundDate,
-              cabin);
-      schedules.addAll(
-          SandboxInventory.schedules(
-              request.getOrigin(),
-              request.getDestination(),
-              outboundDate,
-              inboundDate,
-              EnumSet.of(cabin),
-              overlay.orElse(null),
-              overlay.map(o -> o.repricesFor(request.getCtx().getCorrelationId())).orElse(false)));
+    // The window may span several UTC dates (an overnight deadline, a recovery that must consider
+    // tomorrow): every date in it is searched, bounded, and each offer carries its own date.
+    LocalDate lastDate =
+        request.getOutboundDeparture().hasNotAfter()
+            ? date(request.getOutboundDeparture().getNotAfter().getSeconds())
+            : outboundDate;
+    if (lastDate.isAfter(outboundDate.plusDays(MAX_SEARCH_DAYS - 1))) {
+      lastDate = outboundDate.plusDays(MAX_SEARCH_DAYS - 1);
     }
-    for (SandboxInventory.Schedule s : schedules) {
-      if (!within(s.outbound().getFirst().departure(), request.getOutboundDeparture())) {
-        continue;
+    for (LocalDate date = outboundDate; !date.isAfter(lastDate); date = date.plusDays(1)) {
+      List<SandboxInventory.Schedule> schedules = new ArrayList<>();
+      for (Cabin cabin : cabins) {
+        schedules.addAll(
+            schedulesOn(
+                request.getCtx(),
+                request.getOrigin(),
+                request.getDestination(),
+                date,
+                inboundDate,
+                cabin));
       }
-      if (inboundDate != null
-          && (s.inbound().isEmpty()
-              || !within(s.inbound().getFirst().departure(), request.getReturnDeparture()))) {
-        continue;
+      for (SandboxInventory.Schedule s : schedules) {
+        if (!within(s.outbound().getFirst().departure(), request.getOutboundDeparture())) {
+          continue;
+        }
+        if (inboundDate != null
+            && (s.inbound().isEmpty()
+                || !within(s.inbound().getFirst().departure(), request.getReturnDeparture()))) {
+          continue;
+        }
+        response.addOffers(
+            SandboxInventory.toOffer(
+                s,
+                request.getOrigin(),
+                request.getDestination(),
+                date,
+                inboundDate,
+                now,
+                session,
+                Ids.newId(IdPrefix.OFFER)));
       }
-      response.addOffers(
-          SandboxInventory.toOffer(
-              s,
-              request.getOrigin(),
-              request.getDestination(),
-              outboundDate,
-              inboundDate,
-              now,
-              session,
-              Ids.newId(IdPrefix.OFFER)));
     }
     return response.build();
+  }
+
+  /**
+   * What the airline sells on one date for one caller: the date's own cancellation applied (the
+   * cancelled flight gone; for the disrupted trip, reaccommodation fares, or nothing at all when it
+   * was moved to the next day) and the previous date's next-day move spilling in (for the disrupted
+   * trip every flight carries the reaccommodation fares; everyone else sees published fares).
+   */
+  private List<SandboxInventory.Schedule> schedulesOn(
+      io.travelos.contracts.common.v1.RequestContext ctx,
+      String origin,
+      String destination,
+      LocalDate date,
+      @Nullable LocalDate inboundDate,
+      Cabin cabin) {
+    String tenant = ctx.getTenantId();
+    Optional<SandboxReaccommodation> today =
+        reaccommodation(tenant, origin, destination, date, cabin);
+    Optional<SandboxReaccommodation> spill =
+        reaccommodation(tenant, origin, destination, date.minusDays(1), cabin)
+            .filter(SandboxReaccommodation::nextDay)
+            .filter(r -> r.repricesFor(ctx.getCorrelationId()));
+    if (spill.isPresent() && today.isEmpty()) {
+      return SandboxInventory.schedules(
+          origin, destination, date, inboundDate, EnumSet.of(cabin), spill.get(), true, true);
+    }
+    return SandboxInventory.schedules(
+        origin,
+        destination,
+        date,
+        inboundDate,
+        EnumSet.of(cabin),
+        today.orElse(null),
+        today.map(o -> o.repricesFor(ctx.getCorrelationId())).orElse(false));
   }
 
   @Override
@@ -408,8 +446,10 @@ public class SandboxAirSupplier implements AirSupplier {
           false);
     }
     Cabin cabin = Cabin.valueOf(id.cabin());
+    boolean nextDay = raw.reaccommodation() != null && raw.reaccommodation().movesToNextDay();
     disruptions.saveReaccommodation(
-        SandboxInventory.reaccommodate(order.tenantId(), notice.correlationId(), id, cabin, delta),
+        SandboxInventory.reaccommodate(
+            order.tenantId(), notice.correlationId(), id, cabin, delta, nextDay),
         clock.instant());
   }
 
@@ -443,6 +483,9 @@ public class SandboxAirSupplier implements AirSupplier {
     }
     return order;
   }
+
+  /** A search window is served for at most this many UTC dates (the sandbox has no seasons). */
+  static final int MAX_SEARCH_DAYS = 3;
 
   private Optional<SandboxReaccommodation> reaccommodation(
       String tenant, String origin, String destination, LocalDate outboundDate, Cabin cabin) {
@@ -509,19 +552,18 @@ public class SandboxAirSupplier implements AirSupplier {
       throw new SupplierException(
           "FLIGHT_CANCELLED", "this flight was cancelled by the airline; search again", false);
     }
-    return SandboxInventory.schedules(
-            id.origin(),
-            id.destination(),
-            id.outboundDate(),
-            id.inboundDate(),
-            EnumSet.of(cabin),
-            overlay.orElse(null),
-            overlay.map(o -> o.repricesFor(ctx.getCorrelationId())).orElse(false))
+    return schedulesOn(
+            ctx, id.origin(), id.destination(), id.outboundDate(), id.inboundDate(), cabin)
         .stream()
         .filter(s -> s.slot() == id.slot())
         .findFirst()
         .orElseThrow(
-            () -> new SupplierException("OFFER_UNKNOWN", "offer slot no longer exists", false));
+            () ->
+                new SupplierException(
+                    "OFFER_UNKNOWN",
+                    "offer slot no longer exists (or the airline has moved this passenger to"
+                        + " another date)",
+                    false));
   }
 
   /** The schedule as originally generated, cancellations and repricing ignored. */

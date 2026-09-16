@@ -1,0 +1,41 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.demand.candidate-updated",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T14:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+  "producer": "enterprise-context",
+  "data": {
+    "candidateId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+    "travelerId": "emp_1001",
+    "destination": "SEA",
+    "origin": "BOS",
+    "startDate": "2026-10-06",
+    "endDate": "2026-10-08",
+    "timeZone": "America/Los_Angeles",
+    "rulesVersion": "rules-v1",
+    "status": "ACTIONABLE",
+    "previousStatus": "NEEDS_REVIEW",
+    "reason": "SOURCE_ADDED",
+    "sources": [
+      {
+        "connectorId": "cnx_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+        "kind": "CALENDAR",
+        "sourceId": "evt-acme-2026-10-06-seattle-qbr",
+        "revision": 3,
+        "role": "PRIMARY"
+      },
+      {
+        "connectorId": "cnx_01ARZ3NDEKTSV4RRFFQ69G5FB4",
+        "kind": "CRM",
+        "sourceId": "visit-7781",
+        "revision": 1,
+        "role": "CORRELATED"
+      }
+    ],
+    "missing": [],
+    "reviewReasons": [],
+    "explanation": "CRM visit visit-7781 (Amazon, on-site, 2026-10-07) matches the calendar event by traveler, city and date: one visit, two sources."
+  }
+}

@@ -470,6 +470,121 @@ class DisruptionIngestionIntegrationTest {
         .isEqualTo(1L);
   }
 
+  @Test
+  @org.junit.jupiter.api.Order(7)
+  void aNextDayReaccommodationMovesOnlyTheDisruptedTripToTomorrow() {
+    // A separate trip a week later on the same route, so nothing above interferes.
+    String trip = "trip_01ARZ3NDEKTSV4RRFFQ69G5FB0";
+    String other = "trip_01ARZ3NDEKTSV4RRFFQ69G5FB1";
+    Instant day = Instant.parse("2026-10-13T00:00:00Z");
+    Instant dayEnd = Instant.parse("2026-10-13T23:59:59Z");
+    Instant nextDayEnd = Instant.parse("2026-10-14T23:59:59Z");
+    java.util.function.BiFunction<String, Instant, SearchAirRequest> oneWay =
+        (correlation, until) ->
+            SearchAirRequest.newBuilder()
+                .setCtx(ctx("").toBuilder().setCorrelationId(correlation).build())
+                .setOrigin("BOS")
+                .setDestination("SEA")
+                .setPassengers(1)
+                .addCabins(Cabin.ECONOMY)
+                .setOutboundDeparture(
+                    TimeWindow.newBuilder().setNotBefore(ts(day)).setNotAfter(ts(until)))
+                .build();
+    Offer chosen =
+        gateway.searchAir(oneWay.apply(trip, dayEnd)).getOffersList().stream()
+            .filter(o -> o.getAir().getOutbound().getSegmentsCount() == 1)
+            .min(Comparator.comparingLong(o -> o.getTotal().getAmountMinor()))
+            .orElseThrow();
+    long original = chosen.getTotal().getAmountMinor();
+    CreateOrderResponse created =
+        gateway.createOrder(
+            CreateOrderRequest.newBuilder()
+                .setCtx(ctx(trip + ":CREATE-ORDER:1").toBuilder().setCorrelationId(trip).build())
+                .setProvider("sandbox-air")
+                .setProviderOfferId(chosen.getProviderOfferId())
+                .addPassengers(alice())
+                .setPaymentToken("tok_visa_4242")
+                .build());
+    String flight = chosen.getAir().getOutbound().getSegments(0).getFlightNumber();
+    String body =
+        """
+        {"eventId":"sbx-evt-2001","type":"FLIGHT_CANCELLED","externalOrderId":"%s","flightNumber":"%s",
+         "date":"2026-10-13","reason":"aircraft out of service","reaccommodation":{"fareDeltaMinor":5000,"nextDay":true}}
+        """
+            .formatted(created.getExternalOrderId(), flight);
+    assertThat(post(body, sign(body)).getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+
+    // The disrupted trip: nothing on the 13th, everything on the 14th at the reaccommodation fare.
+    List<Offer> moved = gateway.searchAir(oneWay.apply(trip, nextDayEnd)).getOffersList();
+    assertThat(moved).isNotEmpty();
+    assertThat(moved)
+        .allSatisfy(
+            o ->
+                assertThat(
+                        Instant.ofEpochSecond(
+                                o.getAir().getOutbound().getSegments(0).getDeparture().getSeconds())
+                            .toString())
+                    .startsWith("2026-10-14"));
+    assertThat(moved)
+        .filteredOn(o -> o.getAir().getOutbound().getSegmentsCount() == 1)
+        .isNotEmpty()
+        .allSatisfy(o -> assertThat(o.getTotal().getAmountMinor()).isEqualTo(original + 5000));
+    // and pricing one of them for that trip honours the fare (the order path uses the same rule)
+    Offer tomorrow =
+        moved.stream()
+            .filter(o -> o.getAir().getOutbound().getSegmentsCount() == 1)
+            .findFirst()
+            .orElseThrow();
+    assertThat(
+            gateway
+                .priceOffer(
+                    PriceOfferRequest.newBuilder()
+                        .setCtx(ctx("").toBuilder().setCorrelationId(trip).build())
+                        .setProvider("sandbox-air")
+                        .setProviderOfferId(tomorrow.getProviderOfferId())
+                        .build())
+                .getOffer()
+                .getTotal()
+                .getAmountMinor())
+        .isEqualTo(original + 5000);
+    // A search that stops at the 13th finds nothing for this passenger: honest, not silent.
+    assertThat(gateway.searchAir(oneWay.apply(trip, dayEnd)).getOffersCount()).isZero();
+
+    // Everyone else: the 13th minus the cancelled flight, and published fares on the 14th.
+    List<Offer> others = gateway.searchAir(oneWay.apply(other, nextDayEnd)).getOffersList();
+    assertThat(others)
+        .anySatisfy(
+            o ->
+                assertThat(
+                        Instant.ofEpochSecond(
+                                o.getAir().getOutbound().getSegments(0).getDeparture().getSeconds())
+                            .toString())
+                    .startsWith("2026-10-13"));
+    // the cancelled flight is gone on the cancelled date only; it flies again the next day
+    assertThat(others)
+        .filteredOn(
+            o ->
+                Instant.ofEpochSecond(
+                        o.getAir().getOutbound().getSegments(0).getDeparture().getSeconds())
+                    .toString()
+                    .startsWith("2026-10-13"))
+        .noneMatch(o -> o.getAir().getOutbound().getSegments(0).getFlightNumber().equals(flight));
+    assertThat(
+            others.stream()
+                .filter(
+                    o ->
+                        Instant.ofEpochSecond(
+                                o.getAir().getOutbound().getSegments(0).getDeparture().getSeconds())
+                            .toString()
+                            .startsWith("2026-10-14"))
+                .filter(o -> o.getAir().getOutbound().getSegmentsCount() == 1)
+                .map(o -> o.getTotal().getAmountMinor())
+                .distinct()
+                .count())
+        .as("published fares differ by carrier and time; a flat reaccommodation fare would not")
+        .isGreaterThan(1);
+  }
+
   // ------------------------------------------------------------------ helpers
 
   private ResponseEntity<String> post(String body, String signature) {

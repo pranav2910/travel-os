@@ -27,6 +27,9 @@ final class TripEvents {
     data.put("status", trip.status().name());
     data.put("source", trip.source().name());
     data.put("requestedBy", trip.createdBy().id());
+    if (trip.sourceReference() != null) {
+      data.put("sourceReference", trip.sourceReference());
+    }
     return envelope("travel.trip.created", trip, causationId, data, clock);
   }
 

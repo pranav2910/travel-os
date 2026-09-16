@@ -27,7 +27,13 @@ public enum IdPrefix {
   /** Slice 3: an itinerary component (leg, stay, transfer) with a stable id across re-planning. */
   COMPONENT("cmp"),
   /** Slice 3: money at risk after a failed compensation, until a person resolves it. */
-  EXPOSURE("exp");
+  EXPOSURE("exp"),
+  /** Slice 4: a detected travel demand candidate. */
+  DEMAND("dmd"),
+  /** Slice 4: an enterprise connector (calendar, CRM, HRIS, expense) of one tenant. */
+  CONNECTOR("cnx"),
+  /** Slice 4: one synchronization run of a connector. */
+  SYNC_RUN("syn");
 
   private final String prefix;
 

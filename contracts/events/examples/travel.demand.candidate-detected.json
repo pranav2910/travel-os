@@ -1,0 +1,32 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.demand.candidate-detected",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T14:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+  "producer": "enterprise-context",
+  "data": {
+    "candidateId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+    "travelerId": "emp_1001",
+    "destination": "SEA",
+    "origin": "BOS",
+    "startDate": "2026-10-06",
+    "endDate": "2026-10-08",
+    "timeZone": "America/Los_Angeles",
+    "rulesVersion": "rules-v1",
+    "status": "ACTIONABLE",
+    "sources": [
+      {
+        "connectorId": "cnx_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+        "kind": "CALENDAR",
+        "sourceId": "evt-acme-2026-10-06-seattle-qbr",
+        "revision": 3,
+        "role": "PRIMARY"
+      }
+    ],
+    "missing": [],
+    "reviewReasons": [],
+    "explanation": "Accepted in-person event 'Seattle QBR' at Amazon HQ (SEA) on 2026-10-06 to 2026-10-08, 2,500 mi from the traveler's work location (BOS): travel required."
+  }
+}

@@ -118,16 +118,19 @@ public record IntentRequest(
       throw new IllegalArgumentException(
           "origin, destination, earliestDeparture and arrivalDeadline are required (or an itinerary)");
     }
+    // hotelRequired is honoured (an explicit stay) or refused with HOTEL_DETAILS_INSUFFICIENT;
+    // it is never silently dropped (Slice 3 carry-over, see ADR-0012).
     return new TravelIntent(
-        origin,
-        destination,
-        earliestDeparture,
-        arrivalDeadline,
-        returnAfter,
-        latestReturn,
-        purpose,
-        hotelRequired != null && hotelRequired,
-        travelerCount);
+            origin,
+            destination,
+            earliestDeparture,
+            arrivalDeadline,
+            returnAfter,
+            latestReturn,
+            purpose,
+            hotelRequired != null && hotelRequired,
+            travelerCount)
+        .withExplicitStay();
   }
 
   public static IntentRequest from(TravelIntent intent) {

@@ -23,6 +23,7 @@ nodes:
       - { containerPort: 30086, hostPort: 18086 }   # trip-planning worker (actuator)
       - { containerPort: 30088, hostPort: 18088 }   # audit
       - { containerPort: 30089, hostPort: 18089 }   # disruption
+      - { containerPort: 30090, hostPort: 18090 }   # enterprise-context
       - { containerPort: 30083, hostPort: 19083 }   # optimization grpc
       - { containerPort: 30087, hostPort: 19087 }   # llm-gateway grpc
       - { containerPort: 30180, hostPort: 18180 }   # keycloak

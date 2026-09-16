@@ -82,7 +82,8 @@
           "enum": [
             "FREE_TEXT",
             "CALENDAR",
-            "EMAIL"
+            "EMAIL",
+            "DEMAND"
           ]
         },
         "result": {
@@ -133,7 +134,8 @@
           "enum": [
             "FREE_TEXT",
             "CALENDAR",
-            "EMAIL"
+            "EMAIL",
+            "DEMAND"
           ]
         },
         "result": {

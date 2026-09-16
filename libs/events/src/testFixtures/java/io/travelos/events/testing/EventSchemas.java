@@ -97,7 +97,8 @@ public final class EventSchemas {
         "optimization-events.schema.json",
         "approval-events.schema.json",
         "intent-events.schema.json",
-        "disruption-events.schema.json");
+        "disruption-events.schema.json",
+        "demand-events.schema.json");
   }
 
   private static Schema schema(String location) {

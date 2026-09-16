@@ -30,11 +30,18 @@
             "API",
             "AGENT",
             "CALENDAR",
-            "EMAIL"
+            "EMAIL",
+            "DEMAND"
           ]
         },
         "requestedBy": {
           "$ref": "common.schema.json#/$defs/principal"
+        },
+        "sourceReference": {
+          "type": "string",
+          "description": "what the trip was made from, e.g. the demand candidate id (Slice 4)",
+          "minLength": 1,
+          "maxLength": 128
         }
       }
     },

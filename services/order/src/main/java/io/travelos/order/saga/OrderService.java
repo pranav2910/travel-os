@@ -31,6 +31,7 @@ import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
 import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SupplierOrderStatus;
 import io.travelos.order.events.OrderEvents;
+import io.travelos.order.metrics.OrderMetrics;
 import io.travelos.order.store.ExposureRecord;
 import io.travelos.order.store.ExposureRepository;
 import io.travelos.order.store.OrderChangeRecord;
@@ -74,6 +75,7 @@ public class OrderService {
   private final Outbox outbox;
   private final TransactionTemplate tx;
   private final Clock clock;
+  private final OrderMetrics metrics;
 
   public OrderService(
       OrderRepository orders,
@@ -82,7 +84,8 @@ public class OrderService {
       SupplierClient suppliers,
       Outbox outbox,
       TransactionTemplate tx,
-      Clock clock) {
+      Clock clock,
+      OrderMetrics metrics) {
     this.orders = orders;
     this.changes = changes;
     this.exposures = exposures;
@@ -90,6 +93,7 @@ public class OrderService {
     this.outbox = outbox;
     this.tx = tx;
     this.clock = clock;
+    this.metrics = metrics;
   }
 
   public OrderRecord create(CreateOrderCommand command) {
@@ -228,6 +232,7 @@ public class OrderService {
       } catch (StatusRuntimeException e) {
         String code = failureCode(e);
         log.warn("order {} item {} failed: {}", order.orderId(), item.itemId(), e.getStatus());
+        metrics.booked(item.offerType(), "FAILED");
         tx.executeWithoutResult(
             s ->
                 orders.updateItem(
@@ -280,6 +285,7 @@ public class OrderService {
             .setPaymentToken(command.getPaymentToken())
             .build();
     CreateOrderResponse created;
+    boolean reconciledByLookup = false;
     try {
       created = suppliers.createOrder(request);
     } catch (StatusRuntimeException e) {
@@ -298,6 +304,7 @@ public class OrderService {
           item.itemId(),
           reconciled.getExternalOrderId());
       created = reconciled;
+      reconciledByLookup = true;
     }
     CreateOrderResponse confirmed = created;
     tx.executeWithoutResult(
@@ -309,6 +316,7 @@ public class OrderService {
                 confirmed.getRecordLocator(),
                 null,
                 clock.instant()));
+    metrics.booked(item.offerType(), reconciledByLookup ? "RECONCILED" : "CONFIRMED");
   }
 
   /** Returns the provider offer id to book: the original, or the re-quoted one after expiry. */
@@ -423,7 +431,9 @@ public class OrderService {
             s ->
                 orders.updateItem(
                     item.itemId(), ItemStatus.CANCELLED, null, null, null, clock.instant()));
+        metrics.compensated(item.offerType(), "RELEASED");
       } catch (StatusRuntimeException e) {
+        metrics.compensated(item.offerType(), "CANCEL_FAILED");
         log.error(
             "compensation failed for order {} item {} ({}): needs human attention",
             current.orderId(),
@@ -526,6 +536,7 @@ public class OrderService {
           ExposureRecord resolved = exposures.find(tenant, exposureId).orElseThrow();
           OrderRecord order = orders.find(tenant, orderId).orElseThrow();
           outbox.append(OrderEvents.exposureResolved(order, resolved, by, null, clock));
+          metrics.exposureResolved();
           boolean anyOpen =
               exposures.byOrder(tenant, orderId).stream()
                   .anyMatch(e -> e.status() == ExposureRecord.Status.OPEN);

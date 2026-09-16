@@ -1,0 +1,16 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.demand.sync-failed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T14:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "syn_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+  "producer": "enterprise-context",
+  "data": {
+    "connectorId": "cnx_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+    "kind": "CALENDAR",
+    "runId": "syn_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+    "code": "SOURCE_UNAVAILABLE",
+    "message": "the calendar source refused every retry"
+  }
+}

@@ -49,6 +49,10 @@ topics:
     slice: 4
     events: [travel.expense.created, travel.expense.reconciled]
 
+  - name: travel.demand
+    slice: 4
+    events: [travel.demand.sync-requested, travel.demand.sync-completed, travel.demand.sync-failed, travel.demand.candidate-detected, travel.demand.candidate-updated, travel.demand.candidate-withdrawn, travel.demand.candidate-dismissed, travel.demand.candidate-converted, travel.demand.candidate-changed-after-conversion]
+
   - name: travel.agent
     slice: 1
     events: [travel.agent.action.requested, travel.agent.action.completed, travel.agent.action.rejected]

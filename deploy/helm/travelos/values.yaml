@@ -94,6 +94,21 @@ disruption:
     grpcToApps:
       - { app: order, port: 9085 }
 
+enterprise-context:
+  name: enterprise-context
+  ports: { http: 8090, grpc: 9090 }
+  secretRef: enterprise-context-secrets       # DB password + sandbox connector webhook secret
+  env:
+    ENTERPRISE_CONTEXT_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/enterprise_context
+    ENTERPRISE_CONTEXT_DB_USER: enterprise_context_app
+    TRAVEL_CORE_ADDRESS: travel-core:9081
+    CONTEXT_SYNC_INTERVAL: 60s
+  networkPolicy:
+    httpFrom: *httpFrom
+    grpcFromApps: [trip-planning]
+    grpcToApps:
+      - { app: travel-core, port: 9081 }
+
 trip-planning:
   name: trip-planning
   ports: { http: 8086 }
@@ -105,6 +120,7 @@ trip-planning:
     ORDER_ADDRESS: order:9085
     LLM_GATEWAY_ADDRESS: llm-gateway:9087
     DISRUPTION_ADDRESS: disruption:9089
+    ENTERPRISE_CONTEXT_ADDRESS: enterprise-context:9090
     DEFAULT_TIMEZONE: America/New_York
   secretRef: trip-planning-secrets          # PAYMENT_TOKEN
   autoscaling:
@@ -119,6 +135,7 @@ trip-planning:
       - { app: supplier-gateway, port: 9084 }
       - { app: order, port: 9085 }
       - { app: llm-gateway, port: 9087 }
+      - { app: enterprise-context, port: 9090 }
 
 optimization:
   name: optimization
@@ -173,3 +190,5 @@ ingress:
     - { path: /api/v1/disruptions, service: disruption, port: 8089 }
     - { path: /api/v1/trips, service: travel-core, port: 8081, pathType: Prefix }
     - { path: /api/v1/suppliers, service: supplier-gateway, port: 8084 }
+    - { path: /api/v1/demand, service: enterprise-context, port: 8090, pathType: Prefix }
+    - { path: /api/v1/connectors, service: enterprise-context, port: 8090, pathType: Prefix }

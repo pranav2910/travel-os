@@ -19,8 +19,9 @@ US-domestic, single-traveler, economy round trip; the platform plans, governs, b
 end to end, on a laptop, in Docker and on Kubernetes (kind). **Slice 1.1** hardened it for the AWS
 target: one Kafka security switch (`KAFKA_AUTH=msk-iam`) understood by every client, the
 `travel.optimization.completed` event, the kind e2e/chaos gate in CI, AWS ingress, the `container`
-profile. **Slice 2: autonomous disruption recovery** and **Slice 3: hotels, ground transport
-and multi-city itineraries** (both below) are built on top of it.
+profile. **Slice 2: autonomous disruption recovery**, **Slice 3: hotels, ground transport
+and multi-city itineraries** and **Slice 4: travel-demand detection from calendar, CRM, HRIS and
+expense** (all below) are built on top of it.
 
 Built so far: contracts, shared libs, local platform, **Travel Core**, **Policy**, **Supplier
 Gateway** (sandbox adapter), **Order** (booking saga with compensation), **Optimization** (OR-Tools),
@@ -114,8 +115,33 @@ POST /api/v1/trips {intent.itinerary: legs[], stays[], transfers[]}  ─► froz
 | ☑ OR-Tools `OptimizeItinerary`: one offer per component, hard constraints (leg chronology + connection buffer, transfer reachability, hotel-night coverage on the local calendar, budget, currency), named infeasibility per component, optional components skipped | ☑ durable orchestration: itinerary stages `SEARCHING … REVALIDATING, BOOKING, COMPENSATING`, component states reported to Travel Core, revalidation before the only mutation with re-approval (`APPROVED → AWAITING_APPROVAL`), reconcile-before-retry via booking status, reverse-order compensation, `CANCEL_FAILED` + `order_exposure` + `travel.order.compensation-failed`, human resolution | ☑ connected recovery: a cancelled leg re-times its transfer (same vendor), re-dates its stay (same property) only when the first night moves, re-chains the next leg only when the connection breaks; one component-tagged `ChangeOrder`; per-component accounting in the decision record |
 | ☑ security: tenant + traveler authorization on components, exposures, disruptions (cross-tenant 404); travelers cannot approve their own trips or recoveries; supplier descriptions are data (MIA fixture) | ☑ evidence: `travel.trip.replanned`, `travel.order.{compensation-failed,exposure-resolved}`, components on `trip.booked`/`trip.failed`, component changes on `decision-ready`; ledger sections `components`, `replans`, `compensation`; one trace | ☑ tests: gateway 25, travel-core 48, policy 41, order 16, workflow 36, disruption 6, audit 5, optimizer 34, llm-gateway 30; `scripts/e2e-slice3.sh` (A complete itinerary, B infeasible + budget denial, C stale approval + expired quote, D compensation + refused cancellation resolved, E duplicates + lost supplier answers, F connected recovery autonomous + manager, G isolation/authorization/injection/red-eye) and `scripts/chaos-slice3-kind.sh` (7-component booking and its recovery held at proven points, worker killed) |
 
-Roadmap after that: **Slice 4** calendar/CRM/HRIS/expense integration (detect demand before a
-request exists) · **Slice 5** learning from outcomes · then the frontend.
+### Slice 4: travel-demand detection from calendar, CRM, HRIS and expense
+
+The platform notices that an employee will need to travel before anyone asks: the **Enterprise
+Context** service (`services/enterprise-context`, [ADR-0012](docs/adr/0012-demand-detection-is-deterministic-context-not-authority.md))
+mirrors the HRIS into a verified directory, synchronizes each tenant's connectors page by page
+through a Temporal workflow with durable checkpoints, turns confirmed in-person commitments into
+demand candidates with deterministic, versioned rules and quoted evidence, correlates calendar and
+CRM records of one visit, lets expense history enrich or flag a duplicate, and hands an actionable
+candidate to Travel Core's `CreateTrip` only when a person (the traveler, their HRIS manager or a
+travel admin) converts it. Detection books nothing; conversion runs the unchanged trip lifecycle.
+Sources are the SIMULATED `sandbox-calendar` / `sandbox-crm` / `sandbox-hris` / `sandbox-expense`
+connectors; live providers plug into the same `EnterpriseSource` port.
+
+```
+connector sync (schedule | signed webhook | a person)  ─► travel.demand.sync-requested ─► DemandSyncWorkflow
+   ─► SyncPage x N: fetch page ─► store items + revisions ─► rules-v1 ─► candidates ─► events ─► checkpoint (one transaction)
+   ─► candidate: NEEDS_REVIEW | ACTIONABLE  ─► person: details / dismissal / conversion
+   ─► Travel Core CreateTrip (source DEMAND, sourceReference dmd_...) ─► the Slice 1-3 lifecycle, unchanged
+```
+
+| Slice 4 definition of done | | |
+|---|---|---|
+| ☑ Slice 3 carry-overs: `hotelRequired=true` honoured as an explicit stay or refused up front (`HOTEL_DETAILS_INSUFFICIENT`, API and free text); `travelos_order_component_{bookings,compensations}_total{type,outcome}` + `travelos_order_exposures_open`; the sandbox airline serves every date in a window and `reaccommodation.nextDay` moves a passenger to tomorrow (a recovery re-dates the hotel, live) | ☑ demand model: tenant-scoped `dmd_` candidates with verified traveler, sources + revisions, destination, local dates + zone, missing fields, review flags, `rules-v1`, explanation; lifecycle `NEEDS_REVIEW / ACTIONABLE / DISMISSED / WITHDRAWN / CONVERTED` with stored transitions and the trip link | ☑ roles: calendar (attendance, cancellation, recurrence instances, local dates, virtual/declined/local excluded, unresolved place reviewable); CRM (scheduled on-site visits only); HRIS (identity, work location, manager, active status; nothing inferred from names or text); expense (enrichment and duplicate signals, never a new trip) |
+| ☑ ingestion: tenant connectors with observable status and runs; scheduled sync and HMAC-signed webhooks; pagination, durable checkpoints at the write boundary, retries with backoff for outages and rate limits, source updates/deletions, out-of-order and duplicate delivery suppressed by (source id, revision); worker crash mid-sync resumes at the page | ☑ correlation: one candidate per commitment (redelivery updates it); explicit `calendarEventId` links or the documented same-traveler/city/overlapping-dates rule; adjacent days flagged, never merged; cancellation evidence retained so a stale update cannot resurrect withdrawn demand; never across tenants or travelers | ☑ conversion: authorized REST (`/api/v1/demand`, `/api/v1/connectors`), idempotent and concurrency-safe (row lock + one key per candidate), Travel Core `CreateTrip` with the person's roles; before conversion sources update or withdraw the candidate, after it changes are flagged for review through existing controls |
+| ☑ security + evidence: tenant/traveler/HRIS-manager/admin access, cross-tenant 404, no self-approval anywhere new, secrets refused in connector config, source text quoted as data; `travel.demand.*` (9 types) on contract; audit indexes candidates (`/api/v1/audit/demand/{id}`) and the trip ledger names its demand origin; bounded metrics for pages, runs, items, candidates, duplicates, conversions, notifications | ☑ tests: enterprise-context 10 (integration: rules, correlation, faults, webhooks, concurrency, events on contract; unit: rules, plan), workflow 39, travel-core 51, gateway 26, order 16, events 53; `scripts/e2e-slice4.sh` (0 carry-overs, A detection -> booked trip with audit links, B negatives, C duplicates/out-of-order/concurrent conversion, D changes before/after conversion, E recurrence + DST, F webhooks + schedule, G isolation/authorization/injection) and `scripts/chaos-slice4-kind.sh` (outage + rate limit, service and worker killed mid-sync, redelivered notice across a restart) | ☑ deployment: Helm alias + kind NodePort 18090 + compose service + secrets + CI steps `kind-e2e4`/`kind-chaos4`; Terraform lists the service (static validation only) |
+
+Roadmap after that: **Slice 5** learning from outcomes · then the frontend.
 
 ## Architecture in one screen
 

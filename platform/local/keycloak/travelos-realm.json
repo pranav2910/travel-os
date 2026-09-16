@@ -301,6 +301,32 @@
       "realmRoles": [
         "TRAVELER"
       ]
+    },
+    {
+      "username": "dan",
+      "enabled": true,
+      "firstName": "Dan",
+      "lastName": "Okafor",
+      "email": "dan@acme.example",
+      "emailVerified": true,
+      "attributes": {
+        "tenant_id": [
+          "acme"
+        ],
+        "employee_id": [
+          "emp_1004"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "TRAVELER"
+      ]
     }
   ]
 }

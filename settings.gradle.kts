@@ -39,6 +39,8 @@ include(":services:order")
 include(":services:audit")
 // Slice 2: disruption detection, the recovery decision record, and recovery approvals.
 include(":services:disruption")
+// Slice 4: the verified employee directory, enterprise connectors and travel-demand detection.
+include(":services:enterprise-context")
 
 // Temporal workflows: durable coordination of the trip lifecycle.
 include(":workflows:trip-planning")

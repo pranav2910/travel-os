@@ -12,8 +12,11 @@ import io.temporal.serviceclient.WorkflowServiceStubsOptions;
 import io.temporal.worker.Worker;
 import io.temporal.worker.WorkerFactory;
 import io.temporal.worker.WorkerFactoryOptions;
+import io.travelos.workflows.DemandSync;
 import io.travelos.workflows.DisruptionRecovery;
 import io.travelos.workflows.TripPlanning;
+import io.travelos.workflows.demand.DemandActivities;
+import io.travelos.workflows.demand.DemandSyncWorkflowImpl;
 import io.travelos.workflows.recovery.RecoveryActivities;
 import io.travelos.workflows.recovery.RecoveryWorkflowImpl;
 import org.slf4j.Logger;
@@ -68,6 +71,7 @@ class TemporalWorkerConfiguration {
       WorkflowClient client,
       TripActivities activities,
       RecoveryActivities recoveryActivities,
+      DemandActivities demandActivities,
       WorkflowProperties properties,
       OpenTracingOptions tracing) {
     // The workflow reads the payment token through a side effect from a system property so the
@@ -87,6 +91,10 @@ class TemporalWorkerConfiguration {
     Worker recovery = factory.newWorker(DisruptionRecovery.TASK_QUEUE);
     recovery.registerWorkflowImplementationTypes(RecoveryWorkflowImpl.class);
     recovery.registerActivitiesImplementations(recoveryActivities);
+    // Slice 4: connector synchronization runs on its own queue; a slow source never blocks a trip.
+    Worker demand = factory.newWorker(DemandSync.TASK_QUEUE);
+    demand.registerWorkflowImplementationTypes(DemandSyncWorkflowImpl.class);
+    demand.registerActivitiesImplementations(demandActivities);
     return factory;
   }
 

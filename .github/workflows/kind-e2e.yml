@@ -85,6 +85,10 @@ jobs:
         run: make kind-e2e3
       - name: slice 3 chaos (7-component booking and its recovery held at proven points, worker killed)
         run: make kind-chaos3
+      - name: slice 4 end-to-end (calendar/CRM/HRIS/expense demand detection -> governed trip, carry-overs)
+        run: make kind-e2e4
+      - name: slice 4 chaos (source outage, rate limit, context service and worker killed mid-sync)
+        run: make kind-chaos4
       - name: diagnostics
         if: failure()
         run: |

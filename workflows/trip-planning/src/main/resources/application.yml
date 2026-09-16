@@ -42,6 +42,9 @@ travelos:
       disruption:
         address: ${DISRUPTION_ADDRESS:localhost:9089}
         deadline: 15s
+      enterprise-context:
+        address: ${ENTERPRISE_CONTEXT_ADDRESS:localhost:9090}
+        deadline: 45s
   workflow:
     # The machine identity every downstream call is made as. Scoped, never "*".
     principal: agent/trip-planner/v1

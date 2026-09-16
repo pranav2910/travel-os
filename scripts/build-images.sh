@@ -20,7 +20,7 @@ build() { # name dockerfile args...
   fi
 }
 
-for svc in travel-core policy supplier-gateway order audit disruption; do
+for svc in travel-core policy supplier-gateway order audit disruption enterprise-context; do
   build "$svc" docker/java.Dockerfile --build-arg "JAR=services/$svc/build/libs/$svc-$VERSION.jar"
 done
 build trip-planning docker/java.Dockerfile --build-arg "JAR=workflows/trip-planning/build/libs/trip-planning-$VERSION.jar"

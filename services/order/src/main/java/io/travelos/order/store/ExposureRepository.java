@@ -43,6 +43,15 @@ public class ExposureRepository {
         .update();
   }
 
+  /** Open exposures across every tenant: the platform-wide number a person still owes. */
+  public long countOpen() {
+    Long n =
+        jdbc.sql("SELECT count(*) FROM order_exposure WHERE status = 'OPEN'")
+            .query(Long.class)
+            .single();
+    return n == null ? 0L : n;
+  }
+
   public List<ExposureRecord> byOrder(TenantId tenant, String orderId) {
     return jdbc.sql(
             "SELECT * FROM order_exposure WHERE tenant_id = :t AND order_id = :o ORDER BY created_at")

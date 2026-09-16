@@ -32,7 +32,8 @@ public record TripResponse(
     @Nullable String failureStage,
     @Nullable String failureCode,
     @Nullable String explanation,
-    @Nullable List<ComponentView> components) {
+    @Nullable List<ComponentView> components,
+    @Nullable String sourceReference) {
 
   /** Slice 3: where one component of the itinerary stands. */
   public record ComponentView(
@@ -104,6 +105,7 @@ public record TripResponse(
         trip.failureStage(),
         trip.failureCode(),
         trip.explanation(),
-        components.isEmpty() ? null : components.stream().map(ComponentView::from).toList());
+        components.isEmpty() ? null : components.stream().map(ComponentView::from).toList(),
+        trip.sourceReference());
   }
 }

@@ -1,0 +1,28 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://test-issuer/realms/travelos
+  kafka:
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+    consumer:
+      properties:
+        metadata.max.age.ms: 1000
+travelos:
+  grpc:
+    server:
+      port: 0
+  outbox:
+    poll-interval: 200ms
+  context:
+    sync-interval: 1h
+    scheduler-tick: 1h
+    connectors:
+      sandbox-webhook-secret: test-connector-secret
+      sandbox-page-size: 2

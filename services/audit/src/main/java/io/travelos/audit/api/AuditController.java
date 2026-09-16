@@ -46,6 +46,23 @@ public class AuditController {
     return DecisionLedger.from(tripId, trip.travelerId(), repository.trail(me.tenant(), tripId));
   }
 
+  public record DemandTrail(String candidateId, String travelerId, List<AuditRecord> events) {}
+
+  /**
+   * Slice 4: everything that happened to a detected travel demand, from detection to conversion.
+   */
+  @GetMapping("/demand/{candidateId}")
+  public DemandTrail demand(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String candidateId) {
+    TripIndexEntry entry =
+        repository
+            .findTrip(me.tenant(), candidateId)
+            .filter(t -> AuditAccess.canReadTrip(me, t))
+            .orElseThrow(() -> new ApiException.NotFound("demand candidate", candidateId));
+    return new DemandTrail(
+        candidateId, entry.travelerId(), repository.trail(me.tenant(), candidateId));
+  }
+
   /** Tenant-wide exploration for TRAVEL_ADMIN / FINANCE: "every order confirmed this week". */
   @GetMapping("/events")
   public List<AuditRecord> events(

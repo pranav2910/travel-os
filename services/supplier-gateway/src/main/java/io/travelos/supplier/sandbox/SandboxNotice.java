@@ -19,5 +19,15 @@ record SandboxNotice(
     @Nullable String severity,
     @Nullable Reaccommodation reaccommodation) {
 
-  record Reaccommodation(long fareDeltaMinor) {}
+  /**
+   * @param fareDeltaMinor what the designated replacement costs on top of the original fare
+   * @param nextDay when true the airline has nothing left today for this passenger: every flight on
+   *     the cancelled date is full, and the reaccommodation fares apply to the next date (a
+   *     controllable fixture for recoveries that move a hotel night)
+   */
+  record Reaccommodation(long fareDeltaMinor, @Nullable Boolean nextDay) {
+    boolean movesToNextDay() {
+      return nextDay != null && nextDay;
+    }
+  }
 }

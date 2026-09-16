@@ -8,7 +8,7 @@ PARTITIONS="${PARTITIONS:-3}"
 REPLICATION="${REPLICATION:-1}"
 KAFKA_TOPICS="${KAFKA_TOPICS:-/opt/kafka/bin/kafka-topics.sh}"
 
-TOPICS=(travel.intent travel.trip travel.search travel.policy travel.optimization travel.approval travel.order travel.disruption travel.expense travel.agent travel.audit)
+TOPICS=(travel.intent travel.trip travel.search travel.policy travel.optimization travel.approval travel.order travel.disruption travel.expense travel.demand travel.agent travel.audit)
 
 for topic in "${TOPICS[@]}"; do
   retention=604800000

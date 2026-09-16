@@ -39,12 +39,12 @@ public class SandboxDisruptionRepository {
     jdbc.sql(
             """
             INSERT INTO sandbox_reaccommodation (tenant_id, correlation_id, origin, destination, outbound_date, inbound_date, cabin,
-              cancelled_slot, cancelled_flight, replacement_slot, original_fare_minor, delta_minor, created_at)
-            VALUES (:tenant, :correlation, :origin, :destination, :out, :in, :cabin, :cancelled, :flight, :replacement, :fare, :delta, :now)
+              cancelled_slot, cancelled_flight, replacement_slot, original_fare_minor, delta_minor, next_day, created_at)
+            VALUES (:tenant, :correlation, :origin, :destination, :out, :in, :cabin, :cancelled, :flight, :replacement, :fare, :delta, :nextDay, :now)
             ON CONFLICT (tenant_id, correlation_id, origin, destination, outbound_date, cabin) DO UPDATE SET
               inbound_date = EXCLUDED.inbound_date, cancelled_slot = EXCLUDED.cancelled_slot, cancelled_flight = EXCLUDED.cancelled_flight,
               replacement_slot = EXCLUDED.replacement_slot, original_fare_minor = EXCLUDED.original_fare_minor,
-              delta_minor = EXCLUDED.delta_minor, created_at = EXCLUDED.created_at
+              delta_minor = EXCLUDED.delta_minor, next_day = EXCLUDED.next_day, created_at = EXCLUDED.created_at
             """)
         .param("tenant", r.tenantId())
         .param("correlation", r.correlationId())
@@ -58,6 +58,7 @@ public class SandboxDisruptionRepository {
         .param("replacement", r.replacementSlot())
         .param("fare", r.originalFareMinor())
         .param("delta", r.deltaMinor())
+        .param("nextDay", r.nextDay())
         .param("now", Timestamp.from(now))
         .update();
   }
@@ -94,7 +95,8 @@ public class SandboxDisruptionRepository {
                   rs.getString("cancelled_flight"),
                   rs.getInt("replacement_slot"),
                   rs.getLong("original_fare_minor"),
-                  rs.getLong("delta_minor"));
+                  rs.getLong("delta_minor"),
+                  rs.getBoolean("next_day"));
             })
         .optional();
   }

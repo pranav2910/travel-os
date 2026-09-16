@@ -169,6 +169,10 @@ message TravelerSnapshot {
 // asks it to move, and every move is validated against the lifecycle and recorded as history.
 service TravelCoreService {
   rpc GetTrip(GetTripRequest) returns (Trip);
+  // Slice 4: a trusted service (Enterprise Context) submits a trip on a person's behalf, e.g. when
+  // a detected travel demand is converted. The person is ctx.principal; their roles are relayed as
+  // validated by the caller's JWT. Idempotent by ctx.idempotency_key within the tenant.
+  rpc CreateTrip(CreateTripRequest) returns (Trip);
   // Idempotent: asking for the current status returns the trip unchanged.
   rpc TransitionTrip(TransitionTripRequest) returns (Trip);
   // Records what intent extraction concluded. EXTRACTED freezes the intent on a SUBMITTED trip;
@@ -226,4 +230,16 @@ message ApplyIntentExtractionRequest {
   repeated string assumptions = 7;
   double confidence = 8;
   travelos.common.v1.ModelCall call = 9;
+}
+
+// Slice 4: trip creation by a trusted service on a person's behalf.
+message CreateTripRequest {
+  travelos.common.v1.RequestContext ctx = 1;   // principal = the person; idempotency_key required
+  string traveler_id = 2;
+  TravelIntent intent = 3;                     // frozen intent (an itinerary or the Slice 1 shape)
+  string source = 4;                           // WEB | API | AGENT | CALENDAR | EMAIL | DEMAND
+  string source_reference = 5;                 // e.g. the demand candidate id dmd_<ulid>
+  string request_text = 6;                     // optional; untrusted, carried as data
+  repeated string actor_roles = 7;             // realm roles of ctx.principal, from their JWT
+  string actor_employee_id = 8;                // employee id of ctx.principal, from their JWT
 }

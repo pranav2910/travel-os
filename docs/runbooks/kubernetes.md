@@ -29,6 +29,8 @@ make kind-e2e2          # Slice 2: autonomous + approved disruption recovery, in
 make kind-chaos2        # Slice 2: order + optimizer outages parked at proven points, worker killed mid-ChangeOrder; one recovery
 make kind-e2e3          # Slice 3: multi-city itineraries (hotels, ground), revalidation, compensation, connected recovery
 make kind-chaos3        # Slice 3: a 7-component booking and its recovery held at proven points, worker killed; one booking each
+make kind-e2e4          # Slice 4: calendar/CRM/HRIS/expense demand detection -> a governed trip; Slice 3 carry-overs
+make kind-chaos4        # Slice 4: a connector sync under a source outage, a rate limit, the service and the worker killed; one candidate each
 make kind-rollback-demo # deploy a stand-in "next" release, roll back with helm, verify
 make kind-down
 ```
@@ -49,6 +51,7 @@ Host ports once deployed:
 | trip-planning (worker actuator) | http://localhost:18086 |
 | audit | http://localhost:18088 |
 | disruption | http://localhost:18089 (gRPC 9089 in-cluster) |
+| enterprise-context | http://localhost:18090 (gRPC 9090 in-cluster) |
 | optimization gRPC | localhost:19083 |
 | llm-gateway gRPC | localhost:19087 |
 | Keycloak | http://localhost:18180 (admin password in `deploy/kind/.secrets.env`) |

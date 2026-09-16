@@ -1,0 +1,16 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.demand.candidate-dismissed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T14:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+  "producer": "enterprise-context",
+  "data": {
+    "candidateId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+    "travelerId": "emp_1001",
+    "previousStatus": "NEEDS_REVIEW",
+    "dismissedBy": "human/alice",
+    "reason": "joining remotely"
+  }
+}

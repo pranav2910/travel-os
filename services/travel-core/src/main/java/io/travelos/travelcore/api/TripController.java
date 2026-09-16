@@ -50,6 +50,8 @@ public class TripController {
               request.source() == null ? TripSource.API : request.source(),
               request.request(),
               intent);
+    } catch (TravelIntent.HotelRequestException e) {
+      throw new ApiException.Unprocessable(e.code(), e.getMessage());
     } catch (IllegalArgumentException e) {
       throw new ApiException.Unprocessable("INTENT_INVALID", e.getMessage());
     }

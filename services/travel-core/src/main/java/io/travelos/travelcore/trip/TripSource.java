@@ -6,5 +6,7 @@ public enum TripSource {
   API,
   AGENT,
   CALENDAR,
-  EMAIL
+  EMAIL,
+  /** Slice 4: converted from a detected travel demand; the trip carries the candidate id. */
+  DEMAND
 }

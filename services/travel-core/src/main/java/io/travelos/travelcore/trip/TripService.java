@@ -59,6 +59,20 @@ public class TripService {
    */
   @Transactional
   public Trip create(RequestPrincipal me, CreateTrip command, String idempotencyKey) {
+    return create(me, command, idempotencyKey, null);
+  }
+
+  /**
+   * Slice 4: the same creation for a trusted service acting for a person (Enterprise Context
+   * converting a detected demand). {@code me} is the person as that service validated them; {@code
+   * sourceReference} names what the trip was made from and lands in travel.trip.created.
+   */
+  @Transactional
+  public Trip create(
+      RequestPrincipal me,
+      CreateTrip command,
+      String idempotencyKey,
+      @Nullable String sourceReference) {
     String travelerId =
         command.travelerId() == null ? me.employeeIdOrThrow() : command.travelerId();
     if (!TripAccess.canCreateFor(me, travelerId)) {
@@ -108,7 +122,8 @@ public class TripService {
             null,
             null,
             null,
-            null);
+            null,
+            sourceReference);
     trips.insert(trip);
     trips.appendHistory(trip, null, TripStatus.SUBMITTED, null, me.principal(), now);
     outbox.append(TripEvents.created(trip, null, clock));
@@ -333,8 +348,35 @@ public class TripService {
     if (x.intent() == null) {
       throw new IllegalArgumentException("EXTRACTED needs an intent");
     }
+    TravelIntent understood;
+    try {
+      understood = x.intent().withExplicitStay();
+    } catch (TravelIntent.HotelRequestException e) {
+      // The model understood a hotel the platform cannot pin to nights: refuse now, before any
+      // planning, with the same actionable code the API returns. The ledger keeps the extraction.
+      if (trip.status() == TripStatus.SUBMITTED) {
+        transition(
+            tenant,
+            actor,
+            new Transition(
+                trip.tripId(),
+                TripStatus.FAILED,
+                e.getMessage(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "INTENT",
+                e.code(),
+                null,
+                null));
+      }
+      return getInternal(tenant, trip.tripId());
+    }
     if (trip.intent() != null) {
-      if (trip.intent().equals(x.intent())) {
+      if (trip.intent().equals(understood)) {
         return trip;
       }
       throw new IllegalStateException("trip " + trip.tripId() + " already has a frozen intent");
@@ -343,7 +385,7 @@ public class TripService {
       throw new IllegalStateException(
           "intent can only be set on a SUBMITTED trip, not " + trip.status());
     }
-    Trip next = trip.withIntent(x.intent(), now);
+    Trip next = trip.withIntent(understood, now);
     if (!trips.update(next, trip.version())) {
       throw new IllegalStateException("trip " + trip.tripId() + " changed concurrently; retry");
     }

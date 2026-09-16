@@ -51,6 +51,16 @@ disruption:
     grpcFromApps: [trip-planning]
     grpcToApps:
       - { app: order, port: 9085 }
+enterprise-context:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30090 } }
+  env:
+    CONTEXT_SYNC_INTERVAL: 30s
+  networkPolicy:
+    httpFrom: *host
+    grpcFromApps: [trip-planning]
+    grpcToApps:
+      - { app: travel-core, port: 9081 }
 trip-planning:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { http: 30086 } }
@@ -64,6 +74,7 @@ trip-planning:
       - { app: order, port: 9085 }
       - { app: llm-gateway, port: 9087 }
       - { app: disruption, port: 9089 }
+      - { app: enterprise-context, port: 9090 }
 optimization:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { grpc: 30083 } }

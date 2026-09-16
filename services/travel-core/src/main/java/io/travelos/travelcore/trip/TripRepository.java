@@ -29,7 +29,7 @@ public class TripRepository {
       selected_bundle_id, optimization_run_id, policy_decision_id, approval_id, order_id,
       created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
       traveler_given_name, traveler_family_name, traveler_email, total_currency, total_minor,
-      failure_stage, failure_code, explanation, itinerary
+      failure_stage, failure_code, explanation, itinerary, source_reference
       """;
 
   private final JdbcClient jdbc;
@@ -46,13 +46,14 @@ public class TripRepository {
               origin, destination, earliest_departure, arrival_deadline, return_after, latest_return,
               purpose, hotel_required, travelers,
               created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
-              traveler_given_name, traveler_family_name, traveler_email, itinerary)
+              traveler_given_name, traveler_family_name, traveler_email, itinerary, source_reference)
             VALUES (:tripId, :tenantId, :travelerId, :status, :source, :requestText,
               :origin, :destination, :earliestDeparture, :arrivalDeadline, :returnAfter, :latestReturn,
               :purpose, :hotelRequired, :travelers,
               :createdBy, :idempotencyKey, :requestFingerprint, :version, :createdAt, :updatedAt,
-              :givenName, :familyName, :email, CAST(:itinerary AS jsonb))
+              :givenName, :familyName, :email, CAST(:itinerary AS jsonb), :sourceReference)
             """)
+        .param("sourceReference", trip.sourceReference())
         .param(
             "itinerary",
             intent == null || intent.itinerary() == null
@@ -272,7 +273,8 @@ public class TripRepository {
         total,
         rs.getString("failure_stage"),
         rs.getString("failure_code"),
-        rs.getString("explanation"));
+        rs.getString("explanation"),
+        rs.getString("source_reference"));
   }
 
   private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {

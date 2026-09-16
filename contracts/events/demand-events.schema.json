@@ -1,0 +1,500 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/demand-events.schema.json",
+  "title": "DemandEvents",
+  "$defs": {
+    "candidateId": {
+      "type": "string",
+      "pattern": "^dmd_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "connectorId": {
+      "type": "string",
+      "pattern": "^cnx_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^syn_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "connectorKind": {
+      "enum": [
+        "CALENDAR",
+        "CRM",
+        "HRIS",
+        "EXPENSE"
+      ]
+    },
+    "status": {
+      "enum": [
+        "NEEDS_REVIEW",
+        "ACTIONABLE",
+        "DISMISSED",
+        "WITHDRAWN",
+        "CONVERTED"
+      ]
+    },
+    "sourceRef": {
+      "type": "object",
+      "required": [
+        "connectorId",
+        "kind",
+        "sourceId",
+        "revision",
+        "role"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "connectorId": {
+          "$ref": "#/$defs/connectorId"
+        },
+        "kind": {
+          "$ref": "#/$defs/connectorKind"
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "role": {
+          "enum": [
+            "PRIMARY",
+            "CORRELATED",
+            "ENRICHMENT",
+            "DUPLICATE_SIGNAL"
+          ]
+        }
+      }
+    },
+    "travel.demand.sync-requested": {
+      "type": "object",
+      "required": [
+        "connectorId",
+        "kind",
+        "provider",
+        "runId",
+        "trigger"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "connectorId": {
+          "$ref": "#/$defs/connectorId"
+        },
+        "kind": {
+          "$ref": "#/$defs/connectorKind"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "runId": {
+          "$ref": "#/$defs/runId"
+        },
+        "trigger": {
+          "enum": [
+            "SCHEDULE",
+            "WEBHOOK",
+            "MANUAL"
+          ]
+        },
+        "requestedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "notificationId": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    },
+    "travel.demand.sync-completed": {
+      "type": "object",
+      "required": [
+        "connectorId",
+        "kind",
+        "runId",
+        "pages",
+        "itemsSeen",
+        "itemsChanged",
+        "candidatesTouched"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "connectorId": {
+          "$ref": "#/$defs/connectorId"
+        },
+        "kind": {
+          "$ref": "#/$defs/connectorKind"
+        },
+        "runId": {
+          "$ref": "#/$defs/runId"
+        },
+        "pages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "itemsSeen": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "itemsChanged": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "candidatesTouched": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "travel.demand.sync-failed": {
+      "type": "object",
+      "required": [
+        "connectorId",
+        "kind",
+        "runId",
+        "code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "connectorId": {
+          "$ref": "#/$defs/connectorId"
+        },
+        "kind": {
+          "$ref": "#/$defs/connectorKind"
+        },
+        "runId": {
+          "$ref": "#/$defs/runId"
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "travel.demand.candidate-detected": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "travelerId",
+        "status",
+        "rulesVersion",
+        "sources",
+        "explanation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "destination": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "origin": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rulesVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "reviewReasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "travel.demand.candidate-updated": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "travelerId",
+        "status",
+        "previousStatus",
+        "reason",
+        "rulesVersion",
+        "sources",
+        "explanation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "destination": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "origin": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "timeZone": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rulesVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "reviewReasons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "previousStatus": {
+          "$ref": "#/$defs/status"
+        },
+        "reason": {
+          "enum": [
+            "RESCHEDULED",
+            "DETAILS_RESOLVED",
+            "SOURCE_ADDED",
+            "SOURCE_CHANGED",
+            "REVIEW_REQUIRED",
+            "RESTORED"
+          ]
+        }
+      }
+    },
+    "travel.demand.candidate-withdrawn": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "travelerId",
+        "previousStatus",
+        "reason",
+        "sources"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "previousStatus": {
+          "$ref": "#/$defs/status"
+        },
+        "reason": {
+          "enum": [
+            "SOURCE_CANCELLED",
+            "SOURCE_DELETED",
+            "ATTENDANCE_DECLINED",
+            "TRAVELER_INACTIVE",
+            "NO_LONGER_TRAVEL"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "travel.demand.candidate-dismissed": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "travelerId",
+        "previousStatus",
+        "dismissedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "previousStatus": {
+          "$ref": "#/$defs/status"
+        },
+        "dismissedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "travel.demand.candidate-converted": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "travelerId",
+        "tripId",
+        "convertedBy",
+        "sources"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "convertedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "destination": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "travel.demand.candidate-changed-after-conversion": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "travelerId",
+        "tripId",
+        "change",
+        "sources",
+        "explanation"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "$ref": "#/$defs/candidateId"
+        },
+        "travelerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "change": {
+          "enum": [
+            "RESCHEDULED",
+            "CANCELLED",
+            "LOCATION_CHANGED"
+          ]
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/sourceRef"
+          }
+        },
+        "explanation": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    }
+  }
+}

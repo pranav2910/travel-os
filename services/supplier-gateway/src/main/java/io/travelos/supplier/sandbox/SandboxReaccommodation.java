@@ -12,6 +12,10 @@ import org.jspecify.annotations.Nullable;
  * {@code originalFareMinor + deltaMinor}; every other option costs more, in a fixed order, so tests
  * know precisely which itinerary the optimizer will pick and what it costs.
  *
+ * <p>With {@code nextDay} the airline has nothing left on the cancelled date for this passenger
+ * (every same-day flight is full) and the reaccommodation fares apply to the next date instead: the
+ * controllable fixture behind "the recovery moves the hotel to the next night" (Slice 4 brief).
+ *
  * <p>This is the synthetic supplier being deliberately deterministic (the brief for Slice 2); a
  * real airline's reaccommodation is whatever their revenue management says that day.
  */
@@ -27,7 +31,8 @@ record SandboxReaccommodation(
     String cancelledFlight,
     int replacementSlot,
     long originalFareMinor,
-    long deltaMinor) {
+    long deltaMinor,
+    boolean nextDay) {
 
   /** Whether this search/price/change is the disrupted trip's own, and therefore sees the fares. */
   boolean repricesFor(String correlationId) {

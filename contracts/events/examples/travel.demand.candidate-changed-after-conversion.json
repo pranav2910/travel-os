@@ -1,0 +1,25 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.demand.candidate-changed-after-conversion",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T14:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+  "producer": "enterprise-context",
+  "data": {
+    "candidateId": "dmd_01ARZ3NDEKTSV4RRFFQ69G5FB2",
+    "travelerId": "emp_1001",
+    "tripId": "trip_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "change": "RESCHEDULED",
+    "sources": [
+      {
+        "connectorId": "cnx_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+        "kind": "CALENDAR",
+        "sourceId": "evt-acme-2026-10-06-seattle-qbr",
+        "revision": 5,
+        "role": "PRIMARY"
+      }
+    ],
+    "explanation": "'Seattle QBR' moved to 2026-10-13 after the trip was requested: the trip was not changed automatically; review it."
+  }
+}

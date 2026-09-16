@@ -31,7 +31,8 @@ public record DecisionLedger(
     int eventCount,
     List<Map<String, Object>> components,
     List<Map<String, Object>> replans,
-    @Nullable Map<String, Object> compensation) {
+    @Nullable Map<String, Object> compensation,
+    @Nullable Map<String, Object> origin) {
 
   static DecisionLedger from(String tripId, String travelerId, List<AuditRecord> trail) {
     String status = "SUBMITTED";
@@ -50,6 +51,7 @@ public record DecisionLedger(
     List<Map<String, Object>> replans = new ArrayList<>();
     Map<String, Object> compensation = null;
     Map<String, Map<String, Object>> exposuresById = new LinkedHashMap<>();
+    Map<String, Object> origin = null;
 
     for (AuditRecord r : trail) {
       Map<String, Object> d = r.data();
@@ -57,6 +59,14 @@ public record DecisionLedger(
         recovery(disruptionsById, r);
       }
       switch (r.eventType()) {
+        case "travel.trip.created" -> {
+          if (d.get("sourceReference") != null) {
+            origin = new LinkedHashMap<>();
+            origin.put("source", d.get("source"));
+            origin.put("sourceReference", d.get("sourceReference"));
+            origin.put("requestedBy", d.get("requestedBy"));
+          }
+        }
         case "travel.intent.detected" -> {
           intent = new LinkedHashMap<>(d);
           intent.put("occurredAt", r.occurredAt().toString());
@@ -165,6 +175,16 @@ public record DecisionLedger(
     }
 
     List<String> narrative = new ArrayList<>();
+    if (origin != null) {
+      narrative.add(
+          "The trip was requested from detected travel demand "
+              + origin.get("sourceReference")
+              + " (source "
+              + origin.get("source")
+              + ") by "
+              + origin.get("requestedBy")
+              + ".");
+    }
     if (intent != null) {
       if ("EXTRACTED".equals(intent.get("result"))) {
         narrative.add(
@@ -322,7 +342,8 @@ public record DecisionLedger(
         trail.size(),
         new ArrayList<>(componentsById.values()),
         replans,
-        compensation);
+        compensation,
+        origin);
   }
 
   /** Slice 3: the latest reported state of each component wins. */

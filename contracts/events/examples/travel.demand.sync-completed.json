@@ -1,0 +1,18 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.demand.sync-completed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T14:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "syn_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+  "producer": "enterprise-context",
+  "data": {
+    "connectorId": "cnx_01ARZ3NDEKTSV4RRFFQ69G5FB3",
+    "kind": "CALENDAR",
+    "runId": "syn_01ARZ3NDEKTSV4RRFFQ69G5FB5",
+    "pages": 3,
+    "itemsSeen": 41,
+    "itemsChanged": 2,
+    "candidatesTouched": 1
+  }
+}

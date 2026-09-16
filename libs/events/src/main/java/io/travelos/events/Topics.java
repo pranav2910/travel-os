@@ -17,6 +17,7 @@ public final class Topics {
   public static final String ORDER = "travel.order";
   public static final String DISRUPTION = "travel.disruption";
   public static final String EXPENSE = "travel.expense";
+  public static final String DEMAND = "travel.demand";
   public static final String AGENT = "travel.agent";
   public static final String AUDIT = "travel.audit";
 
@@ -31,6 +32,7 @@ public final class Topics {
           ORDER,
           DISRUPTION,
           EXPENSE,
+          DEMAND,
           AGENT,
           AUDIT);
 
