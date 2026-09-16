@@ -148,6 +148,8 @@ def test_every_optimization_publishes_exactly_one_completed_event(recording):
         "feasibleCandidates",
         "solver",
         "solveTimeMs",
+        "learning",
+        "candidates",
     }
 
 

@@ -18,6 +18,7 @@ import io.travelos.contracts.llm.v1.ExtractIntentResponse;
 import io.travelos.contracts.offer.v1.Bundle;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.optimization.v1.ConstraintSet;
+import io.travelos.contracts.optimization.v1.LearningInputs;
 import io.travelos.contracts.optimization.v1.OptimizationPreferences;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
@@ -40,6 +41,8 @@ import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.workflows.TripPlanning;
 import io.travelos.workflows.TripPlanning.ApprovalDecision;
+import io.travelos.workflows.learning.LearningActivities;
+import io.travelos.workflows.learning.LearningResolution;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -128,6 +131,9 @@ public class TripWorkflowImpl implements TripWorkflow {
                       .setMaximumAttempts(8)
                       .build())
               .build());
+
+  /** Slice 5: learning inputs, resolved once per attempt and pinned by the history (3 tries). */
+  private final LearningActivities learning = LearningResolution.stub();
 
   private TripPlanning.Stage stage = TripPlanning.Stage.LOADING;
   private @Nullable ApprovalDecision decision;
@@ -263,8 +269,11 @@ public class TripWorkflowImpl implements TripWorkflow {
         return fail(tenant, tripId, "POLICY", "ALL_CANDIDATES_DENIED", denialSummary(policy));
       }
 
-      // ---- optimize
+      // ---- optimize (with the learning inputs pinned to this attempt; baseline when unavailable)
       stage = TripPlanning.Stage.OPTIMIZING;
+      LearningInputs learned =
+          LearningResolution.resolve(
+              learning, log, tenant, tripId, trip.getTravelerId(), "PLANNING");
       OptimizeTripResponse optimized =
           activities.optimize(
               OptimizeTripRequest.newBuilder()
@@ -281,6 +290,7 @@ public class TripWorkflowImpl implements TripWorkflow {
                                   .setRisk(0.15)
                                   .setPreference(0.1)
                                   .setExperience(0.1)))
+                  .setLearning(learned)
                   .build());
       if (optimized.getSelectedBundleId().isBlank()) {
         return fail(
@@ -506,6 +516,11 @@ public class TripWorkflowImpl implements TripWorkflow {
     @Override
     public RequestContext ctx(String tenant, String tripId, String idempotencyKey) {
       return TripWorkflowImpl.ctx(tenant, tripId, idempotencyKey);
+    }
+
+    @Override
+    public LearningInputs resolveLearning(String tenant, String tripId, String travelerId) {
+      return LearningResolution.resolve(learning, log, tenant, tripId, travelerId, "PLANNING");
     }
   }
 

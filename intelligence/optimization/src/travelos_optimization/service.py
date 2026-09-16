@@ -12,6 +12,7 @@ from travelos.common.v1 import common_pb2
 from travelos.offer.v1 import offer_pb2
 from travelos.optimization.v1 import optimization_pb2, optimization_pb2_grpc
 from travelos_optimization import events, ids, itinerary, solver, tracing
+from travelos_optimization import learning as learning_inputs
 from travelos_optimization.itinerary import Component, ComponentOffer, ItineraryConstraints
 from travelos_optimization.model import (
     UTC,
@@ -163,6 +164,7 @@ def _component_offer(o: offer_pb2.Offer) -> ComponentOffer:
             duration_minutes=int((dropoff - pickup).total_seconds() // 60)
             if pickup and dropoff
             else 0,
+            vendor_id=g.vendor_id or None,
         )
     raise ValueError(f"offer {o.offer_id} is neither air, hotel nor ground")
 
@@ -224,6 +226,63 @@ def _breakdown(b) -> optimization_pb2.ScoreBreakdown:
     )
 
 
+def _evidence(e: learning_inputs.Evidence) -> optimization_pb2.LearningEvidence:
+    out = optimization_pb2.LearningEvidence(
+        mode=e.mode,
+        profile_id=e.profile_id,
+        algorithm_version=e.algorithm_version,
+        evidence_class=e.evidence_class,
+        applied=e.applied,
+        fallback_reason=e.fallback_reason,
+        baseline_selected_id=e.baseline_selected_id,
+        learned_selected_id=e.learned_selected_id,
+        max_adjustment=e.max_adjustment,
+    )
+    for c in e.contributions:
+        out.contributions.add(
+            candidate_id=c.candidate_id,
+            component_id=c.component_id,
+            supplier_keys=list(c.supplier_keys),
+            baseline_score=c.baseline_score,
+            adjustment=c.adjustment,
+            learned_score=c.learned_score,
+            reasons=list(c.reasons),
+        )
+    return out
+
+
+def _evidence_data(e: learning_inputs.Evidence) -> dict:
+    """The event's view of the evidence: contributions that moved something, bounded."""
+    data: dict = {"mode": e.mode, "applied": e.applied}
+    if e.profile_id:
+        data["profileId"] = e.profile_id
+    if e.algorithm_version:
+        data["algorithmVersion"] = e.algorithm_version
+    if e.evidence_class:
+        data["evidenceClass"] = e.evidence_class
+    if e.fallback_reason:
+        data["fallbackReason"] = e.fallback_reason
+    if e.baseline_selected_id:
+        data["baselineSelectedId"] = e.baseline_selected_id
+    if e.learned_selected_id:
+        data["learnedSelectedId"] = e.learned_selected_id
+    data["maxAdjustment"] = e.max_adjustment
+    moved = [c for c in e.contributions if c.adjustment != 0.0][:50]
+    data["contributions"] = [
+        {
+            "candidateId": c.candidate_id,
+            **({"componentId": c.component_id} if c.component_id else {}),
+            "supplierKeys": list(c.supplier_keys),
+            "baselineScore": round(c.baseline_score, 3),
+            "adjustment": round(c.adjustment, 3),
+            "learnedScore": round(c.learned_score, 3),
+            "reasons": list(c.reasons),
+        }
+        for c in moved
+    ]
+    return data
+
+
 class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
     def __init__(self, publisher: events.EventPublisher | None = None) -> None:
         self._publisher = publisher or events.NoopPublisher()
@@ -240,7 +299,10 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
             raise  # unreachable; keeps type checkers happy
 
-        result = solver.optimize(candidates, k, p)
+        inputs = learning_inputs.from_proto(
+            request.learning if request.HasField("learning") else None
+        )
+        result = solver.optimize(candidates, k, p, inputs)
         run_id = ids.new_id("opt")
         feasible = sum(1 for r in result.ranking if r.feasible)
         log.info(
@@ -273,7 +335,30 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
                 infeasibility_reasons=list(r.infeasibility_reasons),
                 rank=r.rank,
             )
-        self._publish_completed(request, run_id, result, len(candidates), feasible, context)
+        if result.learning is not None:
+            response.learning.CopyFrom(_evidence(result.learning))
+        summaries = [
+            {
+                "candidateId": c.bundle_id,
+                "feasible": True,
+                "score": round(
+                    next(r.score for r in result.ranking if r.bundle_id == c.bundle_id), 3
+                ),
+                "supplierKeys": list(learning_inputs.keys_of_candidate(c)),
+                "provider": c.providers[0] if c.providers else "",
+            }
+            for c in candidates
+            if any(r.bundle_id == c.bundle_id and r.feasible for r in result.ranking)
+        ][:200]
+        if result.learning is not None:
+            by_id = {x.candidate_id: x for x in result.learning.contributions}
+            for summary in summaries:
+                if summary["candidateId"] in by_id:
+                    summary["score"] = round(by_id[summary["candidateId"]].baseline_score, 3)
+                    summary["learnedScore"] = round(by_id[summary["candidateId"]].learned_score, 3)
+        self._publish_completed(
+            request, run_id, result, len(candidates), feasible, context, summaries
+        )
         return response
 
     def OptimizeItinerary(self, request, context):  # noqa: N802 (gRPC naming)
@@ -290,7 +375,10 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
             raise  # unreachable; keeps type checkers happy
 
-        result = itinerary.optimize_itinerary(components, k, p)
+        inputs = learning_inputs.from_proto(
+            request.learning if request.HasField("learning") else None
+        )
+        result = itinerary.optimize_itinerary(components, k, p, inputs)
         run_id = ids.new_id("opt")
         offers_by_id = {o.offer_id: o for c in request.components for o in c.offers}
         log.info(
@@ -345,10 +433,44 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
                 outcome=sel.outcome,
                 infeasibility_reasons=list(sel.reasons),
             )
-        self._publish_itinerary_completed(request, run_id, result, bundle_id, context)
+        if result.learning is not None:
+            response.learning.CopyFrom(_evidence(result.learning))
+        by_offer = {o.offer_id: o for c in components for o in c.offers}
+        summaries = []
+        learned_by_id = (
+            {x.candidate_id: x for x in result.learning.contributions}
+            if result.learning is not None
+            else {}
+        )
+        for sel in result.selections:
+            shown = 0
+            for r in sel.ranking:
+                if not r.feasible:
+                    continue
+                if shown >= 10 and r.bundle_id != sel.offer_id:
+                    continue
+                shown += 1
+                o = by_offer[r.bundle_id]
+                entry = {
+                    "candidateId": r.bundle_id,
+                    "componentId": sel.component_id,
+                    "feasible": True,
+                    "score": round(r.score, 3),
+                    "supplierKeys": list(learning_inputs.keys_of_offer(o)),
+                    "provider": o.provider,
+                }
+                if r.bundle_id in learned_by_id:
+                    entry["score"] = round(learned_by_id[r.bundle_id].baseline_score, 3)
+                    entry["learnedScore"] = round(learned_by_id[r.bundle_id].learned_score, 3)
+                summaries.append(entry)
+        self._publish_itinerary_completed(
+            request, run_id, result, bundle_id, context, summaries[:200]
+        )
         return response
 
-    def _publish_itinerary_completed(self, request, run_id, result, bundle_id, context):
+    def _publish_itinerary_completed(
+        self, request, run_id, result, bundle_id, context, candidates=None
+    ):
         data = {
             "optimizationRunId": run_id,
             "tripId": request.trip_id,
@@ -360,6 +482,10 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
         if bundle_id:
             data["selectedBundleId"] = bundle_id
             data["selectedScore"] = round(float(result.score), 3)
+        if result.learning is not None:
+            data["learning"] = _evidence_data(result.learning)
+        if candidates:
+            data["candidates"] = candidates
         event = events.envelope(
             "travel.optimization.completed",
             request.ctx.tenant_id,
@@ -376,7 +502,9 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
                 f"OPTIMIZATION_EVENT_NOT_PUBLISHED: {e}",
             )
 
-    def _publish_completed(self, request, run_id, result, evaluated, feasible, context):
+    def _publish_completed(
+        self, request, run_id, result, evaluated, feasible, context, candidates=None
+    ):
         """travel.optimization.completed: the run is a domain fact, not just a return value."""
         data = {
             "optimizationRunId": run_id,
@@ -386,6 +514,10 @@ class OptimizationService(optimization_pb2_grpc.OptimizationServiceServicer):
             "solver": result.solver,
             "solveTimeMs": int(result.solve_time_ms),
         }
+        if result.learning is not None:
+            data["learning"] = _evidence_data(result.learning)
+        if candidates:
+            data["candidates"] = candidates
         if result.selected_bundle_id:
             data["selectedBundleId"] = result.selected_bundle_id
             selected = next(

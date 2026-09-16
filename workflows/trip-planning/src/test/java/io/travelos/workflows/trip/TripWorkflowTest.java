@@ -31,6 +31,8 @@ import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
 import io.travelos.contracts.optimization.v1.ComponentCandidates;
 import io.travelos.contracts.optimization.v1.ComponentSelection;
+import io.travelos.contracts.optimization.v1.LearningAdjustment;
+import io.travelos.contracts.optimization.v1.LearningInputs;
 import io.travelos.contracts.optimization.v1.OptimizeItineraryRequest;
 import io.travelos.contracts.optimization.v1.OptimizeItineraryResponse;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
@@ -69,6 +71,7 @@ import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.contracts.trip.v1.UpdateComponentsRequest;
 import io.travelos.workflows.TripPlanning;
+import io.travelos.workflows.learning.LearningActivities;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -94,6 +97,7 @@ class TripWorkflowTest {
 
   private TestWorkflowEnvironment env;
   private TripActivities activities;
+  private LearningActivities learning;
   private WorkflowClient client;
   private final List<TransitionTripRequest> transitions = new CopyOnWriteArrayList<>();
 
@@ -103,7 +107,8 @@ class TripWorkflowTest {
     Worker worker = env.newWorker(TripPlanning.TASK_QUEUE);
     worker.registerWorkflowImplementationTypes(TripWorkflowImpl.class);
     activities = mock(TripActivities.class);
-    worker.registerActivitiesImplementations(activities);
+    learning = mock(LearningActivities.class);
+    worker.registerActivitiesImplementations(activities, learning);
     env.start();
     client = env.getWorkflowClient();
 
@@ -131,6 +136,9 @@ class TripWorkflowTest {
     when(activities.extractIntent(any()))
         .thenReturn(extracted(ExtractIntentResponse.Result.EXTRACTED));
     when(activities.applyIntentExtraction(any())).thenReturn(trip(TripStatus.SUBMITTED, true));
+    when(learning.resolve(anyString(), anyString(), anyString(), anyString()))
+        .thenReturn(
+            LearningInputs.newBuilder().setMode("OFF").setFallbackReason("MODE_OFF").build());
   }
 
   @AfterEach
@@ -803,6 +811,74 @@ class TripWorkflowTest {
   }
 
   // ------------------------------------------------------------------ helpers
+
+  // ------------------------------------------------------------------ Slice 5: learning inputs
+
+  @Test
+  void learningInputsAreResolvedOnceAndPinnedAcrossAnOptimizerRetry() {
+    LearningInputs pinned =
+        LearningInputs.newBuilder()
+            .setMode("ACTIVE")
+            .setProfileId("lp_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+            .setAlgorithmVersion("reliability-v1")
+            .setEvidenceClass("SANDBOX")
+            .setMaxAdjustment(10.0)
+            .addAdjustments(
+                LearningAdjustment.newBuilder()
+                    .setSupplierKey("air:DL")
+                    .setAdjustment(-6.5)
+                    .setSource("SUPPLIER_RELIABILITY"))
+            .build();
+    // the profile changes between the two resolutions a naive planner would make
+    when(learning.resolve(anyString(), anyString(), anyString(), anyString()))
+        .thenReturn(pinned)
+        .thenReturn(pinned.toBuilder().setProfileId("lp_01ARZ3NDEKTSV4RRFFQ69G5FB2").build());
+    java.util.concurrent.atomic.AtomicInteger optimizeCalls =
+        new java.util.concurrent.atomic.AtomicInteger();
+    List<OptimizeTripRequest> optimizeRequests = new CopyOnWriteArrayList<>();
+    doAnswer(
+            inv -> {
+              optimizeRequests.add(inv.getArgument(0));
+              if (optimizeCalls.incrementAndGet() == 1) {
+                throw new RuntimeException("optimizer restarting"); // retryable
+              }
+              return optimized(inv.getArgument(0), "bdl_" + OFFER_CHEAP.substring(4));
+            })
+        .when(activities)
+        .optimize(any());
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+
+    TripWorkflow.Outcome outcome = result(start());
+
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    verify(learning, times(1)).resolve(anyString(), anyString(), anyString(), anyString());
+    assertThat(optimizeRequests).hasSize(2);
+    assertThat(optimizeRequests.get(0).getLearning()).isEqualTo(pinned);
+    assertThat(optimizeRequests.get(1).getLearning())
+        .as(
+            "the retry sees the inputs pinned to the attempt, not the profile that changed meanwhile")
+        .isEqualTo(pinned);
+    assertThat(optimizeRequests.get(1).getLearning().getProfileId())
+        .isEqualTo("lp_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+  }
+
+  @Test
+  void learningOutageFallsBackToTheBaselineWithoutDelayingTheTrip() {
+    when(learning.resolve(anyString(), anyString(), anyString(), anyString()))
+        .thenThrow(new RuntimeException("learning service down"));
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+
+    TripWorkflow.Outcome outcome = result(start());
+
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    verify(learning, times(3)).resolve(anyString(), anyString(), anyString(), anyString());
+    ArgumentCaptor<OptimizeTripRequest> optRequest =
+        ArgumentCaptor.forClass(OptimizeTripRequest.class);
+    verify(activities).optimize(optRequest.capture());
+    assertThat(optRequest.getValue().getLearning().getMode()).isEqualTo("OFF");
+    assertThat(optRequest.getValue().getLearning().getFallbackReason())
+        .isEqualTo("LEARNING_UNAVAILABLE");
+  }
 
   private TripWorkflow start() {
     TripWorkflow workflow =

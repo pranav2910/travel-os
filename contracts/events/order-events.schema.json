@@ -50,6 +50,15 @@
         },
         "failureCode": {
           "type": "string"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supplierKey": {
+          "type": "string",
+          "pattern": "^(air|hotel|ground):.+$",
+          "description": "air:<carrier> | hotel:<property id> | ground:<vendor id>: the supplier an outcome of this item is attributed to (Slice 5)"
         }
       }
     },

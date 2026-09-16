@@ -14,6 +14,7 @@ import io.travelos.contracts.offer.v1.OfferType;
 import io.travelos.contracts.optimization.v1.ComponentCandidates;
 import io.travelos.contracts.optimization.v1.ComponentSelection;
 import io.travelos.contracts.optimization.v1.ItineraryConstraints;
+import io.travelos.contracts.optimization.v1.LearningInputs;
 import io.travelos.contracts.optimization.v1.OptimizationPreferences;
 import io.travelos.contracts.optimization.v1.OptimizeItineraryRequest;
 import io.travelos.contracts.optimization.v1.OptimizeItineraryResponse;
@@ -100,6 +101,9 @@ final class ItineraryFlow {
         int permitted);
 
     RequestContext ctx(String tenant, String tripId, String idempotencyKey);
+
+    /** Slice 5: the learning inputs for this attempt, resolved once and pinned by the history. */
+    LearningInputs resolveLearning(String tenant, String tripId, String travelerId);
   }
 
   static final int MIN_CONNECTION_MINUTES = 60;
@@ -225,6 +229,7 @@ final class ItineraryFlow {
     for (Component c : components) {
       optimize.addComponents(candidates(c, permittedByComponent.get(c.id()), legs));
     }
+    optimize.setLearning(host.resolveLearning(tenant, tripId, trip.getTravelerId()));
     OptimizeItineraryResponse optimized = activities.optimizeItinerary(optimize.build());
     if (!optimized.hasSelected() || optimized.getSelected().getOffersCount() == 0) {
       for (ComponentSelection sel : optimized.getComponentsList()) {

@@ -5,17 +5,182 @@
   "$defs": {
     "travel.optimization.completed": {
       "type": "object",
-      "required": ["optimizationRunId", "tripId", "candidatesEvaluated", "feasibleCandidates", "solver"],
+      "required": [
+        "optimizationRunId",
+        "tripId",
+        "candidatesEvaluated",
+        "feasibleCandidates",
+        "solver"
+      ],
       "additionalProperties": false,
       "properties": {
-        "optimizationRunId": { "$ref": "common.schema.json#/$defs/optimizationRunId" },
-        "tripId": { "$ref": "common.schema.json#/$defs/tripId" },
-        "selectedBundleId": { "$ref": "common.schema.json#/$defs/bundleId" },
-        "selectedScore": { "type": "number", "minimum": 0, "maximum": 100 },
-        "candidatesEvaluated": { "type": "integer", "minimum": 0 },
-        "feasibleCandidates": { "type": "integer", "minimum": 0 },
-        "solver": { "type": "string", "minLength": 1 },
-        "solveTimeMs": { "type": "integer", "minimum": 0 }
+        "optimizationRunId": {
+          "$ref": "common.schema.json#/$defs/optimizationRunId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "selectedBundleId": {
+          "$ref": "common.schema.json#/$defs/bundleId"
+        },
+        "selectedScore": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "candidatesEvaluated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "feasibleCandidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "solver": {
+          "type": "string",
+          "minLength": 1
+        },
+        "solveTimeMs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "learning": {
+          "$ref": "#/$defs/learningEvidence"
+        },
+        "candidates": {
+          "type": "array",
+          "maxItems": 200,
+          "items": {
+            "$ref": "#/$defs/candidateSummary"
+          },
+          "description": "the feasible candidates (bounded), each with the supplier keys an outcome would be attributed to: what an evaluation needs to replay this decision"
+        }
+      }
+    },
+    "learningContribution": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "baselineScore",
+        "adjustment",
+        "learnedScore"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "componentId": {
+          "type": "string"
+        },
+        "supplierKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "baselineScore": {
+          "type": "number"
+        },
+        "adjustment": {
+          "type": "number"
+        },
+        "learnedScore": {
+          "type": "number"
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "learningEvidence": {
+      "type": "object",
+      "required": [
+        "mode",
+        "applied"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "OFF",
+            "SHADOW",
+            "ACTIVE"
+          ]
+        },
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "algorithmVersion": {
+          "type": "string"
+        },
+        "evidenceClass": {
+          "enum": [
+            "SANDBOX",
+            "LIVE"
+          ]
+        },
+        "applied": {
+          "type": "boolean"
+        },
+        "fallbackReason": {
+          "type": "string"
+        },
+        "baselineSelectedId": {
+          "type": "string"
+        },
+        "learnedSelectedId": {
+          "type": "string"
+        },
+        "maxAdjustment": {
+          "type": "number"
+        },
+        "contributions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/learningContribution"
+          }
+        }
+      }
+    },
+    "candidateSummary": {
+      "type": "object",
+      "required": [
+        "candidateId",
+        "feasible"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidateId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "componentId": {
+          "type": "string"
+        },
+        "feasible": {
+          "type": "boolean"
+        },
+        "score": {
+          "type": "number"
+        },
+        "learnedScore": {
+          "type": "number"
+        },
+        "supplierKeys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "provider": {
+          "type": "string"
+        }
       }
     }
   }

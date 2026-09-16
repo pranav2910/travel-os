@@ -1,0 +1,16 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.learning.profile-rolled-back",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T10:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB7",
+  "producer": "learning",
+  "data": {
+    "profileId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB7",
+    "previousProfileId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+    "rolledBackBy": "human/carol",
+    "mode": "SHADOW",
+    "configVersion": 5
+  }
+}

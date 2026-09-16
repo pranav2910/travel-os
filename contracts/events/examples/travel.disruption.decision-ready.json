@@ -1,8 +1,53 @@
 {
   "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S4",
   "eventType": "travel.disruption.decision-ready",
-  "eventVersion": 1, "occurredAt": "2026-09-13T14:05:12Z", "tenantId": "acme", "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-13T14:05:12Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
   "causationId": "dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
   "producer": "disruption",
-  "data": {"disruptionId":"dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD","tripId":"trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB","orderId":"ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG","candidatesSearched":17,"candidatesPermitted":11,"candidatesFeasible":9,"rejected":[{"bundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RX","stage":"POLICY","reasonCodes":["CABIN_NOT_PERMITTED"],"total":{"currency":"USD","amountMinor":130000}}],"selectedBundleId":"bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD","selectedScore":88.2,"originalTotal":{"currency":"USD","amountMinor":49558},"replacementTotal":{"currency":"USD","amountMinor":56858},"incrementalCost":{"currency":"USD","amountMinor":7300},"policyDecisionId":"pd_01K4Q0N7S6Z2X8G5H3J9M1P7RK","policyId":"US_STANDARD_TRAVEL","policyVersion":2,"optimizationRunId":"opt_01K4Q0N7S6Z2X8G5H3J9M1P7RE","autonomyOutcome":"ALLOW","reasonCodes":[]}
+  "data": {
+    "disruptionId": "dsr_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "candidatesSearched": 17,
+    "candidatesPermitted": 11,
+    "candidatesFeasible": 9,
+    "rejected": [
+      {
+        "bundleId": "bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RX",
+        "stage": "POLICY",
+        "reasonCodes": [
+          "CABIN_NOT_PERMITTED"
+        ],
+        "total": {
+          "currency": "USD",
+          "amountMinor": 130000
+        }
+      }
+    ],
+    "selectedBundleId": "bdl_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+    "selectedScore": 88.2,
+    "originalTotal": {
+      "currency": "USD",
+      "amountMinor": 49558
+    },
+    "replacementTotal": {
+      "currency": "USD",
+      "amountMinor": 56858
+    },
+    "incrementalCost": {
+      "currency": "USD",
+      "amountMinor": 7300
+    },
+    "policyDecisionId": "pd_01K4Q0N7S6Z2X8G5H3J9M1P7RK",
+    "policyId": "US_STANDARD_TRAVEL",
+    "policyVersion": 2,
+    "optimizationRunId": "opt_01K4Q0N7S6Z2X8G5H3J9M1P7RE",
+    "autonomyOutcome": "ALLOW",
+    "reasonCodes": [],
+    "learningMode": "SHADOW",
+    "learningProfileId": "lp_01K4Q0N7S6Z2X8G5H3J9M1P7RF"
+  }
 }

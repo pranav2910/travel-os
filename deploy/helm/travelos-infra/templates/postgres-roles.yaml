@@ -30,6 +30,7 @@ data:
     ensure orders_app             orders             "$ORDER_DB_PASSWORD"
     ensure audit_app              audit              "$AUDIT_DB_PASSWORD"
     ensure disruption_app         disruption         "$DISRUPTION_DB_PASSWORD"
+    ensure learning_app           learning           "$LEARNING_DB_PASSWORD"
     echo "roles ensured"
 ---
 apiVersion: batch/v1

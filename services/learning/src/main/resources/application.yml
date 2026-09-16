@@ -1,0 +1,105 @@
+spring:
+  application:
+    name: learning
+  datasource:
+    # The learning_app role can reach ONLY the learning database (ADR-0006).
+    url: ${LEARNING_DB_URL:jdbc:postgresql://localhost:5432/learning}
+    username: ${LEARNING_DB_USER:learning_app}
+    password: ${LEARNING_DB_PASSWORD:learning-dev}
+    hikari:
+      maximum-pool-size: ${LEARNING_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+      validation-timeout: 2000
+  flyway:
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        linger.ms: 5
+        delivery.timeout.ms: 45000
+    consumer:
+      group-id: learning
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+      observation-enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8091}
+  shutdown: graceful
+
+travelos:
+  grpc:
+    server:
+      port: ${GRPC_PORT:9091}
+  outbox:
+    poll-interval: 500ms
+  learning:
+    # SANDBOX where suppliers are SIMULATED (compose, kind); LIVE in a real deployment. A profile is
+    # eligible only when its evidence class equals the deployment class (ADR-0013).
+    deployment-class: ${LEARNING_DEPLOYMENT_CLASS:SANDBOX}
+    default-mode: ${LEARNING_DEFAULT_MODE:SHADOW}
+    # reliability-v1: Beta(prior-successes, prior-failures) smoothing per supplier key, a fixed window,
+    # a minimum sample count below which a key stays at the prior, and a bounded score adjustment.
+    algorithm-version: reliability-v1
+    prior-successes: ${LEARNING_PRIOR_SUCCESSES:8}
+    prior-failures: ${LEARNING_PRIOR_FAILURES:2}
+    min-samples: ${LEARNING_MIN_SAMPLES:3}
+    window: ${LEARNING_WINDOW:180d}
+    scale: ${LEARNING_SCALE:40}
+    max-adjustment: ${LEARNING_MAX_ADJUSTMENT:10}
+    feedback-max-adjustment: ${LEARNING_FEEDBACK_MAX_ADJUSTMENT:5}
+    stale-after: ${LEARNING_STALE_AFTER:30d}
+    # Evaluation before activation: chronological holdout, minimum labeled decisions, tolerance.
+    holdout-fraction: ${LEARNING_HOLDOUT_FRACTION:0.3}
+    min-labeled-decisions: ${LEARNING_MIN_LABELED_DECISIONS:3}
+    brier-tolerance: ${LEARNING_BRIER_TOLERANCE:0.01}
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+    export:
+      enabled: ${TRACING_EXPORT_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+          transport: http
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] [%X{correlation_id:-}] "

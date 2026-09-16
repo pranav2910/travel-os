@@ -20,8 +20,8 @@ end to end, on a laptop, in Docker and on Kubernetes (kind). **Slice 1.1** harde
 target: one Kafka security switch (`KAFKA_AUTH=msk-iam`) understood by every client, the
 `travel.optimization.completed` event, the kind e2e/chaos gate in CI, AWS ingress, the `container`
 profile. **Slice 2: autonomous disruption recovery**, **Slice 3: hotels, ground transport
-and multi-city itineraries** and **Slice 4: travel-demand detection from calendar, CRM, HRIS and
-expense** (all below) are built on top of it.
+and multi-city itineraries**, **Slice 4: travel-demand detection from calendar, CRM, HRIS and
+expense** (all below) are built on top of it. **Slice 5: learning from outcomes** is done: verified outcomes and authorized traveler feedback become versioned, evaluated supplier-reliability profiles that adjust the optimizer's soft ranking within bounds, off / shadow / active per tenant, explainable in the ledger and reversible in one call ([ADR-0013](docs/adr/0013-learning-is-bounded-evaluated-and-reversible.md)).
 
 Built so far: contracts, shared libs, local platform, **Travel Core**, **Policy**, **Supplier
 Gateway** (sandbox adapter), **Order** (booking saga with compensation), **Optimization** (OR-Tools),
@@ -141,7 +141,39 @@ connector sync (schedule | signed webhook | a person)  ─► travel.demand.sync
 | ☑ ingestion: tenant connectors with observable status and runs; scheduled sync and HMAC-signed webhooks; pagination, durable checkpoints at the write boundary, retries with backoff for outages and rate limits, source updates/deletions, out-of-order and duplicate delivery suppressed by (source id, revision); worker crash mid-sync resumes at the page | ☑ correlation: one candidate per commitment (redelivery updates it); explicit `calendarEventId` links or the documented same-traveler/city/overlapping-dates rule; adjacent days flagged, never merged; cancellation evidence retained so a stale update cannot resurrect withdrawn demand; never across tenants or travelers | ☑ conversion: authorized REST (`/api/v1/demand`, `/api/v1/connectors`), idempotent and concurrency-safe (row lock + one key per candidate), Travel Core `CreateTrip` with the person's roles; before conversion sources update or withdraw the candidate, after it changes are flagged for review through existing controls |
 | ☑ security + evidence: tenant/traveler/HRIS-manager/admin access, cross-tenant 404, no self-approval anywhere new, secrets refused in connector config, source text quoted as data; `travel.demand.*` (9 types) on contract; audit indexes candidates (`/api/v1/audit/demand/{id}`) and the trip ledger names its demand origin; bounded metrics for pages, runs, items, candidates, duplicates, conversions, notifications | ☑ tests: enterprise-context 10 (integration: rules, correlation, faults, webhooks, concurrency, events on contract; unit: rules, plan), workflow 39, travel-core 51, gateway 26, order 16, events 53; `scripts/e2e-slice4.sh` (0 carry-overs, A detection -> booked trip with audit links, B negatives, C duplicates/out-of-order/concurrent conversion, D changes before/after conversion, E recurrence + DST, F webhooks + schedule, G isolation/authorization/injection) and `scripts/chaos-slice4-kind.sh` (outage + rate limit, service and worker killed mid-sync, redelivered notice across a restart) | ☑ deployment: Helm alias + kind NodePort 18090 + compose service + secrets + CI steps `kind-e2e4`/`kind-chaos4`; Terraform lists the service (static validation only) |
 
-Roadmap after that: **Slice 5** learning from outcomes · then the frontend.
+### Slice 5: learning from outcomes
+
+The platform learns, narrowly and visibly: the **Learning** service (`services/learning`,
+[ADR-0013](docs/adr/0013-learning-is-bounded-evaluated-and-reversible.md)) consumes what the
+platform announced about trips, orders, disruptions and optimizer decisions into an append-only,
+tenant-scoped **outcome ledger** (one row per logical outcome revision; redelivery and repeated
+representations collapse; completion and refunds are recorded only when a person attests or Finance
+says so), takes structured traveler **feedback** authorized against the actual trip, and builds
+**versioned profiles** (`reliability-v1`: Beta-smoothed supplier reliability per `air:<carrier>` /
+`hotel:<property>` / `ground:<vendor>` key inside a window, a bounded ±10-point adjustment, ±5 for a
+traveler's own ratings) through a durable `LearningBuildWorkflow`. A profile is **evaluated before
+activation** on a chronological, leak-free holdout of the decisions actually made and becomes
+ELIGIBLE or REJECTED with a report (samples, label coverage, Brier vs the prior, violations, limits,
+synthetic or live). Tenants run **OFF / SHADOW / ACTIVE**; the planner resolves inputs through one
+pinned activity, the optimizer ranks baseline and learned, executes the baseline in shadow and the
+learned one in active, and the ledger shows both with per-candidate contributions. Sandbox evidence is
+marked and can never activate in a LIVE deployment.
+
+```
+travel.{trip,order,disruption,optimization} ─► learning consumer ─► outcome ledger (key, revision, class) + decisions
+   feedback / refunds (people, authorized) ──────────────────────────► outcome ledger
+   POST /profiles ─► travel.learning.build-requested ─► LearningBuildWorkflow: BeginBuild ─► ComputeProfile ─► EvaluateProfile
+   ─► ELIGIBLE | REJECTED ─► admin activates (atomic, versioned, audited) ─► planner: Resolve (pinned) ─► optimizer: baseline + learned
+   ─► SHADOW executes baseline, ACTIVE executes learned (within +/-10, policy-permitted, feasible) ─► ledger explains; rollback restores
+```
+
+| Slice 5 definition of done | | |
+|---|---|---|
+| ☑ objective: `reliability-v1` documented (target, features, priors 8/2, min 3 samples, window ≤ 180 d, scale, bounds ±10/±5, hard cap 25); learned utility is never money; hard policy, eligibility, demand rules, approval authority and the $100 rule untouched; no ML platform | ☑ outcomes: versioned `travel.learning.*` contracts + `learning` and `candidates` on `travel.optimization.completed`, `provider`/`supplierKey` on order items, `travel.trip.completed` attestation; kinds distinguish confirmation, completion, cancellation, supplier vs platform failure, recovery, compensation released/refused, exposure resolved, settled refund, feedback; provenance kept; nothing inferred; durable consumer + outbox; exactly once per event id and per logical revision; late corrections are revisions; rebuild reproduces the fingerprint | ☑ tenancy + classes: tenant-scoped ledger and profiles; traveler/admin/finance access, cross-tenant 404; SANDBOX vs LIVE marked per outcome and per profile, deployment class gates eligibility; cold start / insufficient / stale / incompatible / unavailable → baseline with a named fallback; no observations ≠ unreliable |
+| ☑ profiles: `lp_` versions with cutoff, window, dataset fingerprint, algorithm, parameters, counts, artifact, evaluation; built by a Temporal workflow with idempotent steps; workflows never read learned state except through the pinned `Resolve` activity | ☑ optimizer: OFF/SHADOW/ACTIVE; shadow records the alternative and executes the baseline; active applies bounded adjustments to soft scores among feasible, policy-permitted candidates; constraints, revalidation and approval binding preserved; evidence (profile version, contributions, reasons, both selections) in the response, the event, the audit ledger and the recovery decision record | ☑ evaluation + activation: chronological holdout grouped by trip with only-before evidence; report with sample sizes, label coverage, Brier vs prior, ranking changes, violations, synthetic flag, stated limits; criteria (compatible, enough evidence, finite/bounded, zero violations, quality threshold); REST for inspection, build, activation, mode, rollback, history; atomic versioned changes (409 on a stale version); rollback to the previous eligible profile or the baseline (`toBaseline` deactivates outright) |
+| ☑ operations: `/api/v1/learning/summary` (bounded, no person), `travelos_learning_{outcomes,decisions,builds,evaluations,resolutions,activations,feedback}_total` with fixed-vocabulary labels; traces through the pinned activity | ☑ tests: learning 14 (integration: exactly-once ingestion, feedback authorization/revisions, refunds, build/evaluate/reproduce, class mismatch, activation conflicts, rollback, events on contract, metrics; unit: model, evaluator leakage/labels/verdicts, failure codes), worker 45 (pinning across an optimizer retry, outage fallback, build workflow), optimizer 41 (off/shadow/active, clamping, two adjustments on one key summed within the bound, budget unaffected, itineraries), audit 5, disruption 6, events 61; `scripts/e2e-slice5.sh` (0 baseline OFF, A marked outcomes + duplicates + attestation + refunds + feedback, B build/evaluate/reproduce/reject, C shadow then active ranking change with evidence, D budget/approval/$100/isolation safeguards, E conflicts/failed build/rollback/baseline) and `scripts/chaos-slice5-kind.sh` (service gone mid-plan → baseline; worker killed mid-build → one profile; consumer restart → one outcome; activation change under a held optimizer → pinned inputs) | ☑ deployment: Helm alias + kind NodePort 18091 + compose service + secrets + CI steps `kind-e2e5`/`kind-chaos5`; Terraform lists the service (static validation only) |
+
+Roadmap after that: the frontend.
 
 ## Architecture in one screen
 

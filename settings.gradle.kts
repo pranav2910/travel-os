@@ -41,6 +41,8 @@ include(":services:audit")
 include(":services:disruption")
 // Slice 4: the verified employee directory, enterprise connectors and travel-demand detection.
 include(":services:enterprise-context")
+// Slice 5: learning from outcomes (outcome records, feedback, evaluated profiles).
+include(":services:learning")
 
 // Temporal workflows: durable coordination of the trip lifecycle.
 include(":workflows:trip-planning")

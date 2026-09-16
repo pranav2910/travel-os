@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package travelos.learning.v1;
+
+import "google/protobuf/timestamp.proto";
+import "travelos/common/v1/common.proto";
+import "travelos/optimization/v1/optimization.proto";
+
+option java_multiple_files = true;
+option java_package = "io.travelos.contracts.learning.v1";
+option java_outer_classname = "LearningProto";
+
+// Learning from outcomes (Slice 5): verified outcomes and authorized feedback become versioned,
+// evaluated profiles. A profile is resolved for a planning attempt through this door (an activity
+// boundary, never from workflow code) and profile builds are driven step by step by the worker.
+service LearningService {
+  // The tenant's usable profile as bounded adjustments for one traveler, or a named fallback.
+  rpc ResolveProfile(ResolveProfileRequest) returns (travelos.optimization.v1.LearningInputs);
+  // Profile builds: begin (idempotent by profile id), compute the artifact, evaluate it, or record
+  // a failure. Each step is one transaction; a repeated step is a no-op.
+  rpc BeginBuild(BeginBuildRequest) returns (ProfileSummary);
+  rpc ComputeProfile(ProfileStepRequest) returns (ProfileSummary);
+  rpc EvaluateProfile(ProfileStepRequest) returns (ProfileSummary);
+  rpc FailBuild(FailBuildRequest) returns (ProfileSummary);
+}
+
+message ResolveProfileRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string traveler_id = 2;
+  string trip_id = 3;
+  // PLANNING | RECOVERY, for the record.
+  string purpose = 4;
+}
+
+message BeginBuildRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string profile_id = 2;
+  google.protobuf.Timestamp cutoff = 3;
+}
+
+message ProfileStepRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string profile_id = 2;
+}
+
+message FailBuildRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string profile_id = 2;
+  string code = 3;
+  string message = 4;
+}
+
+message ProfileSummary {
+  string profile_id = 1;
+  // BUILDING | BUILT | ELIGIBLE | REJECTED | FAILED
+  string status = 2;
+  string algorithm_version = 3;
+  string evidence_class = 4;
+  google.protobuf.Timestamp input_cutoff = 5;
+  string dataset_fingerprint = 6;
+  int32 hard_outcomes = 7;
+  int32 feedback_outcomes = 8;
+  int32 supplier_keys = 9;
+  string verdict = 10;
+  string failure_code = 11;
+}

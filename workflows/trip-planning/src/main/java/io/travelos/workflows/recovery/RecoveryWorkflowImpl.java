@@ -27,6 +27,7 @@ import io.travelos.contracts.llm.v1.ExplainDisruptionResponse;
 import io.travelos.contracts.offer.v1.Bundle;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.optimization.v1.ConstraintSet;
+import io.travelos.contracts.optimization.v1.LearningInputs;
 import io.travelos.contracts.optimization.v1.OptimizationPreferences;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
@@ -51,6 +52,8 @@ import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.workflows.DisruptionRecovery;
 import io.travelos.workflows.DisruptionRecovery.ApprovalDecision;
 import io.travelos.workflows.DisruptionRecovery.Stage;
+import io.travelos.workflows.learning.LearningActivities;
+import io.travelos.workflows.learning.LearningResolution;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -124,6 +127,9 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
                       .setMaximumAttempts(8)
                       .build())
               .build());
+
+  /** Slice 5: learning inputs, resolved once per attempt and pinned by the history (3 tries). */
+  private final LearningActivities learning = LearningResolution.stub();
 
   private Stage stage = Stage.LOADING;
   private @Nullable ApprovalDecision decision;
@@ -265,6 +271,9 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
       // ---- optimize
       stage = Stage.OPTIMIZING;
       transition(tenant, disruptionId, DisruptionStatus.OPTIMIZING, b -> b.setReason("optimizing"));
+      LearningInputs learned =
+          LearningResolution.resolve(
+              learning, log, tenant, tripId, trip.getTravelerId(), "RECOVERY");
       OptimizeTripResponse optimized =
           activities.optimize(
               OptimizeTripRequest.newBuilder()
@@ -281,6 +290,7 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
                                   .setRisk(0.15)
                                   .setPreference(0.1)
                                   .setExperience(0.1)))
+                  .setLearning(learned)
                   .build());
       int feasible = 0;
       for (RankedCandidate rc : optimized.getRankingList()) {
@@ -389,7 +399,10 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
                       .setAgentPrincipal(DisruptionRecovery.AGENT)
                       .setWorkflowType(DisruptionRecovery.WORKFLOW_TYPE)
                       .setWorkflowVersion(DisruptionRecovery.WORKFLOW_VERSION)
-                      .addAllComponentChanges(accounted))
+                      .addAllComponentChanges(accounted)
+                      .setLearningMode(learned.getMode())
+                      .setLearningProfileId(learned.getProfileId())
+                      .setLearningFallback(learned.getFallbackReason()))
               .build());
 
       // ---- narrate (optional; the decision is the decision with or without a paragraph)

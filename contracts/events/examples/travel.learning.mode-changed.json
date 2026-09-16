@@ -1,0 +1,16 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.learning.mode-changed",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T10:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "acme",
+  "producer": "learning",
+  "data": {
+    "mode": "ACTIVE",
+    "previousMode": "SHADOW",
+    "changedBy": "human/carol",
+    "deploymentClass": "SANDBOX",
+    "configVersion": 6
+  }
+}

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from ortools.sat.python import cp_model
 
+from travelos_optimization import learning
 from travelos_optimization.model import (
     Breakdown,
     Candidate,
@@ -32,16 +33,58 @@ class Result:
     ranking: tuple[Ranked, ...]
     solver: str
     solve_time_ms: int
+    learning: learning.Evidence | None = None
 
 
-def optimize(candidates: list[Candidate], k: Constraints, p: Preferences) -> Result:
+def optimize(
+    candidates: list[Candidate],
+    k: Constraints,
+    p: Preferences,
+    inputs: learning.Inputs | None = None,
+) -> Result:
     started = time.perf_counter()
     reasons = {c.bundle_id: infeasibility_reasons(c, k) for c in candidates}
     feasible = [c for c in candidates if not reasons[c.bundle_id]]
     scores: dict[str, Breakdown] = breakdowns(feasible, p)
     weighted = {c.bundle_id: scores[c.bundle_id].weighted(p.weights) for c in feasible}
 
-    selected = _select(feasible, weighted) if feasible else ""
+    baseline_selected = _select(feasible, weighted) if feasible else ""
+    selected = baseline_selected
+    evidence = learning.off(inputs)
+    if inputs is not None and inputs.usable and feasible:
+        contributions: list[learning.Contribution] = []
+        learned: dict[str, float] = {}
+        for c in feasible:
+            keys = learning.keys_of_candidate(c)
+            adjustment, why = learning.contribution_for(keys, inputs)
+            learned[c.bundle_id] = learning.clamp_score(weighted[c.bundle_id] + adjustment)
+            contributions.append(
+                learning.Contribution(
+                    c.bundle_id,
+                    "",
+                    keys,
+                    round(weighted[c.bundle_id], 4),
+                    adjustment,
+                    round(learned[c.bundle_id], 4),
+                    why,
+                )
+            )
+        learned_selected = _select(feasible, learned)
+        if inputs.applies:
+            selected = learned_selected
+            weighted = learned
+        evidence = learning.Evidence(
+            inputs.mode,
+            inputs.profile_id,
+            inputs.algorithm_version,
+            inputs.evidence_class,
+            inputs.applies,
+            "",
+            baseline_selected,
+            learned_selected,
+            tuple(contributions[:200]),
+            inputs.max_adjustment,
+        )
 
     ordered_feasible = sorted(
         feasible, key=lambda c: (-weighted[c.bundle_id], c.total.amount_minor, c.bundle_id)
@@ -64,7 +107,7 @@ def optimize(candidates: list[Candidate], k: Constraints, p: Preferences) -> Res
             )
         )
     elapsed_ms = int((time.perf_counter() - started) * 1000)
-    return Result(selected, tuple(ranking), _solver_name(), elapsed_ms)
+    return Result(selected, tuple(ranking), _solver_name(), elapsed_ms, evidence)
 
 
 def _select(feasible: list[Candidate], weighted: dict[str, float]) -> str:

@@ -182,6 +182,10 @@ message RecoveryDecision {
   google.protobuf.Timestamp decided_at = 20;
   // Slice 3: per-component accounting behind incremental_cost.
   repeated ComponentChange component_changes = 21;
+  // Slice 5: the learning inputs pinned to this recovery attempt (mode, profile, fallback).
+  string learning_mode = 22;
+  string learning_profile_id = 23;
+  string learning_fallback = 24;
 }
 
 message SupplierResult {

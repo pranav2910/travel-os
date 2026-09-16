@@ -16,6 +16,16 @@ class TripStatusTest {
   }
 
   @Test
+  void completionFollowsBookingOnlyAndIsTerminal() {
+    assertThat(TripStatus.BOOKED.canTransitionTo(TripStatus.COMPLETED)).isTrue();
+    assertThat(TripStatus.PLANNING.canTransitionTo(TripStatus.COMPLETED)).isFalse();
+    assertThat(TripStatus.APPROVED.canTransitionTo(TripStatus.COMPLETED)).isFalse();
+    for (TripStatus status : TripStatus.values()) {
+      assertThat(TripStatus.COMPLETED.canTransitionTo(status)).isFalse();
+    }
+  }
+
+  @Test
   void terminalStatesAreTerminal() {
     for (TripStatus status : TripStatus.values()) {
       assertThat(TripStatus.CANCELLED.canTransitionTo(status)).isFalse();

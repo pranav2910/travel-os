@@ -13,6 +13,7 @@ public enum TripStatus {
   APPROVED,
   BOOKING,
   BOOKED,
+  COMPLETED,
   CANCELLED,
   FAILED;
 
@@ -26,7 +27,10 @@ public enum TripStatus {
           // the approved plan is stale and a person decides again.
           APPROVED, EnumSet.of(BOOKING, AWAITING_APPROVAL, CANCELLED),
           BOOKING, EnumSet.of(BOOKED, FAILED),
-          BOOKED, EnumSet.of(CANCELLED),
+          // Slice 5: completion is attested by a person (the traveler after the last arrival, or a
+          // travel admin), never inferred from a booking.
+          BOOKED, EnumSet.of(COMPLETED, CANCELLED),
+          COMPLETED, EnumSet.noneOf(TripStatus.class),
           CANCELLED, EnumSet.noneOf(TripStatus.class),
           FAILED, EnumSet.noneOf(TripStatus.class));
 

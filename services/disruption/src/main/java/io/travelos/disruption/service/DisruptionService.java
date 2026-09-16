@@ -295,7 +295,11 @@ public class DisruptionService {
                 stored.getOptimizationRunId(),
                 stored.getAutonomyOutcome(),
                 codes,
-                componentChanges),
+                componentChanges,
+                Map.of(
+                    "learningMode", stored.getLearningMode(),
+                    "learningProfileId", stored.getLearningProfileId(),
+                    "learningFallback", stored.getLearningFallback())),
             clock));
     return ready;
   }

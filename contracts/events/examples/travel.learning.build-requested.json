@@ -1,0 +1,14 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.learning.build-requested",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T10:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+  "producer": "learning",
+  "data": {
+    "profileId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+    "requestedBy": "human/carol",
+    "inputCutoff": "2026-09-16T10:00:00Z"
+  }
+}

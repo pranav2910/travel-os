@@ -32,7 +32,7 @@ jobs:
   kind:
     name: slice 1 on kind (e2e + chaos)
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 95
     env:
       KIND_VERSION: v0.31.0
     steps:
@@ -89,6 +89,10 @@ jobs:
         run: make kind-e2e4
       - name: slice 4 chaos (source outage, rate limit, context service and worker killed mid-sync)
         run: make kind-chaos4
+      - name: slice 5 end-to-end (outcomes -> evaluated profile -> shadow/active ranking, safeguards, activation/rollback)
+        run: make kind-e2e5
+      - name: slice 5 chaos (learning service and worker killed mid-plan and mid-build, consumer restart, pinned inputs)
+        run: make kind-chaos5
       - name: diagnostics
         if: failure()
         run: |

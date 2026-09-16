@@ -33,7 +33,13 @@ public enum IdPrefix {
   /** Slice 4: an enterprise connector (calendar, CRM, HRIS, expense) of one tenant. */
   CONNECTOR("cnx"),
   /** Slice 4: one synchronization run of a connector. */
-  SYNC_RUN("syn");
+  SYNC_RUN("syn"),
+  /** Slice 5: a learned profile (a versioned, evaluated artifact). */
+  PROFILE("lp"),
+  /** Slice 5: one recorded outcome revision. */
+  OUTCOME("out"),
+  /** Slice 5: a traveler's feedback record. */
+  FEEDBACK("fb");
 
   private final String prefix;
 

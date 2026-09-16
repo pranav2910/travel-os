@@ -146,6 +146,17 @@ enterprise-context:
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress: *awsEgress
+learning:
+  <<: *prodScale
+  serviceAccount: { annotations: { eks.amazonaws.com/role-arn: "" } }
+  externalSecret:
+    <<: *es
+    data:
+      - secretKey: LEARNING_DB_PASSWORD
+        remoteRef: { key: travelos/ENV/learning/db, property: password }
+  networkPolicy:
+    httpFrom: *httpFromVpc
+    extraEgress: *awsEgress
 trip-planning:
   <<: *prodScale
   networkPolicy:

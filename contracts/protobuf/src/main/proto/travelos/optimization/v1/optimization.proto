@@ -70,6 +70,8 @@ message OptimizeTripRequest {
   repeated travelos.offer.v1.Bundle candidates = 3;
   ConstraintSet constraints = 4;
   OptimizationPreferences preferences = 5;
+  // Slice 5: the learned inputs the workflow resolved and pinned for this attempt (may be absent).
+  LearningInputs learning = 6;
 }
 
 message OptimizeTripResponse {
@@ -79,6 +81,8 @@ message OptimizeTripResponse {
   repeated RankedCandidate ranking = 3;
   string solver = 4;
   int64 solve_time_ms = 5;
+  // Slice 5: what learning did (or would have done) to this ranking.
+  LearningEvidence learning = 6;
 }
 
 // ---------------------------------------------------------------- Slice 3
@@ -125,6 +129,8 @@ message OptimizeItineraryRequest {
   repeated ComponentCandidates components = 3;
   ItineraryConstraints constraints = 4;
   OptimizationPreferences preferences = 5;
+  // Slice 5: pinned learned inputs for this attempt (may be absent).
+  LearningInputs learning = 6;
 }
 
 message ComponentSelection {
@@ -155,4 +161,65 @@ message OptimizeItineraryResponse {
   string solver = 7;
   int64 solve_time_ms = 8;
   int32 combinations_considered = 9;
+  // Slice 5: what learning did (or would have done) to this composition.
+  LearningEvidence learning = 10;
+}
+
+// ---------------------------------------------------------------- Slice 5: learning from outcomes
+// A bounded, explainable soft adjustment for one supplier key. Points on the 0..100 score, never
+// money. The optimizer clamps every adjustment to [-max_adjustment, +max_adjustment].
+message LearningAdjustment {
+  // air:<carrier> | hotel:<property id> | ground:<vendor id>
+  string supplier_key = 1;
+  double adjustment = 2;
+  // What it rests on: the smoothed estimate and the evidence behind it.
+  double estimate = 3;
+  int32 samples = 4;
+  // SUPPLIER_RELIABILITY | TRAVELER_PREFERENCE
+  string source = 5;
+  string reason = 6;
+}
+
+// Resolved by the Learning service at planning time through an activity, and pinned to the
+// attempt: replays and retries of the same attempt reuse these exact inputs.
+message LearningInputs {
+  // OFF | SHADOW | ACTIVE. OFF or an absent message reproduces the baseline exactly.
+  string mode = 1;
+  string profile_id = 2;
+  string algorithm_version = 3;
+  // SANDBOX | LIVE: the class of evidence the profile was built from.
+  string evidence_class = 4;
+  repeated LearningAdjustment adjustments = 5;
+  double max_adjustment = 6;
+  // Why there is no usable profile (NO_ACTIVE_PROFILE, STALE_PROFILE, CLASS_MISMATCH,
+  // INCOMPATIBLE_ALGORITHM, LEARNING_UNAVAILABLE, MODE_OFF); empty when a profile applies.
+  string fallback_reason = 7;
+}
+
+// One candidate's learned contribution, as applied (ACTIVE) or merely computed (SHADOW).
+message LearningContribution {
+  // A bundle id (OptimizeTrip) or an offer id (OptimizeItinerary).
+  string candidate_id = 1;
+  string component_id = 2;
+  repeated string supplier_keys = 3;
+  double baseline_score = 4;
+  double adjustment = 5;
+  double learned_score = 6;
+  repeated string reasons = 7;
+}
+
+message LearningEvidence {
+  string mode = 1;
+  string profile_id = 2;
+  string algorithm_version = 3;
+  string evidence_class = 4;
+  // True only in ACTIVE mode with a usable profile: the selection was made with learning.
+  bool applied = 5;
+  string fallback_reason = 6;
+  // The selection the baseline ranking makes and the one the learned ranking makes; equal when
+  // learning changes nothing. In SHADOW mode the baseline one is executed.
+  string baseline_selected_id = 7;
+  string learned_selected_id = 8;
+  repeated LearningContribution contributions = 9;
+  double max_adjustment = 10;
 }

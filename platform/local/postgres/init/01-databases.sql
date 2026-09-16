@@ -39,3 +39,7 @@ REVOKE CONNECT ON DATABASE audit FROM PUBLIC;
 CREATE ROLE disruption_app LOGIN PASSWORD 'disruption-dev';
 CREATE DATABASE disruption OWNER disruption_app;
 REVOKE CONNECT ON DATABASE disruption FROM PUBLIC;
+
+CREATE ROLE learning_app LOGIN PASSWORD 'learning-dev';
+CREATE DATABASE learning OWNER learning_app;
+REVOKE CONNECT ON DATABASE learning FROM PUBLIC;

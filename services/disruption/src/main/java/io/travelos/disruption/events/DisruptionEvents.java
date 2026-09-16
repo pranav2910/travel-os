@@ -56,7 +56,45 @@ public final class DisruptionEvents {
       String optimizationRunId,
       String autonomyOutcome,
       List<String> reasonCodes,
-      @Nullable List<Map<String, Object>> componentChanges) {
+      @Nullable List<Map<String, Object>> componentChanges,
+      @Nullable Map<String, String> learning) {
+    public DecisionSummary(
+        int candidatesSearched,
+        int candidatesPermitted,
+        int candidatesFeasible,
+        List<Map<String, Object>> rejected,
+        String selectedBundleId,
+        @Nullable Double selectedScore,
+        @Nullable Money originalTotal,
+        @Nullable Money replacementTotal,
+        Money incrementalCost,
+        String policyDecisionId,
+        String policyId,
+        int policyVersion,
+        String optimizationRunId,
+        String autonomyOutcome,
+        List<String> reasonCodes,
+        @Nullable List<Map<String, Object>> componentChanges) {
+      this(
+          candidatesSearched,
+          candidatesPermitted,
+          candidatesFeasible,
+          rejected,
+          selectedBundleId,
+          selectedScore,
+          originalTotal,
+          replacementTotal,
+          incrementalCost,
+          policyDecisionId,
+          policyId,
+          policyVersion,
+          optimizationRunId,
+          autonomyOutcome,
+          reasonCodes,
+          componentChanges,
+          null);
+    }
+
     public DecisionSummary(
         int candidatesSearched,
         int candidatesPermitted,
@@ -123,6 +161,16 @@ public final class DisruptionEvents {
       data.put(
           "affectedComponentIds",
           s.componentChanges().stream().map(c -> c.get("componentId")).toList());
+    }
+    // Slice 5: which learning inputs the recovery's optimizer run was pinned to.
+    if (s.learning() != null) {
+      s.learning()
+          .forEach(
+              (k, v) -> {
+                if (v != null && !v.isBlank()) {
+                  data.put(k, v);
+                }
+              });
     }
     return envelope("travel.disruption.decision-ready", d, d.disruptionId(), data, clock);
   }

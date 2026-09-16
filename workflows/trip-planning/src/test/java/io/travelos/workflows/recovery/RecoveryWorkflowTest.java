@@ -36,6 +36,7 @@ import io.travelos.contracts.offer.v1.HotelOffer;
 import io.travelos.contracts.offer.v1.Journey;
 import io.travelos.contracts.offer.v1.Offer;
 import io.travelos.contracts.offer.v1.OfferType;
+import io.travelos.contracts.optimization.v1.LearningInputs;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
 import io.travelos.contracts.optimization.v1.RankedCandidate;
@@ -67,6 +68,7 @@ import io.travelos.contracts.trip.v1.TravelerSnapshot;
 import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.workflows.DisruptionRecovery;
+import io.travelos.workflows.learning.LearningActivities;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -96,6 +98,7 @@ class RecoveryWorkflowTest {
 
   private TestWorkflowEnvironment env;
   private RecoveryActivities activities;
+  private LearningActivities learning;
   private WorkflowClient client;
   private final List<TransitionDisruptionRequest> transitions = new CopyOnWriteArrayList<>();
   private final List<RecordRecoveryOutcomeRequest> outcomes = new CopyOnWriteArrayList<>();
@@ -107,7 +110,17 @@ class RecoveryWorkflowTest {
     Worker worker = env.newWorker(DisruptionRecovery.TASK_QUEUE);
     worker.registerWorkflowImplementationTypes(RecoveryWorkflowImpl.class);
     activities = mock(RecoveryActivities.class);
-    worker.registerActivitiesImplementations(activities);
+    learning = mock(LearningActivities.class);
+    worker.registerActivitiesImplementations(activities, learning);
+    when(learning.resolve(anyString(), anyString(), anyString(), anyString()))
+        .thenReturn(
+            LearningInputs.newBuilder()
+                .setMode("SHADOW")
+                .setProfileId("lp_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .setAlgorithmVersion("reliability-v1")
+                .setEvidenceClass("SANDBOX")
+                .setMaxAdjustment(10.0)
+                .build());
     env.start();
     client = env.getWorkflowClient();
 
@@ -198,6 +211,21 @@ class RecoveryWorkflowTest {
         .isEqualTo("bdl_" + CHEAP.substring(4));
     assertThat(change.getValue().getPolicyDecisionId()).isEqualTo("pd_action");
     assertThat(change.getValue().getApprovalId()).isEmpty();
+
+    // Slice 5: the optimizer saw the pinned learning inputs and the decision record says which
+    ArgumentCaptor<OptimizeTripRequest> opt = ArgumentCaptor.forClass(OptimizeTripRequest.class);
+    verify(activities).optimize(opt.capture());
+    assertThat(opt.getValue().getLearning().getMode()).isEqualTo("SHADOW");
+    assertThat(opt.getValue().getLearning().getProfileId())
+        .isEqualTo("lp_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+    ArgumentCaptor<RecordRecoveryDecisionRequest> pinnedDecision =
+        ArgumentCaptor.forClass(RecordRecoveryDecisionRequest.class);
+    verify(activities).recordDecision(pinnedDecision.capture());
+    assertThat(pinnedDecision.getValue().getDecision().getLearningMode()).isEqualTo("SHADOW");
+    assertThat(pinnedDecision.getValue().getDecision().getLearningProfileId())
+        .isEqualTo("lp_01ARZ3NDEKTSV4RRFFQ69G5FAV");
+    assertThat(pinnedDecision.getValue().getDecision().getLearningFallback()).isEmpty();
+    verify(learning, times(1)).resolve(anyString(), anyString(), anyString(), anyString());
     assertThat(change.getValue().getPassengers(0).getEmail()).isEqualTo("alice@acme.example");
 
     // policy was asked about THE action with the real incremental cost and the trip's constraints

@@ -61,6 +61,15 @@ enterprise-context:
     grpcFromApps: [trip-planning]
     grpcToApps:
       - { app: travel-core, port: 9081 }
+learning:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30091 } }
+  env:
+    LEARNING_DEPLOYMENT_CLASS: SANDBOX        # kind runs SIMULATED suppliers: sandbox evidence is the deployment's class
+    LEARNING_SCALE: "100"                     # demo strength: a handful of SIMULATED outcomes reaches the +/-10 bound (default 40)
+  networkPolicy:
+    httpFrom: *host
+    grpcFromApps: [trip-planning]
 trip-planning:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { http: 30086 } }
@@ -75,6 +84,7 @@ trip-planning:
       - { app: llm-gateway, port: 9087 }
       - { app: disruption, port: 9089 }
       - { app: enterprise-context, port: 9090 }
+      - { app: learning, port: 9091 }
 optimization:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { grpc: 30083 } }

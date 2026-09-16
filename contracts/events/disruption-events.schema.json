@@ -360,6 +360,23 @@
             "type": "string",
             "pattern": "^cmp_[0-9A-HJKMNP-TV-Z]{26}$"
           }
+        },
+        "learningMode": {
+          "enum": [
+            "OFF",
+            "SHADOW",
+            "ACTIVE"
+          ],
+          "description": "Slice 5: the learning mode pinned to this recovery attempt"
+        },
+        "learningProfileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$",
+          "description": "the profile resolved for the attempt, when one was"
+        },
+        "learningFallback": {
+          "type": "string",
+          "description": "why learning did not influence the ranking (NO_ACTIVE_PROFILE, STALE_PROFILE, CLASS_MISMATCH, INCOMPATIBLE_ALGORITHM, LEARNING_UNAVAILABLE, MODE_OFF)"
         }
       }
     },

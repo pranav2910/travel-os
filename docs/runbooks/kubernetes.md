@@ -31,6 +31,8 @@ make kind-e2e3          # Slice 3: multi-city itineraries (hotels, ground), reva
 make kind-chaos3        # Slice 3: a 7-component booking and its recovery held at proven points, worker killed; one booking each
 make kind-e2e4          # Slice 4: calendar/CRM/HRIS/expense demand detection -> a governed trip; Slice 3 carry-overs
 make kind-chaos4        # Slice 4: a connector sync under a source outage, a rate limit, the service and the worker killed; one candidate each
+make kind-e2e5          # Slice 5: outcomes -> evaluated profile -> shadow/active ranking with evidence; safeguards; activation conflicts and rollback
+make kind-chaos5        # Slice 5: learning service gone mid-plan (baseline), worker killed mid-build (one profile), consumer restart (one outcome), pinned inputs
 make kind-rollback-demo # deploy a stand-in "next" release, roll back with helm, verify
 make kind-down
 ```
@@ -52,6 +54,7 @@ Host ports once deployed:
 | audit | http://localhost:18088 |
 | disruption | http://localhost:18089 (gRPC 9089 in-cluster) |
 | enterprise-context | http://localhost:18090 (gRPC 9090 in-cluster) |
+| learning | http://localhost:18091 (gRPC 9091 in-cluster) |
 | optimization gRPC | localhost:19083 |
 | llm-gateway gRPC | localhost:19087 |
 | Keycloak | http://localhost:18180 (admin password in `deploy/kind/.secrets.env`) |

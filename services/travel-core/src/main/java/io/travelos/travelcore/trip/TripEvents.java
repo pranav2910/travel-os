@@ -136,6 +136,14 @@ final class TripEvents {
     return envelope("travel.trip.failed", trip, causationId, data, clock);
   }
 
+  /** Slice 5: the trip happened, as a person attested. Never inferred. */
+  static EventEnvelope completed(Trip trip, @Nullable String causationId, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("orderId", trip.evidence().orderId());
+    return envelope("travel.trip.completed", trip, causationId, data, clock);
+  }
+
   static EventEnvelope cancelled(
       Trip trip, String reason, Principal cancelledBy, @Nullable String causationId, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();

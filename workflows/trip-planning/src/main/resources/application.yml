@@ -45,6 +45,10 @@ travelos:
       enterprise-context:
         address: ${ENTERPRISE_CONTEXT_ADDRESS:localhost:9090}
         deadline: 45s
+      learning:
+        address: ${LEARNING_ADDRESS:localhost:9091}
+        # Resolution is quick and optional (baseline fallback); builds are longer.
+        deadline: 60s
   workflow:
     # The machine identity every downstream call is made as. Scoped, never "*".
     principal: agent/trip-planner/v1

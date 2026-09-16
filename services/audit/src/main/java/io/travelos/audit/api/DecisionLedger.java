@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -32,7 +33,8 @@ public record DecisionLedger(
     List<Map<String, Object>> components,
     List<Map<String, Object>> replans,
     @Nullable Map<String, Object> compensation,
-    @Nullable Map<String, Object> origin) {
+    @Nullable Map<String, Object> origin,
+    @Nullable Map<String, Object> learning) {
 
   static DecisionLedger from(String tripId, String travelerId, List<AuditRecord> trail) {
     String status = "SUBMITTED";
@@ -52,6 +54,7 @@ public record DecisionLedger(
     Map<String, Object> compensation = null;
     Map<String, Map<String, Object>> exposuresById = new LinkedHashMap<>();
     Map<String, Object> origin = null;
+    Map<String, Object> learning = null;
 
     for (AuditRecord r : trail) {
       Map<String, Object> d = r.data();
@@ -88,7 +91,16 @@ public record DecisionLedger(
           }
         }
         case "travel.policy.violation" -> policyViolations++;
-        case "travel.optimization.completed" -> optimization = d;
+        case "travel.optimization.completed" -> {
+          optimization = d;
+          if (d.get("learning") instanceof Map<?, ?> l) {
+            learning = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> e : l.entrySet()) {
+              learning.put(String.valueOf(e.getKey()), e.getValue());
+            }
+            learning.put("optimizationRunId", d.get("optimizationRunId"));
+          }
+        }
         case "travel.approval.requested" -> {
           approval = new LinkedHashMap<>(d);
           approval.put("status", "PENDING");
@@ -236,6 +248,36 @@ public record DecisionLedger(
               optimization.get("selectedBundleId"),
               optimization.get("selectedScore")));
     }
+    if (learning != null) {
+      boolean applied = Boolean.TRUE.equals(learning.get("applied"));
+      Object profile = learning.get("profileId");
+      Object fallback = learning.get("fallbackReason");
+      if (applied) {
+        narrative.add(
+            "Learned inputs (profile "
+                + profile
+                + ", "
+                + learning.get("algorithmVersion")
+                + ", "
+                + learning.get("evidenceClass")
+                + " evidence) adjusted the soft ranking within +/-"
+                + learning.get("maxAdjustment")
+                + " points; estimated reliability and preference, not a guarantee.");
+      } else if (profile != null) {
+        narrative.add(
+            "Learning ran in "
+                + learning.get("mode")
+                + " mode with profile "
+                + profile
+                + ": the baseline ranking was executed"
+                + (Objects.equals(
+                        learning.get("baselineSelectedId"), learning.get("learnedSelectedId"))
+                    ? " and the learned ranking agreed."
+                    : "; the learned ranking would have chosen differently (recorded, not applied)."));
+      } else if (fallback != null) {
+        narrative.add("Learning did not influence this plan: " + fallback + " (baseline ranking).");
+      }
+    }
     if (plan != null) {
       Object total = plan.get("total");
       narrative.add(
@@ -343,7 +385,8 @@ public record DecisionLedger(
         new ArrayList<>(componentsById.values()),
         replans,
         compensation,
-        origin);
+        origin,
+        learning);
   }
 
   /** Slice 3: the latest reported state of each component wins. */

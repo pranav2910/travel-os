@@ -180,7 +180,7 @@ class AuditServiceIntegrationTest {
     List<String> narrative = new java.util.ArrayList<>();
     ledger.get("narrative").forEach(n -> narrative.add(n.asString()));
     assertThat(narrative)
-        .hasSize(6)
+        .hasSize(7)
         .satisfies(
             n -> {
               assertThat(n.get(0)).contains("understood from free text by claude-opus-5");
@@ -188,10 +188,19 @@ class AuditServiceIntegrationTest {
                   .contains("US_STANDARD_TRAVEL v12")
                   .contains("ALLOW_WITH_APPROVAL");
               assertThat(n.get(2)).contains("ortools-cpsat-9.15").contains("91.4");
-              assertThat(n.get(3)).contains("Approval was required").contains("USD 820.00");
-              assertThat(n.get(4)).contains("approved by human/bob");
-              assertThat(n.get(5)).contains("confirmed at sandbox-air").contains("SBX-4F9K2Q");
+              // Slice 5: the example ran learning in SHADOW mode; the ledger says so and says what
+              // was executed (the baseline), never implying the learned pick was a better one.
+              assertThat(n.get(3))
+                  .contains("SHADOW")
+                  .contains("lp_01K4Q0N7S6Z2X8G5H3J9M1P7RF")
+                  .contains("baseline ranking was executed")
+                  .contains("recorded, not applied");
+              assertThat(n.get(4)).contains("Approval was required").contains("USD 820.00");
+              assertThat(n.get(5)).contains("approved by human/bob");
+              assertThat(n.get(6)).contains("confirmed at sandbox-air").contains("SBX-4F9K2Q");
             });
+    assertThat(ledger.get("learning").get("mode").asString()).isEqualTo("SHADOW");
+    assertThat(ledger.get("learning").get("applied").asBoolean()).isFalse();
   }
 
   @Test

@@ -187,6 +187,9 @@ public final class OrderEvents {
       putIfPresent(m, "componentId", item.componentId());
       m.put("total", money(item.total()));
       putIfPresent(m, "failureCode", item.failureCode());
+      // Slice 5: who the outcome of this item belongs to, so consumers never re-read the order
+      putIfPresent(m, "provider", item.provider());
+      putIfPresent(m, "supplierKey", SupplierKeys.of(item.offerJson()));
       items.add(m);
     }
     return items;

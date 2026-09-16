@@ -188,6 +188,59 @@ public class TripService {
   }
 
   /**
+   * Slice 5: a person attests that the trip took place. The traveler may do so once the last leg's
+   * deadline has passed; a travel admin at any time (e.g. from expense reconciliation). Idempotent
+   * by state. Nothing else ever marks a trip completed: a booked trip is not a completed one.
+   */
+  @Transactional
+  public Trip complete(RequestPrincipal me, String tripId) {
+    Trip trip =
+        trips
+            .find(me.tenant(), tripId)
+            .filter(t -> TripAccess.canRead(me, t))
+            .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
+    if (trip.status() == TripStatus.COMPLETED) {
+      return trip;
+    }
+    boolean owner = trip.travelerId().equals(me.employeeId());
+    if (!owner && !me.hasRole("TRAVEL_ADMIN")) {
+      throw new ApiException.Forbidden(
+          "NOT_ALLOWED", "only the traveler or a travel admin may attest completion");
+    }
+    if (trip.status() != TripStatus.BOOKED) {
+      throw new ApiException.Conflict(
+          "TRIP_NOT_BOOKED", "only a BOOKED trip can be completed; this one is " + trip.status());
+    }
+    Instant now = clock.instant();
+    if (owner && !me.hasRole("TRAVEL_ADMIN") && trip.intent() != null) {
+      Instant lastArrival =
+          trip.intent().itinerary() != null
+              ? trip.intent().itinerary().lastArrival()
+              : (trip.intent().latestReturn() != null
+                  ? trip.intent().latestReturn()
+                  : trip.intent().arrivalDeadline());
+      if (now.isBefore(lastArrival)) {
+        throw new ApiException.Conflict(
+            "TRIP_NOT_OVER", "the trip's last arrival is " + lastArrival + "; attest after it");
+      }
+    }
+    Trip completed = trip.withStatus(TripStatus.COMPLETED, now);
+    if (!trips.update(completed, trip.version())) {
+      throw new ApiException.Conflict(
+          "TRIP_MODIFIED_CONCURRENTLY", "trip changed while completing; re-read and retry");
+    }
+    trips.appendHistory(
+        trip,
+        trip.status(),
+        TripStatus.COMPLETED,
+        "completed, attested by " + me.principal().id(),
+        me.principal(),
+        now);
+    outbox.append(TripEvents.completed(completed, null, clock));
+    return completed;
+  }
+
+  /**
    * The workflow's lever. Validates the lifecycle, records evidence, creates the approval when
    * entering AWAITING_APPROVAL, and publishes the matching event. Idempotent: asking for the
    * current status returns the trip unchanged.

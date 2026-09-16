@@ -1,0 +1,23 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.learning.feedback-recorded",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T10:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "producer": "learning",
+  "data": {
+    "feedbackId": "fb_01ARZ3NDEKTSV4RRFFQ69G5FB9",
+    "tripId": "trip_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+    "travelerId": "emp_1001",
+    "componentId": "cmp_01ARZ3NDEKTSV4RRFFQ69G5FC0",
+    "supplierKey": "air:AS",
+    "revision": 1,
+    "rating": 5,
+    "tags": [
+      "ON_TIME",
+      "WOULD_USE_AGAIN"
+    ],
+    "recordedBy": "human/alice"
+  }
+}

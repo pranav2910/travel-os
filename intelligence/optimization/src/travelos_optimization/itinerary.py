@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 
 from ortools.sat.python import cp_model
 
+from travelos_optimization import learning
 from travelos_optimization.model import Breakdown, Cabin, Money, Preferences, Ranked, Weights
 from travelos_optimization.solver import SCORE_SCALE, _solver_name
 
@@ -47,6 +48,7 @@ class ComponentOffer:
     hotel_id: str | None = None
     refundable: bool = True
     duration_minutes: int = 0
+    vendor_id: str | None = None  # GROUND
 
 
 @dataclass(frozen=True)
@@ -99,6 +101,7 @@ class ItineraryResult:
     solver: str = ""
     solve_time_ms: int = 0
     combinations: int = 0
+    learning: learning.Evidence | None = None
 
     @property
     def feasible(self) -> bool:
@@ -230,7 +233,10 @@ def _breakdowns(c: Component, offers: list[ComponentOffer], p: Preferences) -> d
 
 
 def optimize_itinerary(
-    components: list[Component], k: ItineraryConstraints, p: Preferences
+    components: list[Component],
+    k: ItineraryConstraints,
+    p: Preferences,
+    inputs: learning.Inputs | None = None,
 ) -> ItineraryResult:
     started = time.perf_counter()
     weights: Weights = p.weights
@@ -246,6 +252,44 @@ def optimize_itinerary(
         feasible[c.component_id] = [o for o in c.offers if not unary[c.component_id][o.offer_id]]
         scores[c.component_id] = _breakdowns(c, feasible[c.component_id], p)
         combinations *= max(1, len(feasible[c.component_id]))
+
+    # Slice 5: bounded learned adjustments per feasible offer; the executed objective uses them only
+    # in ACTIVE mode. Feasibility above is untouched by them.
+    use_learning = inputs is not None and inputs.usable
+    learned: dict[str, dict[str, float]] = {}
+    contributions: list[learning.Contribution] = []
+    for c in ordered:
+        learned[c.component_id] = {}
+        for o in feasible[c.component_id]:
+            base = scores[c.component_id][o.offer_id].weighted(weights)
+            if use_learning:
+                adjustment, why = learning.contribution_for(learning.keys_of_offer(o), inputs)
+                value = learning.clamp_score(base + adjustment)
+                contributions.append(
+                    learning.Contribution(
+                        o.offer_id,
+                        c.component_id,
+                        learning.keys_of_offer(o),
+                        round(base, 4),
+                        adjustment,
+                        round(value, 4),
+                        why,
+                    )
+                )
+            else:
+                value = base
+            learned[c.component_id][o.offer_id] = value
+    executed = (
+        learned
+        if use_learning and inputs.applies
+        else {
+            cid: {oid: scores[cid][oid].weighted(weights) for oid in learned[cid]}
+            for cid in learned
+        }
+    )
+    baseline_only = {
+        cid: {oid: scores[cid][oid].weighted(weights) for oid in learned[cid]} for cid in learned
+    }
 
     reasons: list[str] = []
     for c in ordered:
@@ -312,34 +356,52 @@ def optimize_itinerary(
         )
 
     # objective: weighted score, then cheaper, then fulfil optional components
-    terms = []
-    for c in ordered:
-        offers = feasible[c.component_id]
-        by_cost = sorted(offers, key=lambda o: (o.total.amount_minor, o.offer_id))
-        rank = {o.offer_id: i for i, o in enumerate(by_cost)}
-        n = len(offers)
-        for o in offers:
-            weighted = scores[c.component_id][o.offer_id].weighted(weights)
-            value = int(round(weighted * SCORE_SCALE)) * (n + 1) - rank[o.offer_id]
-            if not c.required:
-                value += SCORE_SCALE * (n + 1)  # a fulfilled optional component beats an empty one
-            terms.append(value * x[(c.component_id, o.offer_id)])
-    if terms:
-        model.Maximize(sum(terms))
+    def solve_with(score_of: dict[str, dict[str, float]]) -> tuple[bool, dict[str, str]]:
+        terms = []
+        for c in ordered:
+            offers = feasible[c.component_id]
+            by_cost = sorted(offers, key=lambda o: (o.total.amount_minor, o.offer_id))
+            rank = {o.offer_id: i for i, o in enumerate(by_cost)}
+            n = len(offers)
+            for o in offers:
+                weighted = score_of[c.component_id][o.offer_id]
+                value = int(round(weighted * SCORE_SCALE)) * (n + 1) - rank[o.offer_id]
+                if not c.required:
+                    value += SCORE_SCALE * (n + 1)  # a fulfilled optional beats an empty one
+                terms.append(value * x[(c.component_id, o.offer_id)])
+        if terms:
+            model.Maximize(sum(terms))
+        cp = cp_model.CpSolver()
+        cp.parameters.num_workers = 1
+        cp.parameters.random_seed = 7
+        cp.parameters.max_time_in_seconds = 10.0
+        st = cp.Solve(model) if x else cp_model.INFEASIBLE
+        good = st in (cp_model.OPTIMAL, cp_model.FEASIBLE) and not reasons
+        chosen: dict[str, str] = {}
+        if good:
+            for (cid, oid), var in x.items():
+                if cp.Value(var):
+                    chosen[cid] = oid
+        return good, chosen
 
-    solver = cp_model.CpSolver()
-    solver.parameters.num_workers = 1
-    solver.parameters.random_seed = 7
-    solver.parameters.max_time_in_seconds = 10.0
-    status = solver.Solve(model) if x else cp_model.INFEASIBLE
-    ok = status in (cp_model.OPTIMAL, cp_model.FEASIBLE) and not reasons
-
-    selected: dict[str, str] = {}
-    if ok:
-        for (cid, oid), var in x.items():
-            if solver.Value(var):
-                selected[cid] = oid
-    elif not reasons:
+    ok, selected = solve_with(executed)
+    evidence = learning.off(inputs)
+    if use_learning:
+        ok_base, baseline_selected = solve_with(baseline_only)
+        ok_learned, learned_selected = (ok, selected) if inputs.applies else solve_with(learned)
+        evidence = learning.Evidence(
+            inputs.mode,
+            inputs.profile_id,
+            inputs.algorithm_version,
+            inputs.evidence_class,
+            inputs.applies,
+            "",
+            "|".join(f"{cid}={oid}" for cid, oid in sorted(baseline_selected.items())),
+            "|".join(f"{cid}={oid}" for cid, oid in sorted(learned_selected.items())),
+            tuple(contributions[:200]),
+            inputs.max_adjustment,
+        )
+    if not ok and not reasons:
         if k.max_total is not None:
             cheapest = sum(
                 min((o.total.amount_minor for o in feasible[c.component_id]), default=0)
@@ -361,7 +423,7 @@ def optimize_itinerary(
         feasible_sorted = sorted(
             feasible[c.component_id],
             key=lambda o: (
-                -scores[c.component_id][o.offer_id].weighted(weights),
+                -executed[c.component_id][o.offer_id],
                 o.total.amount_minor,
                 o.offer_id,
             ),
@@ -376,9 +438,7 @@ def optimize_itinerary(
                 Ranked(
                     bundle_id=o.offer_id,
                     feasible=not bad,
-                    score=round(scores[c.component_id][o.offer_id].weighted(weights), 4)
-                    if not bad
-                    else 0.0,
+                    score=round(executed[c.component_id][o.offer_id], 4) if not bad else 0.0,
                     breakdown=scores[c.component_id][o.offer_id]
                     if not bad
                     else Breakdown(0, 0, 0, 0, 0),
@@ -388,7 +448,7 @@ def optimize_itinerary(
             )
         if chosen:
             bd = scores[c.component_id][chosen]
-            sc = round(bd.weighted(weights), 4)
+            sc = round(executed[c.component_id][chosen], 4)
             outcome = "SELECTED"
             comp_reasons: tuple[str, ...] = ()
             total_score += sc
@@ -420,4 +480,5 @@ def optimize_itinerary(
         solver=_solver_name(),
         solve_time_ms=elapsed_ms,
         combinations=combinations,
+        learning=evidence,
     )

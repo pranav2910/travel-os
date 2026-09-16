@@ -100,6 +100,15 @@ public class TripController {
     return trips.history(me, tripId);
   }
 
+  /** Slice 5: completion is attested (traveler after the trip, or a travel admin); idempotent. */
+  @PostMapping(path = "/{tripId}/completion")
+  public TripResponse complete(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @IdempotencyKeyHeader String idempotencyKey) {
+    return TripResponse.from(trips.complete(me, tripId));
+  }
+
   /** Cancellation is a POST that returns 200 with the new state; repeats are idempotent. */
   @PostMapping(path = "/{tripId}/cancellation", consumes = "application/json")
   public TripResponse cancel(

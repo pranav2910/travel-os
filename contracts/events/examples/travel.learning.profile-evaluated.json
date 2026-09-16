@@ -1,0 +1,23 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.learning.profile-evaluated",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T10:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+  "producer": "learning",
+  "data": {
+    "profileId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+    "verdict": "PASSED",
+    "status": "ELIGIBLE",
+    "decisionsEvaluated": 8,
+    "decisionsLabeled": 6,
+    "brierBaseline": 0.24,
+    "brierCandidate": 0.17,
+    "hardConstraintViolations": 0,
+    "reasons": [
+      "brier 0.17 <= baseline 0.24",
+      "6 labeled decisions >= 3"
+    ]
+  }
+}

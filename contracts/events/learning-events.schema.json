@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/learning-events.schema.json",
+  "title": "LearningEvents",
+  "$defs": {
+    "profileId": {
+      "type": "string",
+      "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+    },
+    "mode": {
+      "enum": [
+        "OFF",
+        "SHADOW",
+        "ACTIVE"
+      ]
+    },
+    "evidenceClass": {
+      "enum": [
+        "SANDBOX",
+        "LIVE"
+      ]
+    },
+    "profileStatus": {
+      "enum": [
+        "BUILDING",
+        "BUILT",
+        "ELIGIBLE",
+        "REJECTED",
+        "FAILED"
+      ]
+    },
+    "travel.learning.build-requested": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "requestedBy",
+        "inputCutoff"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "requestedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "inputCutoff": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "travel.learning.profile-built": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "algorithmVersion",
+        "evidenceClass",
+        "inputCutoff",
+        "datasetFingerprint",
+        "hardOutcomes",
+        "feedbackOutcomes",
+        "supplierKeys"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "algorithmVersion": {
+          "type": "string"
+        },
+        "evidenceClass": {
+          "$ref": "#/$defs/evidenceClass"
+        },
+        "inputCutoff": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "datasetFingerprint": {
+          "type": "string"
+        },
+        "hardOutcomes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "feedbackOutcomes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "supplierKeys": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "travel.learning.profile-evaluated": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "verdict",
+        "status",
+        "decisionsEvaluated",
+        "decisionsLabeled"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "verdict": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/profileStatus"
+        },
+        "decisionsEvaluated": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "decisionsLabeled": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "brierBaseline": {
+          "type": "number"
+        },
+        "brierCandidate": {
+          "type": "number"
+        },
+        "hardConstraintViolations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "travel.learning.build-failed": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "code"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "code": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "travel.learning.profile-activated": {
+      "type": "object",
+      "required": [
+        "profileId",
+        "activatedBy",
+        "mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "previousProfileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "activatedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "mode": {
+          "$ref": "#/$defs/mode"
+        },
+        "configVersion": {
+          "type": "integer"
+        }
+      }
+    },
+    "travel.learning.profile-rolled-back": {
+      "type": "object",
+      "required": [
+        "rolledBackBy",
+        "mode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "profileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "previousProfileId": {
+          "type": "string",
+          "pattern": "^lp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "rolledBackBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "mode": {
+          "$ref": "#/$defs/mode"
+        },
+        "configVersion": {
+          "type": "integer"
+        }
+      }
+    },
+    "travel.learning.mode-changed": {
+      "type": "object",
+      "required": [
+        "mode",
+        "previousMode",
+        "changedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/mode"
+        },
+        "previousMode": {
+          "$ref": "#/$defs/mode"
+        },
+        "changedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "deploymentClass": {
+          "$ref": "#/$defs/evidenceClass"
+        },
+        "configVersion": {
+          "type": "integer"
+        }
+      }
+    },
+    "travel.learning.feedback-recorded": {
+      "type": "object",
+      "required": [
+        "feedbackId",
+        "tripId",
+        "travelerId",
+        "revision",
+        "rating"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "feedbackId": {
+          "type": "string",
+          "pattern": "^fb_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "componentId": {
+          "type": "string"
+        },
+        "supplierKey": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recordedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    }
+  }
+}

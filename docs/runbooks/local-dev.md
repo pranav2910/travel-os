@@ -25,6 +25,7 @@ Docker Desktop needs ~3 GB for the platform; Java services run on the host.
 | LLM gateway | gRPC `localhost:9087` (`make run-llm-gateway`) | `LLM_PROVIDER=fake` offline; set `ANTHROPIC_API_KEY` for `anthropic` (Claude Opus 5) |
 | Disruption | http://localhost:8089 / gRPC :9089 (`make run SVC=disruption`) | Slice 2: consumer group `disruption` on `travel.disruption`; `GET /api/v1/trips/{tripId}/disruptions`, `GET /api/v1/disruptions/{id}`, `POST /api/v1/disruptions/{id}/approval` (MANAGER/TRAVEL_ADMIN) |
 | Enterprise Context | http://localhost:8090 / gRPC :9090 (`make run SVC=enterprise-context`) | Slice 4: connectors (`/api/v1/connectors`, TRAVEL_ADMIN), demand candidates (`/api/v1/demand`), signed webhooks `POST /api/v1/connectors/{provider}/events`; gRPC `SyncPage/CompleteSync/FailSync/GetEmployee` for the worker |
+| Learning | http://localhost:8091 / gRPC :9091 (`make run SVC=learning`) | Slice 5: consumer group `learning` on `travel.trip/order/disruption/optimization`; `/api/v1/learning/{config,profiles,history,summary}` (TRAVEL_ADMIN; FINANCE reads), `/outcomes`, `/feedback`, `/preferences` (travelers, own trips), `/outcomes/refunds` (FINANCE); gRPC `ResolveProfile` for the planner, `BeginBuild/ComputeProfile/EvaluateProfile/FailBuild` for the build workflow |
 | Audit | http://localhost:8088 (`make run SVC=audit`) | consumer group `audit` on every `travel.*` topic; `GET /api/v1/audit/trips/{id}`, `/decisions`, `/events?type=` (TRAVEL_ADMIN/FINANCE) |
 
 Service ports (HTTP 808x pairs with gRPC 908x): travel-core 8081 · policy 8082 / 9082 · optimization 8083 / 9083 · supplier-gateway 8084 / 9084 · order 8085 / 9085.
@@ -267,3 +268,41 @@ every acceptance scenario (`make stack-e2e4` / `make kind-e2e4`); `make kind-cha
 deterministic chaos run. Slice 3 carry-over fixture: a cancellation notice with
 `"reaccommodation": {"fareDeltaMinor": 7300, "nextDay": true}` leaves the disrupted passenger nothing
 on the cancelled date and reprices the next date, so the recovery re-dates the hotel.
+
+## Slice 5: learning from outcomes (SANDBOX evidence)
+
+`services/learning` owns the outcome ledger, feedback and the versioned profiles. Everything the
+platform can observe here comes from SIMULATED suppliers, so every outcome is `SANDBOX` evidence and
+the local deployment class is `SANDBOX` (`LEARNING_DEPLOYMENT_CLASS`); a production deployment says
+`LIVE` and never activates a sandbox-trained profile. The stack and kind run `LEARNING_SCALE=100` so a
+demo's handful of outcomes reaches the ±10 bound; the production default is 40.
+
+Demo, against the Docker stack or kind (`scripts/e2e-slice5.sh` does all of this and more):
+
+```bash
+# 0. the tenant's mode (default SHADOW). OFF reproduces the baseline; ACTIVE applies an eligible profile.
+curl $LEARNING/api/v1/learning/config -H "Authorization: Bearer $CAROL"
+curl -X PUT $LEARNING/api/v1/learning/config -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' -d '{"mode":"SHADOW"}'
+# 1. book trips, let the sandbox airline cancel some (scripts/e2e-slice2.sh notify), attest a completion as an admin,
+#    let Finance record a settled refund; every outcome of a trip, with revisions and provenance:
+curl "$LEARNING/api/v1/learning/outcomes?tripId=$TRIP" -H "Authorization: Bearer $ALICE"
+curl -X POST $CORE/api/v1/trips/$TRIP/completion -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)"
+curl -X POST $LEARNING/api/v1/learning/outcomes/refunds -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' \
+  -d '{"tripId":"'$TRIP'","orderId":"'$ORDER'","itemId":"'$ITEM'","amountMinor":52000,"currency":"USD","reference":"RF-1"}'
+# 2. the traveler's structured feedback (tags from a fixed vocabulary; the comment is stored as text, never used)
+curl -X POST $LEARNING/api/v1/learning/feedback -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' \
+  -d '{"tripId":"'$TRIP'","componentId":"'$ITEM'","rating":2,"tags":["DELAYED"],"comment":"late both ways"}'
+# 3. build + evaluate a profile (the worker runs LearningBuildWorkflow), inspect it, activate it, roll back
+curl -X POST $LEARNING/api/v1/learning/profiles -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' -d '{"window":"PT2H"}'
+curl $LEARNING/api/v1/learning/profiles/$LP -H "Authorization: Bearer $CAROL"          # status, suppliers, evaluation report, fingerprint
+curl -X POST $LEARNING/api/v1/learning/profiles/$LP/activation -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' -d '{"expectedVersion":3}'
+curl -X POST $LEARNING/api/v1/learning/rollback -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' -d '{}'   # previous eligible profile, else baseline
+curl -X POST $LEARNING/api/v1/learning/rollback -H "Authorization: Bearer $CAROL" -H "Idempotency-Key: $(uuidgen)" -H 'Content-Type: application/json' -d '{"toBaseline":true}'   # no profile at all
+# 4. what a plan used: the ledger's learning section (mode, profile, applied, both selections, contributions)
+curl $AUDIT/api/v1/audit/trips/$TRIP/decisions -H "Authorization: Bearer $ALICE" | jq .learning
+```
+
+Fallbacks a plan can record instead of a profile: `MODE_OFF`, `NO_ACTIVE_PROFILE`, `STALE_PROFILE`,
+`CLASS_MISMATCH`, `INCOMPATIBLE_ALGORITHM`, `LEARNING_UNAVAILABLE` (the service did not answer within
+3 attempts; the trip proceeds on the baseline). `make stack-e2e5` / `make kind-e2e5` run the
+acceptance script; `make kind-chaos5` the deterministic chaos run.

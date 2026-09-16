@@ -9,7 +9,9 @@ SHA="$(git rev-parse --short=12 HEAD)"
 # Uncommitted changes get their own tag: an image tag must never mean two different builds, and a
 # Deployment whose image reference did not change would keep running the old one.
 if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
-  SHA="${SHA}-dirty-$( (git diff HEAD --binary; git status --porcelain --untracked-files=all) | shasum | cut -c1-8)"
+  # The dirty hash covers tracked changes AND the contents of untracked files (a new service edited
+  # before its first commit must still produce a new tag, or the nodes keep the cached image).
+  SHA="${SHA}-dirty-$( (git diff HEAD --binary; git status --porcelain --untracked-files=all; git ls-files --others --exclude-standard -z | xargs -0 shasum 2>/dev/null) | shasum | cut -c1-8)"
 fi
 TAG="${TAG:-$SHA}"
 REGISTRY=localhost:5001/travel-os

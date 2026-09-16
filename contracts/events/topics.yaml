@@ -53,6 +53,10 @@ topics:
     slice: 4
     events: [travel.demand.sync-requested, travel.demand.sync-completed, travel.demand.sync-failed, travel.demand.candidate-detected, travel.demand.candidate-updated, travel.demand.candidate-withdrawn, travel.demand.candidate-dismissed, travel.demand.candidate-converted, travel.demand.candidate-changed-after-conversion]
 
+  - name: travel.learning
+    slice: 5
+    events: [travel.learning.build-requested, travel.learning.profile-built, travel.learning.profile-evaluated, travel.learning.build-failed, travel.learning.profile-activated, travel.learning.profile-rolled-back, travel.learning.mode-changed, travel.learning.feedback-recorded]
+
   - name: travel.agent
     slice: 1
     events: [travel.agent.action.requested, travel.agent.action.completed, travel.agent.action.rejected]

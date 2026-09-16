@@ -1,0 +1,19 @@
+{
+  "eventId": "evt_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+  "eventType": "travel.learning.profile-built",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-16T10:03:22.104Z",
+  "tenantId": "acme",
+  "correlationId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+  "producer": "learning",
+  "data": {
+    "profileId": "lp_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+    "algorithmVersion": "reliability-v1",
+    "evidenceClass": "SANDBOX",
+    "inputCutoff": "2026-09-16T10:00:00Z",
+    "datasetFingerprint": "5f2a9c1e3b7d4f60",
+    "hardOutcomes": 27,
+    "feedbackOutcomes": 3,
+    "supplierKeys": 6
+  }
+}
