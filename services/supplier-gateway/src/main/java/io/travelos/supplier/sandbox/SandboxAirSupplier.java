@@ -219,6 +219,9 @@ public class SandboxAirSupplier implements AirSupplier {
       throw new SupplierException("OFFER_EXPIRED", "offer expired; search again", false);
     }
     SandboxInventory.Schedule schedule = schedule(request.getCtx(), id);
+    // The repriced offer keeps the searched offer's issue time: the provider offer id encodes it,
+    // and pricing an offer must hand back the same id (a fresh instant made the id differ whenever
+    // a second boundary fell between the search and the price call).
     Offer offer =
         SandboxInventory.toOffer(
             schedule,
@@ -226,7 +229,7 @@ public class SandboxAirSupplier implements AirSupplier {
             id.destination(),
             id.outboundDate(),
             id.inboundDate(),
-            now,
+            Instant.ofEpochSecond(id.issuedEpochSeconds()),
             "",
             Ids.newId(IdPrefix.OFFER));
     // Deterministic inventory never moves; a real adapter would compare with the supplier's
