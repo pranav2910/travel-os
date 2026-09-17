@@ -377,6 +377,37 @@ public class OrderController {
     }
   }
 
+  /** One exposure with the order and trip it belongs to (the Finance inbox row). */
+  public record ExposureListItem(
+      String orderId, String tripId, String travelerId, ExposureView exposure) {}
+
+  /**
+   * The tenant's financial exposures at one status (default OPEN), for the roles that close them
+   * (TRAVEL_ADMIN, FINANCE). Everyone else is refused: the list would show other people's orders.
+   */
+  @GetMapping("/exposures")
+  public List<ExposureListItem> exposures(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @RequestParam(defaultValue = "OPEN") String status,
+      @RequestParam(defaultValue = "100") int limit) {
+    if (!me.hasAnyRole("TRAVEL_ADMIN", "FINANCE")) {
+      throw new ApiException.Forbidden(
+          "NOT_AN_EXPOSURE_RESOLVER", "TRAVEL_ADMIN or FINANCE role required");
+    }
+    ExposureRecord.Status wanted;
+    try {
+      wanted = ExposureRecord.Status.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
+    } catch (IllegalArgumentException e) {
+      throw new ApiException.Unprocessable("STATUS_UNKNOWN", "status must be OPEN or RESOLVED");
+    }
+    List<ExposureListItem> out = new java.util.ArrayList<>();
+    for (ExposureRecord e : orders.exposures(me.tenant(), wanted, Math.clamp(limit, 1, 500))) {
+      OrderRecord o = orders.get(me.tenant(), e.orderId());
+      out.add(new ExposureListItem(o.orderId(), o.tripId(), o.travelerId(), ExposureView.from(e)));
+    }
+    return out;
+  }
+
   @GetMapping
   public List<OrderResponse> byTrip(
       @AuthenticationPrincipal RequestPrincipal me, @RequestParam String tripId) {

@@ -33,6 +33,7 @@ make kind-e2e4          # Slice 4: calendar/CRM/HRIS/expense demand detection ->
 make kind-chaos4        # Slice 4: a connector sync under a source outage, a rate limit, the service and the worker killed; one candidate each
 make kind-e2e5          # Slice 5: outcomes -> evaluated profile -> shadow/active ranking with evidence; safeguards; activation conflicts and rollback
 make kind-chaos5        # Slice 5: learning service gone mid-plan (baseline), worker killed mid-build (one profile), consumer restart (one outcome), pinned inputs
+make web-e2e-kind       # browser E2E (Playwright) against the cluster: web on :18080, Keycloak on :18180
 make kind-rollback-demo # deploy a stand-in "next" release, roll back with helm, verify
 make kind-down
 ```
@@ -55,6 +56,7 @@ Host ports once deployed:
 | disruption | http://localhost:18089 (gRPC 9089 in-cluster) |
 | enterprise-context | http://localhost:18090 (gRPC 9090 in-cluster) |
 | learning | http://localhost:18091 (gRPC 9091 in-cluster) |
+| web (the app + /api proxy) | http://localhost:18080 |
 | optimization gRPC | localhost:19083 |
 | llm-gateway gRPC | localhost:19087 |
 | Keycloak | http://localhost:18180 (admin password in `deploy/kind/.secrets.env`) |
@@ -92,6 +94,13 @@ kubectl -n travelos get deploy -o custom-columns=NAME:.metadata.name,IMAGE:.spec
   on 443). `make kind-chaos` proves the policies are enforced, not just rendered.
 * **Secrets**: `secretRef` per service; on EKS an `ExternalSecret` materialises it from Secrets
   Manager. Values files only ever contain the *names* of secrets.
+* **The web edge** (`kind: web`): the same nginx image as compose, read-only root filesystem with
+  everything rendered under `/tmp`, HTTP probes on `/healthz`, and a NetworkPolicy that reaches
+  only the services it proxies (`httpToApps`) while those accept HTTP from `web` (`httpFromApps`).
+  Its upstream URLs are fully qualified (`policy.travelos.svc.cluster.local`) because nginx asks
+  the cluster DNS server directly and never applies the pod's search domains; a bare service name
+  is a 502 "host not found". `/config.json` is rendered from public env values only
+  (`OIDC_AUTHORITY` is the Keycloak URL as the browser reaches it, 18180 on kind).
 
 ## Rollback
 

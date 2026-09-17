@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /><title>Signing in</title></head>
+  <body>
+    <!-- Loaded in a hidden iframe by oidc-client-ts to renew a session without a redirect. It only
+         hands the authorization response back to the opener; no application code runs here. -->
+    <script type="module">
+      import { UserManager } from './src/auth/oidc-renew.ts';
+      new UserManager({ response_mode: 'query' }).signinSilentCallback().catch(() => {});
+    </script>
+  </body>
+</html>

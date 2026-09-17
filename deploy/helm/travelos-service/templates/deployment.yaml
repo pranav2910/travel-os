@@ -110,7 +110,26 @@ spec:
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- if eq .Values.kind "java" }}
+          {{- if eq .Values.kind "web" }}
+          startupProbe:
+            httpGet:
+              path: {{ .Values.probes.httpPath }}
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.httpPath }}
+              port: http
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.httpPath }}
+              port: http
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          {{- else if eq .Values.kind "java" }}
           startupProbe:
             httpGet:
               path: /actuator/health/liveness

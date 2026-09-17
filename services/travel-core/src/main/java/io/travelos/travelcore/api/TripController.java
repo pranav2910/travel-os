@@ -10,9 +10,11 @@ import io.travelos.travelcore.trip.Trip;
 import io.travelos.travelcore.trip.TripRepository;
 import io.travelos.travelcore.trip.TripService;
 import io.travelos.travelcore.trip.TripSource;
+import io.travelos.travelcore.trip.TripStatus;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -80,10 +82,38 @@ public class TripController {
     return trips.components(me, tripId).stream().map(TripResponse.ComponentView::from).toList();
   }
 
+  /**
+   * {@code scope=mine} (default): the caller's own trips. {@code scope=tenant}: every trip of the
+   * tenant, for MANAGER / TRAVEL_ADMIN / FINANCE (an approval inbox is {@code
+   * scope=tenant&status=AWAITING_APPROVAL}). {@code status} filters either scope.
+   */
   @GetMapping
-  public List<TripResponse> listMine(
-      @AuthenticationPrincipal RequestPrincipal me, @RequestParam(defaultValue = "50") int limit) {
-    return trips.listMine(me, Math.clamp(limit, 1, 200)).stream().map(TripResponse::from).toList();
+  public List<TripResponse> list(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @RequestParam(defaultValue = "50") int limit,
+      @RequestParam(defaultValue = "mine") String scope,
+      @RequestParam(required = false) @Nullable String status) {
+    TripStatus wanted = null;
+    if (status != null && !status.isBlank()) {
+      try {
+        wanted = TripStatus.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new ApiException.Unprocessable("STATUS_UNKNOWN", "unknown status " + status);
+      }
+    }
+    int n = Math.clamp(limit, 1, 200);
+    List<Trip> found =
+        switch (scope) {
+          case "mine" -> trips.listMine(me, n);
+          case "tenant" -> trips.listForTenant(me, wanted, n);
+          default ->
+              throw new ApiException.Unprocessable("SCOPE_UNKNOWN", "scope must be mine or tenant");
+        };
+    TripStatus filter = wanted;
+    return found.stream()
+        .filter(t -> filter == null || t.status() == filter)
+        .map(TripResponse::from)
+        .toList();
   }
 
   /** The agent-decision ledger: what a model concluded about this trip, with its evidence. */

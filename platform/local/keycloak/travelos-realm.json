@@ -159,15 +159,19 @@
       "directAccessGrantsEnabled": false,
       "redirectUris": [
         "http://localhost:5173/*",
-        "http://localhost:3000/*"
+        "http://localhost:3000/*",
+        "http://localhost:8080/*",
+        "http://localhost:18080/*"
       ],
       "webOrigins": [
         "http://localhost:5173",
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "http://localhost:18080"
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "+"
+        "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:3000/*##http://localhost:8080/*##http://localhost:18080/*"
       },
       "defaultClientScopes": [
         "travelos",
@@ -175,7 +179,8 @@
         "email",
         "roles"
       ],
-      "optionalClientScopes": []
+      "optionalClientScopes": [],
+      "description": "Browser app (Authorization Code + PKCE, no secret). Origins: Vite dev 5173, Docker stack 8080, kind 18080."
     },
     {
       "clientId": "travelos-dev-cli",

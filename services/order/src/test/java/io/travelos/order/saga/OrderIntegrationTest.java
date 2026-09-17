@@ -245,6 +245,25 @@ class OrderIntegrationTest {
     assertThat(view.get("exposures").get(0).get("status").asString()).isEqualTo("OPEN");
     assertThat(view.get("exposures").get(0).get("amount").get("amountMinor").asLong())
         .isEqualTo(view.get("items").get(0).get("total").get("amountMinor").asLong());
+    // Finance's inbox: every open exposure of the tenant with its order and trip; travelers and
+    // managers are refused (the list would show other people's orders)
+    ResponseEntity<String> open = get("/api/v1/orders/exposures?status=OPEN", TestTokens.carol());
+    assertThat(open.getStatusCode().value()).isEqualTo(200);
+    JsonNode rows = json.readTree(open.getBody());
+    assertThat(rows)
+        .anySatisfy(
+            r -> {
+              assertThat(r.get("orderId").asString()).isEqualTo(order.getOrderId());
+              assertThat(r.get("tripId").asString()).isEqualTo(TRIP);
+              assertThat(r.get("exposure").get("status").asString()).isEqualTo("OPEN");
+            });
+    assertThat(get("/api/v1/orders/exposures", TestTokens.alice()).getStatusCode().value())
+        .isEqualTo(403);
+    assertThat(get("/api/v1/orders/exposures", TestTokens.bob()).getStatusCode().value())
+        .isEqualTo(403);
+    assertThat(
+            get("/api/v1/orders/exposures?status=NOPE", TestTokens.carol()).getStatusCode().value())
+        .isEqualTo(422);
   }
 
   @Test

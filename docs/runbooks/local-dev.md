@@ -26,6 +26,7 @@ Docker Desktop needs ~3 GB for the platform; Java services run on the host.
 | Disruption | http://localhost:8089 / gRPC :9089 (`make run SVC=disruption`) | Slice 2: consumer group `disruption` on `travel.disruption`; `GET /api/v1/trips/{tripId}/disruptions`, `GET /api/v1/disruptions/{id}`, `POST /api/v1/disruptions/{id}/approval` (MANAGER/TRAVEL_ADMIN) |
 | Enterprise Context | http://localhost:8090 / gRPC :9090 (`make run SVC=enterprise-context`) | Slice 4: connectors (`/api/v1/connectors`, TRAVEL_ADMIN), demand candidates (`/api/v1/demand`), signed webhooks `POST /api/v1/connectors/{provider}/events`; gRPC `SyncPage/CompleteSync/FailSync/GetEmployee` for the worker |
 | Learning | http://localhost:8091 / gRPC :9091 (`make run SVC=learning`) | Slice 5: consumer group `learning` on `travel.trip/order/disruption/optimization`; `/api/v1/learning/{config,profiles,history,summary}` (TRAVEL_ADMIN; FINANCE reads), `/outcomes`, `/feedback`, `/preferences` (travelers, own trips), `/outcomes/refunds` (FINANCE); gRPC `ResolveProfile` for the planner, `BeginBuild/ComputeProfile/EvaluateProfile/FailBuild` for the build workflow |
+| Web app | http://localhost:8080 (Docker stack) · http://localhost:5173 (`make web-dev`) | the React workspace; nginx proxies `/api/v1/*` to the services; signs in through Keycloak's `travelos-web` client (PKCE) |
 | Audit | http://localhost:8088 (`make run SVC=audit`) | consumer group `audit` on every `travel.*` topic; `GET /api/v1/audit/trips/{id}`, `/decisions`, `/events?type=` (TRAVEL_ADMIN/FINANCE) |
 
 Service ports (HTTP 808x pairs with gRPC 908x): travel-core 8081 · policy 8082 / 9082 · optimization 8083 / 9083 · supplier-gateway 8084 / 9084 · order 8085 / 9085.
@@ -114,8 +115,8 @@ Every runnable component has an image (`docker/java.Dockerfile`, `docker/python.
 as running them on the host, so `scripts/e2e-slice1.sh` works unchanged.
 
 ```bash
-make images       # jars + 8 images tagged ghcr.io/pranav2910/travel-os/<name>:local (~75s)
-make stack-up     # infra + services, waits until every container is healthy, creates topics
+make images       # jars + 12 images (incl. the web app) tagged ghcr.io/pranav2910/travel-os/<name>:local
+make stack-up     # infra + services + the web app on http://localhost:8080, waits until healthy, creates topics
 make stack-e2e    # the live Slice 1 script against the containers
 make stack-logs SVC=trip-planning
 make stack-down   # or stack-nuke to drop the data volumes
@@ -170,6 +171,16 @@ docker compose -f platform/local/docker-compose.yml exec postgres psql -U travel
 ```
 
 ## Gotchas
+
+- The Postgres init script (`platform/local/postgres/init/01-databases.sql`) runs only when the
+  `postgres-data` volume is created. A volume from before a slice that added a database (Slice 2:
+  `disruption`, Slice 5: `learning`) makes that service restart-loop with "password authentication
+  failed for user <svc>_app". Either `make stack-nuke` (drops the local data volumes) or create just
+  the missing role and database with the statements from that file.
+- `make stack-up` creates the Kafka topics only after every container is healthy. If the `--wait`
+  step fails (a restart-looping service), no topic exists, the outboxes hold every event and trips
+  stay SUBMITTED forever: fix the service, then rerun `make stack-up` (or
+  `docker compose -f platform/local/docker-compose.yml run --rm kafka-init`).
 
 - Homebrew's `openjdk@21` is not visible to `/usr/libexec/java_home` unless symlinked; the Makefile
   falls back to the keg path. Gradle also auto-provisions a JDK 21 if it finds none.
@@ -306,3 +317,30 @@ Fallbacks a plan can record instead of a profile: `MODE_OFF`, `NO_ACTIVE_PROFILE
 `CLASS_MISMATCH`, `INCOMPATIBLE_ALGORITHM`, `LEARNING_UNAVAILABLE` (the service did not answer within
 3 attempts; the trip proceeds on the baseline). `make stack-e2e5` / `make kind-e2e5` run the
 acceptance script; `make kind-chaos5` the deterministic chaos run.
+
+## The web app
+
+`web/` (React + TypeScript, Vite). Sign in as one of the realm's users (`password`): alice
+(traveler), bob (traveler + manager), carol (traveler + travel admin + Finance), dan (traveler), zoe
+(another tenant). The header always says "Sandbox — simulated bookings".
+
+- The edge container runs with a read-only root filesystem on Kubernetes **and** in compose
+  (`read_only: true`, tmpfs `/tmp`): everything nginx renders or writes (`/tmp/conf.d`, the proxy
+  snippet, `config.json`, pid, temp dirs) lives under `/tmp`. A quick check of the image alone:
+  `docker run --rm --read-only --tmpfs /tmp -p 8079:8080 ghcr.io/pranav2910/travel-os/web:local`
+  then `curl localhost:8079/healthz`.
+
+```bash
+make web-install                  # npm ci (pinned versions)
+make web-dev                      # http://localhost:5173, /api proxied to the services on their host ports (make up + make run ...)
+make web-check                    # eslint, tsc, vitest, production build
+make images && make stack-up      # the app in the Docker stack on http://localhost:8080
+make web-e2e                      # Playwright against the stack (needs: npx playwright install chromium webkit)
+#   E2E_BASE_URL (web edge), E2E_KEYCLOAK_URL, E2E_SUPPLIER_URL (supplier notices go to the gateway's own
+#   port: the edge only proxies browser routes) and E2E_WEBHOOK_SECRET are the knobs; the Makefile sets them.
+```
+
+Demo path: alice → New trip (round trip BOS→SEA, a wide UTC window) → the page follows the
+workflow to Booked and shows the bookings, the timeline and "Why this option"; bob → Approvals when
+a policy requires a manager (`managerRequiredAbove`); carol → Finance / Connectors / Learning. The
+request page states that submitting books; there is no preview mode.

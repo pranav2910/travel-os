@@ -496,6 +496,10 @@ public class OrderService {
     return exposures.byOrder(tenant, orderId);
   }
 
+  public List<ExposureRecord> exposures(TenantId tenant, ExposureRecord.Status status, int limit) {
+    return exposures.byTenantAndStatus(tenant, status, limit);
+  }
+
   /**
    * A person closes an exposure (cancelled by phone, loss accepted, refund negotiated). Idempotent
    * by the caller's key. When nothing is open any more the order is honest again: FAILED, fully

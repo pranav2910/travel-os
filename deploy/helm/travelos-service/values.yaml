@@ -1,6 +1,6 @@
 # Defaults for every service. The umbrella chart (deploy/helm/travelos) overrides per service.
 name: ""                 # required: travel-core, policy, ... (set by the umbrella alias values)
-kind: java               # java (Spring Boot: HTTP actuator probes) | python (gRPC health probes)
+kind: java               # java (Spring Boot: HTTP actuator probes) | python (gRPC health probes) | web (static nginx: HTTP path probe)
 
 image:
   registry: ""           # falls back to global.image.registry
@@ -33,6 +33,7 @@ resources:
 javaToolOptions: "-XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom"
 
 probes:
+  httpPath: /healthz       # kind: web only
   startup:
     failureThreshold: 36   # 36 x 5s = 3 minutes for a cold JVM on a small node
     periodSeconds: 5
@@ -76,10 +77,14 @@ networkPolicy:
   enabled: true
   # Who may reach the HTTP port. Default: in-cluster only; kind opens it for the host.
   httpFrom: []
+  # Which apps (by `app` label) may reach the HTTP port (the web edge proxies to the services).
+  httpFromApps: []
   # Which apps (by `app` label) may reach the gRPC port.
   grpcFromApps: []
   # Which apps this service calls over gRPC (egress within the namespace).
   grpcToApps: []
+  # Which apps this service calls over HTTP (the web edge to the services it proxies).
+  httpToApps: []
   # Infra ports this service needs in the infra namespace.
   infraPorts: [5432, 9092, 7233, 8180, 4317, 4318]
   # Extra egress rules (e.g. llm-gateway to the public internet on 443).

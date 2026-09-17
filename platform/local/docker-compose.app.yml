@@ -195,6 +195,34 @@ services:
     depends_on:
       <<: *infra-ready
 
+  # The web app: the React build behind nginx, which also proxies /api/v1/* to the services above, so
+  # the browser talks to one origin (http://localhost:8080). Keycloak stays on :8180 (OIDC redirects).
+  web:
+    image: ghcr.io/pranav2910/travel-os/web:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/web.Dockerfile
+    restart: unless-stopped
+    mem_limit: 64m
+    read_only: true # as on Kubernetes: everything nginx writes lives under /tmp
+    tmpfs: [/tmp]
+    environment:
+      OIDC_AUTHORITY: http://localhost:8180/realms/travelos
+      OIDC_CLIENT_ID: travelos-web
+      DEPLOYMENT_CLASS: SANDBOX
+      ENVIRONMENT_LABEL: docker stack
+    ports:
+      - "8080:8080"
+    healthcheck:
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+    depends_on:
+      travel-core: { condition: service_healthy }
+      learning: { condition: service_healthy }
+
   trip-planning:
     <<: *java
     image: ghcr.io/pranav2910/travel-os/trip-planning:${TAG:-local}

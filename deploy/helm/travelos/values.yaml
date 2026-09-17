@@ -30,6 +30,7 @@ travel-core:
     TRAVEL_CORE_DB_USER: travel_core_app
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
     grpcFromApps: [trip-planning]
 
 policy:
@@ -41,6 +42,7 @@ policy:
     POLICY_DB_USER: policy_app
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
     grpcFromApps: [trip-planning]
 
 supplier-gateway:
@@ -66,6 +68,7 @@ order:
     SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
     grpcFromApps: [trip-planning, disruption]
     grpcToApps:
       - { app: supplier-gateway, port: 9084 }
@@ -79,6 +82,7 @@ audit:
     AUDIT_DB_USER: audit_app
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
 
 disruption:
   name: disruption
@@ -90,6 +94,7 @@ disruption:
     ORDER_ADDRESS: order:9085
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
     grpcFromApps: [trip-planning]
     grpcToApps:
       - { app: order, port: 9085 }
@@ -105,6 +110,7 @@ enterprise-context:
     CONTEXT_SYNC_INTERVAL: 60s
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
     grpcFromApps: [trip-planning]
     grpcToApps:
       - { app: travel-core, port: 9081 }
@@ -119,7 +125,43 @@ learning:
     LEARNING_DEPLOYMENT_CLASS: LIVE           # a production deployment activates LIVE-evidence profiles only
   networkPolicy:
     httpFrom: *httpFrom
+    httpFromApps: [web]
     grpcFromApps: [trip-planning]
+
+# The web edge (Slice 6): the React app behind nginx, proxying the public routes to the services.
+web:
+  name: web
+  kind: web
+  ports: { http: 8080 }
+  resources: { requests: { cpu: 50m, memory: 32Mi }, limits: { memory: 64Mi } }
+  autoscaling: { enabled: false }
+  replicaCount: 2
+  env:
+    OIDC_AUTHORITY: http://localhost:8180/realms/travelos   # the users' Keycloak, as they reach it
+    OIDC_CLIENT_ID: travelos-web
+    DEPLOYMENT_CLASS: SANDBOX
+    ENVIRONMENT_LABEL: kubernetes
+    # Fully qualified on purpose: nginx resolves upstreams with the cluster DNS server directly and
+    # does not apply the pod's search domains, so a bare service name is "host not found".
+    # The release namespace is travelos (Makefile / CI); change these with it.
+    TRAVEL_CORE_URL: http://travel-core.travelos.svc.cluster.local:8081
+    POLICY_URL: http://policy.travelos.svc.cluster.local:8082
+    ORDER_URL: http://order.travelos.svc.cluster.local:8085
+    AUDIT_URL: http://audit.travelos.svc.cluster.local:8088
+    DISRUPTION_URL: http://disruption.travelos.svc.cluster.local:8089
+    ENTERPRISE_CONTEXT_URL: http://enterprise-context.travelos.svc.cluster.local:8090
+    LEARNING_URL: http://learning.travelos.svc.cluster.local:8091
+  networkPolicy:
+    httpFrom: *httpFrom
+    infraPorts: []                            # static files + proxy: no database, broker or IdP calls
+    httpToApps:
+      - { app: travel-core, port: 8081 }
+      - { app: policy, port: 8082 }
+      - { app: order, port: 8085 }
+      - { app: audit, port: 8088 }
+      - { app: disruption, port: 8089 }
+      - { app: enterprise-context, port: 8090 }
+      - { app: learning, port: 8091 }
 
 trip-planning:
   name: trip-planning
@@ -207,3 +249,4 @@ ingress:
     - { path: /api/v1/demand, service: enterprise-context, port: 8090, pathType: Prefix }
     - { path: /api/v1/connectors, service: enterprise-context, port: 8090, pathType: Prefix }
     - { path: /api/v1/learning, service: learning, port: 8091, pathType: Prefix }
+    - { path: /, service: web, port: 8080, pathType: Prefix }   # the app itself (deep links -> index.html)

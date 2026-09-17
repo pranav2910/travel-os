@@ -106,6 +106,24 @@ public class TripRepository {
         .optional();
   }
 
+  /** Every trip of the tenant, newest first, optionally at one status (approvers' inboxes). */
+  public List<Trip> listForTenant(TenantId tenant, @Nullable TripStatus status, int limit) {
+    String where = status == null ? "" : " AND status = :status";
+    var spec =
+        jdbc.sql(
+                "SELECT "
+                    + COLUMNS
+                    + " FROM trip WHERE tenant_id = :tenantId"
+                    + where
+                    + " ORDER BY created_at DESC, trip_id DESC LIMIT :limit")
+            .param("tenantId", tenant.value())
+            .param("limit", limit);
+    if (status != null) {
+      spec = spec.param("status", status.name());
+    }
+    return spec.query(TripRepository::map).list();
+  }
+
   public List<Trip> listForTraveler(TenantId tenant, String travelerId, int limit) {
     return jdbc.sql(
             "SELECT "

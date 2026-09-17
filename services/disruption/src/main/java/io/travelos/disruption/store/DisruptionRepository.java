@@ -107,6 +107,22 @@ public class DisruptionRepository {
         .list();
   }
 
+  /** The tenant's disruptions, newest first, optionally at one status (an operations inbox). */
+  public List<Disruption> byTenant(TenantId tenant, @Nullable DisruptionStatus status, int limit) {
+    String where = status == null ? "" : " AND status = :s";
+    var spec =
+        jdbc.sql(
+                "SELECT * FROM disruption WHERE tenant_id = :t"
+                    + where
+                    + " ORDER BY detected_at DESC, disruption_id LIMIT :n")
+            .param("t", tenant.value())
+            .param("n", limit);
+    if (status != null) {
+      spec = spec.param("s", status.name());
+    }
+    return spec.query(DisruptionRepository::map).list();
+  }
+
   public List<Disruption> byTrip(TenantId tenant, String tripId) {
     return jdbc.sql(
             "SELECT * FROM disruption WHERE tenant_id = :t AND trip_id = :trip ORDER BY detected_at DESC, disruption_id")

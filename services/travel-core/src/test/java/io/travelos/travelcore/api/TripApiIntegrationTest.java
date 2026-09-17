@@ -335,6 +335,35 @@ class TripApiIntegrationTest {
     }
 
     @Test
+    void approversListTheTenantsTripsTravelersOnlyTheirOwn() {
+      String tripId = createAsAlice();
+      // a manager's inbox: the tenant's trips, optionally at one status
+      ResponseEntity<String> tenant = get("/api/v1/trips?scope=tenant", TestTokens.bob());
+      assertThat(tenant.getStatusCode().value()).isEqualTo(200);
+      assertThat(tenant.getBody()).contains(tripId);
+      ResponseEntity<String> booked =
+          get("/api/v1/trips?scope=tenant&status=BOOKED", TestTokens.bob());
+      assertThat(booked.getStatusCode().value()).isEqualTo(200);
+      assertThat(booked.getBody()).doesNotContain(tripId);
+      assertThat(
+              get("/api/v1/trips?scope=tenant&status=NOPE", TestTokens.bob())
+                  .getStatusCode()
+                  .value())
+          .isEqualTo(422);
+      // a traveler may not widen the scope: the list would show trips they cannot read
+      ResponseEntity<String> refused = get("/api/v1/trips?scope=tenant", TestTokens.dan());
+      assertThat(refused.getStatusCode().value()).isEqualTo(403);
+      assertThat(refused.getBody()).contains("NOT_TENANT_WIDE");
+      // the other tenant's admin sees nothing of ours
+      assertThat(
+              get(
+                      "/api/v1/trips?scope=tenant",
+                      TestTokens.user("zadmin", "globex", "emp_2002", List.of("TRAVEL_ADMIN")))
+                  .getBody())
+          .doesNotContain(tripId);
+    }
+
+    @Test
     void onlyArrangersCreateTripsForOthers() {
       String forDan = "{\"travelerId\":\"emp_1004\",\"intent\":" + INTENT + "}";
       ResponseEntity<String> asTraveler =

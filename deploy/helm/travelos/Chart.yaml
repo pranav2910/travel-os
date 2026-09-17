@@ -49,3 +49,7 @@ dependencies:
     alias: learning
     version: 0.1.0
     repository: file://../travelos-service
+  - name: travelos-service
+    alias: web
+    version: 0.1.0
+    repository: file://../travelos-service

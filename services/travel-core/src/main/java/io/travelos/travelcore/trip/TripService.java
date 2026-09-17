@@ -155,6 +155,19 @@ public class TripService {
     return trips.listForTraveler(me.tenant(), me.employeeIdOrThrow(), limit);
   }
 
+  /**
+   * The tenant's trips for the roles that may read any of them (an approver's inbox). A traveler
+   * asking for the tenant scope is refused: the list would show trips they may not read.
+   */
+  @Transactional(readOnly = true)
+  public List<Trip> listForTenant(RequestPrincipal me, @Nullable TripStatus status, int limit) {
+    if (!TripAccess.canReadTenantWide(me)) {
+      throw new ApiException.Forbidden(
+          "NOT_TENANT_WIDE", "MANAGER, TRAVEL_ADMIN or FINANCE role required for scope=tenant");
+    }
+    return trips.listForTenant(me.tenant(), status, limit);
+  }
+
   @Transactional(readOnly = true)
   public List<TripRepository.StatusChange> history(RequestPrincipal me, String tripId) {
     Trip trip = get(me, tripId);

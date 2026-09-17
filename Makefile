@@ -11,7 +11,7 @@ COMPOSE := docker compose -f platform/local/docker-compose.yml
 STACK   := docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml
 JARS    := travel-core policy supplier-gateway order audit disruption enterprise-context learning
 
-.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e stack-e2e2 stack-e2e3 stack-e2e4 stack-e2e5 kind-up kind-deploy kind-e2e kind-e2e2 kind-e2e3 kind-e2e4 kind-e2e5 kind-chaos kind-chaos2 kind-chaos3 kind-chaos4 kind-chaos5 kind-rollback-demo kind-down helm-lint tf-check
+.PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images web-install web-dev web-check web-e2e web-e2e-kind stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e stack-e2e2 stack-e2e3 stack-e2e4 stack-e2e5 kind-up kind-deploy kind-e2e kind-e2e2 kind-e2e3 kind-e2e4 kind-e2e5 kind-chaos kind-chaos2 kind-chaos3 kind-chaos4 kind-chaos5 kind-rollback-demo kind-down helm-lint tf-check
 
 help: ## list targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
@@ -59,10 +59,10 @@ run-llm-gateway: ## run the LLM gateway (gRPC :9087). LLM_PROVIDER=fake for offl
 jars: ## build every runnable jar (8 services + the worker)
 	$(GRADLE) $(foreach s,$(JARS),:services:$(s):bootJar) :workflows:trip-planning:bootJar -q
 
-images: jars ## build all 11 container images as ghcr.io/pranav2910/travel-os/<name>:local
+images: jars ## build all 12 container images (incl. the web edge) as ghcr.io/pranav2910/travel-os/<name>:local
 	scripts/build-images.sh local
 
-stack-up: ## run the WHOLE platform in Docker: infra + 9 services, wait healthy, create topics (needs `make images`)
+stack-up: ## run the WHOLE platform in Docker: infra + 9 services + the web app on :8080, wait healthy, create topics (needs `make images`)
 	$(STACK) up -d --wait
 	$(COMPOSE) run --rm kafka-init
 
@@ -86,6 +86,17 @@ stack-e2e4: ## run the Slice 4 script (demand detection) against the Docker stac
 	bash scripts/e2e-slice4.sh
 stack-e2e5: ## run the Slice 5 script (learning from outcomes) against the Docker stack
 	bash scripts/e2e-slice5.sh
+web-install: ## install the web app's pinned dependencies (npm ci)
+	cd web && npm ci --no-audit --no-fund
+web-dev: ## run the web app with Vite on :5173, proxying /api to the services on their host ports
+	cd web && npm run dev
+web-check: ## lint, type-check, unit-test and build the web app
+	cd web && npm run check
+web-e2e: ## browser E2E (Playwright) against the Docker stack: web :8080, Keycloak :8180
+	cd web && E2E_BASE_URL=http://localhost:8080 E2E_KEYCLOAK_URL=http://localhost:8180 E2E_SUPPLIER_URL=http://localhost:8084 npx playwright test
+web-e2e-kind: ## browser E2E (Playwright) against the kind cluster: web :18080, Keycloak :18180
+	cd web && E2E_BASE_URL=http://localhost:18080 E2E_KEYCLOAK_URL=http://localhost:18180 E2E_SUPPLIER_URL=http://localhost:18084 \
+	  E2E_WEBHOOK_SECRET=$$(grep '^SANDBOX_AIR_WEBHOOK_SECRET=' ../deploy/kind/.secrets.env | cut -d= -f2) npx playwright test
 
 stack-e2e: ## run the live end-to-end script against the Docker stack
 	bash scripts/e2e-slice1.sh

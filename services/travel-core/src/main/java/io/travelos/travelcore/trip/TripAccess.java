@@ -18,6 +18,10 @@ public final class TripAccess {
     return isOwner(me, trip) || me.hasAnyRole(TENANT_WIDE_ROLES);
   }
 
+  public static boolean canReadTenantWide(RequestPrincipal me) {
+    return me.hasAnyRole(TENANT_WIDE_ROLES);
+  }
+
   public static boolean canCancel(RequestPrincipal me, Trip trip) {
     return isOwner(me, trip) || me.hasAnyRole("TRAVEL_ADMIN");
   }

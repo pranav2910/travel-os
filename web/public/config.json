@@ -1,0 +1,6 @@
+{
+  "oidcAuthority": "http://localhost:8180/realms/travelos",
+  "oidcClientId": "travelos-web",
+  "deploymentClass": "SANDBOX",
+  "environmentLabel": "vite dev"
+}

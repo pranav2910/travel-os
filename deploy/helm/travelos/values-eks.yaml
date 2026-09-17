@@ -157,6 +157,13 @@ learning:
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress: *awsEgress
+web:
+  <<: *prodScale
+  env:
+    DEPLOYMENT_CLASS: LIVE
+    ENVIRONMENT_LABEL: eks
+  networkPolicy:
+    httpFrom: *httpFromVpc
 trip-planning:
   <<: *prodScale
   networkPolicy:

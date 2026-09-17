@@ -406,6 +406,18 @@ class DisruptionServiceIntegrationTest {
         .isEqualTo(HttpStatus.NOT_FOUND);
     assertThat(get("/api/v1/disruptions/" + DISRUPTION, TestTokens.bob()).getStatusCode())
         .isEqualTo(HttpStatus.OK);
+    // the operations inbox: a manager lists what needs a person; a traveler sees only their own;
+    // another tenant sees nothing
+    JsonNode inbox =
+        json.readTree(get("/api/v1/disruptions?status=HUMAN_REQUIRED", TestTokens.bob()).getBody());
+    assertThat(inbox).extracting(n -> n.get("disruptionId").asString()).contains(DISRUPTION);
+    assertThat(json.readTree(get("/api/v1/disruptions", TestTokens.alice()).getBody()))
+        .extracting(n -> n.get("disruptionId").asString())
+        .contains(DISRUPTION);
+    assertThat(json.readTree(get("/api/v1/disruptions", TestTokens.dan()).getBody())).isEmpty();
+    assertThat(json.readTree(get("/api/v1/disruptions", TestTokens.zoe()).getBody())).isEmpty();
+    assertThat(get("/api/v1/disruptions?status=NOPE", TestTokens.bob()).getStatusCode())
+        .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
 
     // the traveler cannot approve her own recovery; a manager can, once
     assertThat(decide(TestTokens.alice(), "APPROVE", "k-1").getStatusCode())

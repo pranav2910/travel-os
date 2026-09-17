@@ -52,6 +52,18 @@ public class ExposureRepository {
     return n == null ? 0L : n;
   }
 
+  /** The tenant's exposures at one status, oldest first: what Finance still has to close. */
+  public List<ExposureRecord> byTenantAndStatus(
+      TenantId tenant, ExposureRecord.Status status, int limit) {
+    return jdbc.sql(
+            "SELECT * FROM order_exposure WHERE tenant_id = :t AND status = :s ORDER BY created_at LIMIT :n")
+        .param("t", tenant.value())
+        .param("s", status.name())
+        .param("n", limit)
+        .query(ExposureRepository::map)
+        .list();
+  }
+
   public List<ExposureRecord> byOrder(TenantId tenant, String orderId) {
     return jdbc.sql(
             "SELECT * FROM order_exposure WHERE tenant_id = :t AND order_id = :o ORDER BY created_at")

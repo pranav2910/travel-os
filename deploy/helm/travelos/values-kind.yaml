@@ -70,6 +70,14 @@ learning:
   networkPolicy:
     httpFrom: *host
     grpcFromApps: [trip-planning]
+web:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30080 } }
+  env:
+    OIDC_AUTHORITY: http://localhost:18180/realms/travelos   # kind maps Keycloak's NodePort to 18180 on the host
+    ENVIRONMENT_LABEL: kind
+  networkPolicy:
+    httpFrom: *host
 trip-planning:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { http: 30086 } }

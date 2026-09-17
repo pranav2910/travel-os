@@ -304,6 +304,12 @@ public class DisruptionService {
     return ready;
   }
 
+  @Transactional(readOnly = true)
+  public List<Disruption> list(
+      TenantId tenant, io.travelos.disruption.model.@Nullable DisruptionStatus status, int limit) {
+    return repository.byTenant(tenant, status, limit);
+  }
+
   /** Written once; moves the disruption to its terminal state and tells the world. */
   @Transactional
   public Disruption recordOutcome(TenantId tenant, String disruptionId, RecoveryOutcome outcome) {

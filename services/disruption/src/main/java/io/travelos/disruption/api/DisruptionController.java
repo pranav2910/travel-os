@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -96,6 +97,31 @@ public class DisruptionController {
   public List<DisruptionView> byTrip(
       @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
     return disruptions.byTrip(me.tenant(), tripId).stream()
+        .filter(d -> DisruptionAccess.canRead(me, d))
+        .map(this::view)
+        .toList();
+  }
+
+  /**
+   * The tenant's disruptions the caller may read, optionally at one status: a manager's inbox is
+   * {@code status=HUMAN_REQUIRED}. A traveler sees only their own.
+   */
+  @GetMapping("/disruptions")
+  public List<DisruptionView> list(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @RequestParam(required = false) @Nullable String status,
+      @RequestParam(defaultValue = "50") int limit) {
+    io.travelos.disruption.model.DisruptionStatus wanted = null;
+    if (status != null && !status.isBlank()) {
+      try {
+        wanted =
+            io.travelos.disruption.model.DisruptionStatus.valueOf(
+                status.trim().toUpperCase(java.util.Locale.ROOT));
+      } catch (IllegalArgumentException e) {
+        throw new ApiException.Unprocessable("STATUS_UNKNOWN", "unknown status " + status);
+      }
+    }
+    return disruptions.list(me.tenant(), wanted, Math.clamp(limit, 1, 200)).stream()
         .filter(d -> DisruptionAccess.canRead(me, d))
         .map(this::view)
         .toList();

@@ -42,11 +42,27 @@ jobs:
           path: "**/build/reports/tests/"
           if-no-files-found: ignore
 
+  web:
+    name: web app (lint, types, unit tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: install (pinned)
+        run: cd web && npm ci --no-audit --no-fund
+      - name: lint, typecheck, unit tests, production build
+        run: cd web && npm run check
+
   images:
     name: container images
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: java
+    needs: [java, web]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6

@@ -13,6 +13,7 @@ on:
       - scripts/**
       - services/**
       - intelligence/**
+      - web/**
       - docker/**
       - contracts/**
       - platform/local/**
@@ -30,7 +31,7 @@ permissions:
 
 jobs:
   kind:
-    name: slice 1 on kind (e2e + chaos)
+    name: slices 1-5 + web on kind (e2e + chaos)
     runs-on: ubuntu-latest
     timeout-minutes: 95
     env:
@@ -75,6 +76,24 @@ jobs:
           df -h / | tail -1
       - name: slice 1 end-to-end
         run: make kind-e2e
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: browser E2E against the cluster (Chromium + WebKit; real Keycloak, real bookings)
+        run: |
+          cd web && npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium webkit
+          cd .. && make web-e2e-kind
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: web-e2e-report
+          path: |
+            web/playwright-report/
+            web/test-results/
+          if-no-files-found: ignore
       - name: chaos (pod kills mid-workflow, NetworkPolicy enforcement)
         run: make kind-chaos
       - name: slice 2 end-to-end (autonomous + approved recovery, injection, duplicates, trace)

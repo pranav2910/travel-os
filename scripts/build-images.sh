@@ -26,5 +26,7 @@ done
 build trip-planning docker/java.Dockerfile --build-arg "JAR=workflows/trip-planning/build/libs/trip-planning-$VERSION.jar"
 build optimization docker/python.Dockerfile --build-arg MODULE=optimization --build-arg ENTRY=travelos_optimization.server
 build llm-gateway docker/python.Dockerfile --build-arg MODULE=llm-gateway --build-arg ENTRY=travelos_llm_gateway.server
+# The web edge (React app + nginx proxy); built inside Docker, so no Node toolchain is needed here.
+build web docker/web.Dockerfile
 
 echo; docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}' | grep -E "^$REGISTRY/" | grep -E "\s$TAG\s"

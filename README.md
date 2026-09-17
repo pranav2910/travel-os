@@ -173,7 +173,37 @@ travel.{trip,order,disruption,optimization} ─► learning consumer ─► outc
 | ☑ profiles: `lp_` versions with cutoff, window, dataset fingerprint, algorithm, parameters, counts, artifact, evaluation; built by a Temporal workflow with idempotent steps; workflows never read learned state except through the pinned `Resolve` activity | ☑ optimizer: OFF/SHADOW/ACTIVE; shadow records the alternative and executes the baseline; active applies bounded adjustments to soft scores among feasible, policy-permitted candidates; constraints, revalidation and approval binding preserved; evidence (profile version, contributions, reasons, both selections) in the response, the event, the audit ledger and the recovery decision record | ☑ evaluation + activation: chronological holdout grouped by trip with only-before evidence; report with sample sizes, label coverage, Brier vs prior, ranking changes, violations, synthetic flag, stated limits; criteria (compatible, enough evidence, finite/bounded, zero violations, quality threshold); REST for inspection, build, activation, mode, rollback, history; atomic versioned changes (409 on a stale version); rollback to the previous eligible profile or the baseline (`toBaseline` deactivates outright) |
 | ☑ operations: `/api/v1/learning/summary` (bounded, no person), `travelos_learning_{outcomes,decisions,builds,evaluations,resolutions,activations,feedback}_total` with fixed-vocabulary labels; traces through the pinned activity | ☑ tests: learning 14 (integration: exactly-once ingestion, feedback authorization/revisions, refunds, build/evaluate/reproduce, class mismatch, activation conflicts, rollback, events on contract, metrics; unit: model, evaluator leakage/labels/verdicts, failure codes), worker 45 (pinning across an optimizer retry, outage fallback, build workflow), optimizer 41 (off/shadow/active, clamping, two adjustments on one key summed within the bound, budget unaffected, itineraries), audit 5, disruption 6, events 61; `scripts/e2e-slice5.sh` (0 baseline OFF, A marked outcomes + duplicates + attestation + refunds + feedback, B build/evaluate/reproduce/reject, C shadow then active ranking change with evidence, D budget/approval/$100/isolation safeguards, E conflicts/failed build/rollback/baseline) and `scripts/chaos-slice5-kind.sh` (service gone mid-plan → baseline; worker killed mid-build → one profile; consumer restart → one outcome; activation change under a held optimizer → pinned inputs) | ☑ deployment: Helm alias + kind NodePort 18091 + compose service + secrets + CI steps `kind-e2e5`/`kind-chaos5`; Terraform lists the service (static validation only) |
 
-Roadmap after that: the frontend.
+### Frontend: the web app for the sandbox platform
+
+`web/` is the first complete browser workspace (React 19 + TypeScript, Vite, React Router, TanStack
+Query, oidc-client-ts). A traveler requests and tracks trips (structured, free-text, multi-city with
+hotels and transfers; the request page says that submitting may book), a manager works an approval
+inbox (trips and disruption recoveries, no self-approval, stale decisions conflict), travel admins
+and Finance operate disruptions, exposures, settled refunds, demand and connectors (all simulated,
+labelled so) and the learning controls (mode, build, activate with a version, roll back). The
+browser reaches one origin: the `web` image (nginx) serves the app and proxies only the public
+`/api/v1/*` routes to their owning services (the same table as the Helm ingress). Sign-in is
+Authorization Code + PKCE against the realm's public `travelos-web` client; tokens stay in memory
+and a reload restores the session through Keycloak's SSO cookie.
+
+```bash
+make images && make stack-up      # the platform + the app on http://localhost:8080 (Keycloak :8180)
+make web-e2e                      # Playwright against it (Chromium, WebKit smoke, phone viewport)
+make web-dev                      # or: Vite on :5173 proxying /api to the services on their host ports
+```
+
+Screen → endpoint → role matrix: [docs/frontend/api-matrix.md](docs/frontend/api-matrix.md). Three
+narrow list endpoints were added for the inboxes (`GET /api/v1/trips?scope=tenant&status=`,
+`GET /api/v1/disruptions?status=`, `GET /api/v1/orders/exposures?status=`), each tested in its
+owning service.
+
+| Frontend definition of done | | |
+|---|---|---|
+| ☑ contracts mapped: explicit typed clients per service, problem details, idempotency per operation, expected versions and 409 handling; the app never authorizes, never derives thresholds, never reconstructs state from timers | ☑ real sign-in: Keycloak PKCE public client (dev 5173, stack 8080, kind 18080 origins), in-memory tokens, silent restore, expiry → sign-in, logout, role-gated navigation, cache cleared on account change; the server stays authoritative | ☑ shell: one visual system, sandbox chip, role-based groups (my travel / needs attention / demand / learning), empty/loading/error/denied/not-found states, keyboard focus, labelled forms, `<dialog>` modals, phone layout |
+| ☑ traveler: overview, trips, new trip (round, one-way, multi-city + stays + transfers, free text, hotelRequired), progress from the real status with backoff polling, detail with components, bookings (UTC flights, zoned hotels/ground, references), disruptions, decision ledger + policy reasons + model conclusions, feedback, attestation, cancellation | ☑ manager/ops/Finance: approval inbox (trips + recoveries), detail with cost and policy reasons, approve/reject with 409 on stale, disruption states and dependent changes, exposures with resolution, settled refunds (FINANCE only), outcome ledger | ☑ demand + connectors + learning: inbox/detail with evidence as data, details/dismiss/convert (one trip per candidate), connectors labelled simulated with sync/status/config/runs, learning mode/evidence/profiles/build/activate/rollback/baseline with versioned conflicts and honest evaluation wording |
+| ☑ money/dates/async: BigInt minor units, explicit currency, zero ≠ missing; UTC flights, IANA hotels/ground, local dates as written; bounded backoff polling stopping at terminal states; fixed idempotency keys across retries and reloads; uncertain answers reconciled, never faked | ☑ packaging: `docker/web.Dockerfile` (node build → unprivileged nginx, read-only fs), compose `web`, Helm `kind: web` + NetworkPolicies (only the proxied services, no infra), kind NodePort 18080, EKS values, CI `web` job + browser E2E on kind (`make web-e2e-kind`) | ☑ tests: 26 unit (money, dates, idempotency, polling incl. wake after a person acts and "not here yet" deep links, HTTP client, status, new-trip form, trip views following the trip), Playwright E2E with the real backend (auth/expiry/cache isolation, booking incl. multi-city + reload, duplicate/uncertain submit, budget denial, approvals + self-approval + stale, disruption + exposure + Finance boundaries, demand conversion once, learning mode/409/rollback, cross-tenant deep links + direct mutations, mobile, WebKit smoke + axe) |
+
+Roadmap after that: live-provider onboarding and a public/cloud deployment (deferred).
 
 ## Architecture in one screen
 
