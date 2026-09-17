@@ -43,8 +43,14 @@ for svc in "$CORE" "$POLICY" "$ORDER" "$SUPPLIER" "$DISRUPTION" "$WORKER"; do
   for i in $(seq 1 90); do curl -sf "$svc/actuator/health/readiness" >/dev/null && break; sleep 2; done
   curl -sf "$svc/actuator/health/readiness" >/dev/null || fail "$svc not ready"
 done
-tmp_describe() { kubectl exec -n travelos-infra deploy/temporal -- temporal workflow describe --address 127.0.0.1:7233 --namespace travelos -w "$1" -o json 2>/dev/null; }
-tmp_show() { kubectl exec -n travelos-infra deploy/temporal -- temporal workflow show --address 127.0.0.1:7233 --namespace travelos -w "$1" -o json 2>/dev/null; }
+# The Temporal CLI runs inside the temporal pod; kubectl exec can drop the connection on a busy runner
+# and hand back nothing, which is not a chaos result: ask again (bounded) and never feed the parsers empty text.
+tmp_cli() { local i out err; err=$(mktemp); for i in 1 2 3 4 5; do
+  out=$(kubectl exec -n travelos-infra deploy/temporal -- temporal workflow "$@" --address 127.0.0.1:7233 --namespace travelos -o json 2>"$err") && [ -n "$out" ] && { rm -f "$err"; printf '%s\n' "$out"; return 0; }
+  grep -qi "not found\|NotFound" "$err" && break # the workflow does not exist (yet): an answer, not a dropped connection
+  sleep 3; done; rm -f "$err"; echo '{}'; }
+tmp_show() { tmp_cli show -w "$1"; }
+tmp_describe() { tmp_cli describe -w "$1"; }
 pending_attempt() { tmp_describe "$1" | python3 -c 'import sys,json; d=json.load(sys.stdin); pa=[p for p in d.get("pendingActivities",[]) if p.get("activityType",{}).get("name")==sys.argv[1]]; print(pa[0].get("attempt",0) if pa else 0)' "$2" 2>/dev/null || echo 0; }
 scale_away() { kubectl -n travelos scale deploy/"$1" --replicas=0 >/dev/null; kubectl -n travelos wait --for=delete pod -l app="$1" --timeout=120s >/dev/null 2>&1 || true; echo "  $1 scaled to 0 (pods gone)"; }
 scale_back() { kubectl -n travelos scale deploy/"$1" --replicas=1 >/dev/null; kubectl -n travelos rollout status deploy/"$1" --timeout=240s >/dev/null; echo "  $1 back"; }

@@ -70,8 +70,14 @@ order_of() { curl -s "$ORDER/api/v1/orders?tripId=$1" -H "Authorization: Bearer 
 count_events() { kafka_consume "$1" | grep "$2" | python3 -c "import sys,json; print(sum(1 for l in sys.stdin if l.strip() and json.loads(l)['eventType']=='$3'))"; }
 
 # ---- chaos helpers (the Slice 1-4 discipline: every hold is proven by a Temporal tripwire before the next fault)
-tmp_describe() { kubectl exec -n travelos-infra deploy/temporal -- temporal workflow describe --address 127.0.0.1:7233 --namespace travelos -w "$1" -o json 2>/dev/null; }
-tmp_show() { kubectl exec -n travelos-infra deploy/temporal -- temporal workflow show --address 127.0.0.1:7233 --namespace travelos -w "$1" -o json 2>/dev/null; }
+# The Temporal CLI runs inside the temporal pod; kubectl exec can drop the connection on a busy runner
+# and hand back nothing, which is not a chaos result: ask again (bounded) and never feed the parsers empty text.
+tmp_cli() { local i out err; err=$(mktemp); for i in 1 2 3 4 5; do
+  out=$(kubectl exec -n travelos-infra deploy/temporal -- temporal workflow "$@" --address 127.0.0.1:7233 --namespace travelos -o json 2>"$err") && [ -n "$out" ] && { rm -f "$err"; printf '%s\n' "$out"; return 0; }
+  grep -qi "not found\|NotFound" "$err" && break # the workflow does not exist (yet): an answer, not a dropped connection
+  sleep 3; done; rm -f "$err"; echo '{}'; }
+tmp_show() { tmp_cli show -w "$1"; }
+tmp_describe() { tmp_cli describe -w "$1"; }
 pending_attempt() { tmp_describe "$1" | python3 -c 'import sys,json; d=json.load(sys.stdin); pa=[p for p in d.get("pendingActivities",[]) if p.get("activityType",{}).get("name")==sys.argv[1]]; print(pa[0].get("attempt",0) if pa else 0)' "$2" 2>/dev/null || echo 0; }
 max_attempt_in_history() { tmp_show "$1" | python3 -c 'import sys,json; ev=json.load(sys.stdin).get("events",[]); a=[e["activityTaskStartedEventAttributes"]["attempt"] for e in ev if e["eventType"]=="EVENT_TYPE_ACTIVITY_TASK_STARTED" and e["activityTaskStartedEventAttributes"].get("attempt",1)>1 and (len(sys.argv)<2 or sys.argv[1] in json.dumps(e))]; print(max(a, default=1))' "${2:-}"; }
 activity_attempts() { # $1 workflow id, $2 activity type -> highest attempt of that activity in the history (scheduled+started)
