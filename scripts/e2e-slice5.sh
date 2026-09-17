@@ -215,7 +215,13 @@ echo "-- A.4 a traveler cancellation is not a refund; Finance's settled refund i
 [ "$(curl -s -o /dev/null -w '%{http_code}' -X POST "$CORE/api/v1/trips/$T3/cancellation" -H "Authorization: Bearer $ALICE" -H "Idempotency-Key: x-$T3" -H 'Content-Type: application/json' -d '{"reason":"plans changed"}')" = 200 ] && pass "alice cancelled $T3" || fail "cancellation"
 wait_kind "$T3" CANCELLED_BY_TRAVELER 60 && pass "CANCELLED_BY_TRAVELER recorded (NEUTRAL: not supplier quality)" || fail "no cancellation outcome: $(kinds "$T3")"
 case ",$(kinds "$T3")," in *",REFUND_SETTLED,"*) fail "a refund was inferred from the cancellation";; *) pass "no REFUND_SETTLED without Finance saying so";; esac
-read -r O3 E3 F3 C3 IT3 TOT3 <<<"$(curl -s "$ORDER/api/v1/orders?tripId=$T3" -H "Authorization: Bearer $BOB" | check "o=d[0]; item=o['items'][0]; f=item['flights'][0]; print(o['orderId'], o['externalOrderId'], f['flightNumber'], f.get('carrier') or f['flightNumber'][:2], item['itemId'], o['total']['amountMinor'])")"
+# the order read is asked again for a while: right after the cancellation the Order service may answer
+# empty or with a partial list (it is writing), and an empty answer must never reach the parser
+O3_LINE=""; for i in $(seq 1 30); do
+  O3_LINE=$(curl -s "$ORDER/api/v1/orders?tripId=$T3" -H "Authorization: Bearer $BOB" | check "o=d[0]; item=o['items'][0]; f=item['flights'][0]; print(o['orderId'], o['externalOrderId'], f['flightNumber'], f.get('carrier') or f['flightNumber'][:2], item['itemId'], o['total']['amountMinor'])" 2>/dev/null) && [ -n "$O3_LINE" ] && break
+  sleep 2; done
+[ -n "$O3_LINE" ] || fail "no order for the cancelled trip $T3: $(curl -s "$ORDER/api/v1/orders?tripId=$T3" -H "Authorization: Bearer $BOB" | head -c 300)"
+read -r O3 E3 F3 C3 IT3 TOT3 <<<"$O3_LINE"
 REF="{\"tripId\":\"$T3\",\"orderId\":\"$O3\",\"itemId\":\"$IT3\",\"amountMinor\":$TOT3,\"currency\":\"USD\",\"reference\":\"RF-$NONCE\"}"
 [ "$(lrn_post_code /api/v1/learning/outcomes/refunds "$ALICE" "$REF")" = 403 ] && pass "alice cannot record a refund (403)" || fail "refund access"
 lrn_post /api/v1/learning/outcomes/refunds "$CAROL" "$REF" | check "assert d['kind']=='REFUND_SETTLED' and d['revision']==1 and d['source']=='API', d" && pass "carol (FINANCE) recorded the settled refund (revision 1)" || fail "refund"
