@@ -15,7 +15,10 @@ export default defineConfig({
   workers: 1,
   retries: process.env['CI'] ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
+  // no single action or assertion may eat a test's whole budget: a stuck step fails as itself
   use: {
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     baseURL: process.env['E2E_BASE_URL'] ?? 'http://localhost:8080',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

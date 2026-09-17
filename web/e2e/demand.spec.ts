@@ -109,7 +109,8 @@ test.describe('demand and connectors', () => {
     await expect(convert).toBeEnabled();
     // two clicks in a row: one trip
     await convert.click();
-    await convert.click({ force: true }).catch(() => {});
+    // the page may already have moved on: never wait for the button to come back
+    await convert.click({ force: true, timeout: 1_000 }).catch(() => {});
     await page.waitForURL(/\/trips\/trip_/);
     const tripId = page.url().split('/trips/')[1]!;
     // the candidate now links to that trip and offers no second conversion
