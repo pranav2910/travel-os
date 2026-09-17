@@ -1,4 +1,4 @@
-import type { TripResponse, TripStatus } from '@/api/types';
+import type { PolicyDecisionResponse, TripResponse, TripStatus } from '@/api/types';
 
 /** What the platform does with a submitted trip, in order; the current status sets the step states. */
 export const STEPS: { key: string; label: string; statuses: TripStatus[] }[] = [
@@ -61,7 +61,7 @@ export function explainFailure(trip: TripResponse): string {
   const code = trip.failureCode ?? 'FAILED';
   switch (code) {
     case 'ALL_CANDIDATES_DENIED':
-      return 'Every option was denied by policy (for example the trip budget). Nothing was booked.';
+      return 'Every option was denied by policy. Nothing was booked.';
     case 'NO_FEASIBLE_CANDIDATE':
     case 'NO_FEASIBLE_ITINERARY':
       return 'No permitted option fits the requested windows. Nothing was booked.';
@@ -80,4 +80,25 @@ export function isTerminal(status: TripStatus): boolean {
   return (
     status === 'BOOKED' || status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED'
   );
+}
+
+/** The distinct reasons policy gave for denying options, most frequent first: the backend's words, not a guess. */
+export function denyReasons(
+  decisions: PolicyDecisionResponse[],
+): { code: string; message: string; count: number }[] {
+  const seen = new Map<string, { code: string; message: string; count: number }>();
+  for (const d of decisions) {
+    if (d.outcome !== 'DENY') continue;
+    const reasons = d.decision['reasons'];
+    if (!Array.isArray(reasons)) continue;
+    for (const r of reasons as { code?: unknown; message?: unknown }[]) {
+      const code = typeof r.code === 'string' ? r.code : 'DENIED';
+      const message = typeof r.message === 'string' ? r.message : '';
+      const key = `${code}|${message}`;
+      const cur = seen.get(key) ?? { code, message, count: 0 };
+      cur.count += 1;
+      seen.set(key, cur);
+    }
+  }
+  return [...seen.values()].sort((a, b) => b.count - a.count);
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { TripResponse } from '@/api/types';
-import { STEPS, explainFailure, stepState } from './status';
+import { STEPS, denyReasons, explainFailure, stepState } from './status';
 
 const base: TripResponse = {
   tripId: 'trip_1',
@@ -43,5 +43,21 @@ describe('trip progress', () => {
         STEPS[1]!,
       ),
     ).toBe('failed');
+  });
+
+  it('lists the distinct reasons policy gave for denying, most frequent first, in its own words', () => {
+    const d = (outcome: string, reasons: unknown) =>
+      ({ decisionId: Math.random().toString(), outcome, decision: { reasons } }) as never;
+    const out = denyReasons([
+      d('DENY', [{ code: 'NO_POLICY', message: 'tenant globex has no default travel policy' }]),
+      d('DENY', [{ code: 'NO_POLICY', message: 'tenant globex has no default travel policy' }]),
+      d('DENY', [{ code: 'OVER_BUDGET', message: 'USD 5000 over the ceiling' }]),
+      d('ALLOW', [{ code: 'IGNORED' }]),
+      d('DENY', 'not a list'),
+    ]);
+    expect(out).toEqual([
+      { code: 'NO_POLICY', message: 'tenant globex has no default travel policy', count: 2 },
+      { code: 'OVER_BUDGET', message: 'USD 5000 over the ceiling', count: 1 },
+    ]);
   });
 });

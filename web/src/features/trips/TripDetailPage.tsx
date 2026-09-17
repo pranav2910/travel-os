@@ -33,7 +33,7 @@ import {
 } from '@/ui';
 import { NotFound } from '@/shell/guards';
 import { useCancelTrip, useCompleteTrip, useDecideTrip, useFollowTrip, useTrip } from './hooks';
-import { STEPS, explainFailure, isTerminal, stepState } from './status';
+import { STEPS, denyReasons, explainFailure, isTerminal, stepState } from './status';
 import { route } from './OverviewPage';
 import { FeedbackPanel } from './FeedbackPanel';
 
@@ -114,6 +114,7 @@ export function TripDetailPage() {
           {t.status === 'FAILED' && (
             <Alert tone="danger" title="Not booked.">
               {explainFailure(t)}
+              {t.failureCode === 'ALL_CANDIDATES_DENIED' && <DenyReasons tripId={t.tripId} />}
             </Alert>
           )}
           {t.explanation && (
@@ -376,6 +377,29 @@ function Components({ trip }: { trip: TripResponse }) {
         </div>
       ))}
     </Card>
+  );
+}
+
+/** Policy's own words for a denial (the same decisions the "Why this option" card lists). */
+function DenyReasons({ tripId }: { tripId: string }) {
+  const pol = useQuery({
+    queryKey: policyKeys.byTrip(tripId),
+    queryFn: () => policy.byTrip(tripId),
+  });
+  const reasons = pol.data ? denyReasons(pol.data) : [];
+  if (reasons.length === 0) return null;
+  return (
+    <ul style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+      {reasons.slice(0, 3).map((r) => (
+        <li key={`${r.code}|${r.message}`}>
+          <span className="mono">{r.code}</span>
+          {r.message ? <> — {r.message}</> : null}{' '}
+          <span className="muted">
+            ({r.count} option{r.count === 1 ? '' : 's'})
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

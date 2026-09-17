@@ -324,6 +324,11 @@ acceptance script; `make kind-chaos5` the deterministic chaos run.
 (traveler), bob (traveler + manager), carol (traveler + travel admin + Finance), dan (traveler), zoe
 (another tenant). The header always says "Sandbox — simulated bookings".
 
+Only tenant **acme** has a published policy (`make seed-policy`, `acme-us-standard.json`). zoe's
+tenant globex has none on purpose (it exists for the isolation checks): every trip she submits
+fails at the policy stage with `NO_POLICY` ("nothing can be booked until one is published"), and
+the trip page shows that reason. Publish a globex policy as a globex travel admin to change that.
+
 - The edge container runs with a read-only root filesystem on Kubernetes **and** in compose
   (`read_only: true`, tmpfs `/tmp`): everything nginx renders or writes (`/tmp/conf.d`, the proxy
   snippet, `config.json`, pid, temp dirs) lives under `/tmp`. A quick check of the image alone:
