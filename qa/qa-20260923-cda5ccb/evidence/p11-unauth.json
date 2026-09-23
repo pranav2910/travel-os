@@ -1,0 +1,15 @@
+{
+ "/api/v1/trips": 401,
+ "/api/v1/policies": 401,
+ "/api/v1/policy-decisions": 401,
+ "/api/v1/orders": 401,
+ "/api/v1/audit/events": 401,
+ "/api/v1/disruptions": 401,
+ "/api/v1/demand": 401,
+ "/api/v1/connectors": 401,
+ "/api/v1/learning/config": 401,
+ "/api/v1/suppliers/sandbox-air/events": 404,
+ "/api/v1/nope": 404,
+ "/actuator/health": 200,
+ "/api/v1/trips/../../healthz": 404
+}

@@ -1,0 +1,279 @@
+{
+ "final": {
+  "tripId": "trip_01M363D7605GNY07GXQNCT3TM0",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "AUS",
+   "earliestDeparture": "2026-11-01T05:00:00Z",
+   "arrivalDeadline": "2026-11-01T23:59:00Z",
+   "returnAfter": "2026-11-03T05:00:00Z",
+   "latestReturn": "2026-11-03T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb F4 refused hotel (AUS) compensates",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M363D75Z90RWV423RNPBR58Y",
+      "origin": "BOS",
+      "destination": "AUS",
+      "earliestDeparture": "2026-11-01T05:00:00Z",
+      "arrivalDeadline": "2026-11-01T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M363D75Z90RWV423RNPBR58Z",
+      "origin": "AUS",
+      "destination": "BOS",
+      "earliestDeparture": "2026-11-03T05:00:00Z",
+      "arrivalDeadline": "2026-11-03T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M363D75Z90RWV423RNPBR590",
+      "city": "AUS",
+      "checkInDate": "2026-11-01",
+      "checkOutDate": "2026-11-03",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M363D7G2KFYAGWVSAEAJZH6Y",
+   "optimizationRunId": "opt_01M363D7G2RBM92YDBJGXJZ105",
+   "policyDecisionId": "pd_01M363D7GPDXTYZ1F694PPPHA8",
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:02:06.272631Z",
+  "updatedAt": "2026-09-23T03:02:07.735174Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 87093,
+   "display": "USD 870.93"
+  },
+  "failureStage": "BOOKING",
+  "failureCode": "ROOM_NO_LONGER_AVAILABLE",
+  "explanation": "For the BOS to AUS to BOS we chose DL254 BOS-AUS via sandbox-air; DL254 AUS-BOS via sandbox-air; hotel Congress Ave Motel in AUS (2 nights, 2026-11-01) at USD 870.93 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v56. It ranked first with a score of 98.8 (cost 97, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M363D75Z90RWV423RNPBR58Y",
+    "type": "AIR",
+    "status": "CANCELLED",
+    "offerId": "off_01M363D79XY76FYQMQWVVY2CAM",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M363D8DT4CTD5YG5V2MXRVNK",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 29754,
+     "display": "USD 297.54"
+    },
+    "failureCode": null,
+    "summary": "DL254 BOS-AUS 2026-11-01T17:45:00Z",
+    "updatedAt": "2026-09-23T03:02:07.635203Z"
+   },
+   {
+    "componentId": "cmp_01M363D75Z90RWV423RNPBR58Z",
+    "type": "AIR",
+    "status": "CANCELLED",
+    "offerId": "off_01M363D7ANRB51T38J6CNRVQD4",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M363D8E3HE4JJZH2Q2HKGYTG",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 31539,
+     "display": "USD 315.39"
+    },
+    "failureCode": null,
+    "summary": "DL254 AUS-BOS 2026-11-03T17:45:00Z",
+    "updatedAt": "2026-09-23T03:02:07.635203Z"
+   },
+   {
+    "componentId": "cmp_01M363D75Z90RWV423RNPBR590",
+    "type": "HOTEL",
+    "status": "FAILED",
+    "offerId": "off_01M363D7B9WYGG8XTXCWMH85PK",
+    "provider": "sandbox-hotel",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 25800,
+     "display": "USD 258.00"
+    },
+    "failureCode": "ROOM_NO_LONGER_AVAILABLE",
+    "summary": "Congress Ave Motel AUS 2026-11-01 to 2026-11-03 (2 nights)",
+    "updatedAt": "2026-09-23T03:02:07.635203Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M363D75Z90RWV423RNPBR58Y",
+   "type": "AIR",
+   "status": "CANCELLED",
+   "offerId": "off_01M363D79XY76FYQMQWVVY2CAM",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M363D8DT4CTD5YG5V2MXRVNK",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 29754,
+    "display": "USD 297.54"
+   },
+   "failureCode": null,
+   "summary": "DL254 BOS-AUS 2026-11-01T17:45:00Z",
+   "updatedAt": "2026-09-23T03:02:07.635203Z"
+  },
+  {
+   "componentId": "cmp_01M363D75Z90RWV423RNPBR58Z",
+   "type": "AIR",
+   "status": "CANCELLED",
+   "offerId": "off_01M363D7ANRB51T38J6CNRVQD4",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M363D8E3HE4JJZH2Q2HKGYTG",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 31539,
+    "display": "USD 315.39"
+   },
+   "failureCode": null,
+   "summary": "DL254 AUS-BOS 2026-11-03T17:45:00Z",
+   "updatedAt": "2026-09-23T03:02:07.635203Z"
+  },
+  {
+   "componentId": "cmp_01M363D75Z90RWV423RNPBR590",
+   "type": "HOTEL",
+   "status": "FAILED",
+   "offerId": "off_01M363D7B9WYGG8XTXCWMH85PK",
+   "provider": "sandbox-hotel",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 25800,
+    "display": "USD 258.00"
+   },
+   "failureCode": "ROOM_NO_LONGER_AVAILABLE",
+   "summary": "Congress Ave Motel AUS 2026-11-01 to 2026-11-03 (2 nights)",
+   "updatedAt": "2026-09-23T03:02:07.635203Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M363D8DGN57NXQ9PRY7QSY60",
+   "tripId": "trip_01M363D7605GNY07GXQNCT3TM0",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M363D7G2KFYAGWVSAEAJZH6Y",
+   "supplier": "sandbox-air",
+   "status": "FAILED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 87093,
+    "display": "USD 870.93"
+   },
+   "policyDecisionId": "pd_01M363D7GPDXTYZ1F694PPPHA8",
+   "optimizationRunId": "opt_01M363D7G2RBM92YDBJGXJZ105",
+   "failureCode": "ROOM_NO_LONGER_AVAILABLE",
+   "failureMessage": "ROOM_NO_LONGER_AVAILABLE: the last room at Congress Ave Motel was just sold",
+   "compensated": true,
+   "items": [
+    {
+     "itemId": "itm_01M363D8DF6ACQQBV0P084FPN8",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8QVVTfDIwMjYtMTEtMDF8LXwyfEVDT05PTVl8MTc5MDEzMjUyNg",
+     "status": "CANCELLED",
+     "externalRef": "SBX-01M363D8DT4CTD5YG5V2MXRVNK",
+     "recordLocator": "FYWU8V",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 29754,
+      "display": "USD 297.54"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL254",
+       "origin": "BOS",
+       "destination": "AUS",
+       "departure": "2026-11-01T17:45:00Z",
+       "arrival": "2026-11-01T20:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M363D75Z90RWV423RNPBR58Y"
+    },
+    {
+     "itemId": "itm_01M363D8DF6ACQQBV0P084FPN9",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxBVVN8Qk9TfDIwMjYtMTEtMDN8LXwyfEVDT05PTVl8MTc5MDEzMjUyNg",
+     "status": "CANCELLED",
+     "externalRef": "SBX-01M363D8E3HE4JJZH2Q2HKGYTG",
+     "recordLocator": "AVYHFK",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 31539,
+      "display": "USD 315.39"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL254",
+       "origin": "AUS",
+       "destination": "BOS",
+       "departure": "2026-11-03T17:45:00Z",
+       "arrival": "2026-11-03T21:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M363D75Z90RWV423RNPBR58Z"
+    },
+    {
+     "itemId": "itm_01M363D8DF6ACQQBV0P084FPNA",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxBVVN8MjAyNi0xMS0wMXwyMDI2LTExLTAzfEZBSUx8MTc5MDEzMjUyNg",
+     "status": "FAILED",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 25800,
+      "display": "USD 258.00"
+     },
+     "failureCode": "ROOM_NO_LONGER_AVAILABLE",
+     "flights": [],
+     "componentId": "cmp_01M363D75Z90RWV423RNPBR590",
+     "hotel": {
+      "propertyId": "HTL-AUS-FAIL",
+      "name": "Congress Ave Motel",
+      "city": "AUS",
+      "checkInDate": "2026-11-01",
+      "checkOutDate": "2026-11-03",
+      "nights": 2,
+      "timeZone": "America/Chicago",
+      "refundable": true
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T03:02:07.535390Z",
+   "updatedAt": "2026-09-23T03:02:07.588537Z"
+  }
+ ]
+}

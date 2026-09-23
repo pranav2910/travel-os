@@ -1,0 +1,22 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-03 just closed",
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-09-22T23:53:02Z",
+   "arrivalDeadline": "2026-09-23T04:52:02Z"
+  }
+ },
+ "status": 422,
+ "body": {
+  "detail": "the outbound window closed at 2026-09-23 00:52 America/New_York (2026-09-23T04:52:02Z); it is now 2026-09-23 00:53 America/New_York at BOS: choose a departure in the future",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "DEPARTURE_IN_PAST",
+  "type": "https://contracts.travelos.io/problems/departure-in-past",
+  "code": "DEPARTURE_IN_PAST"
+ },
+ "now_utc": "2026-09-23T04:53:02+00:00"
+}

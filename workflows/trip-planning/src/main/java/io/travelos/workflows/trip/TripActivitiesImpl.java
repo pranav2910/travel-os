@@ -15,7 +15,9 @@ import io.travelos.contracts.optimization.v1.OptimizeItineraryRequest;
 import io.travelos.contracts.optimization.v1.OptimizeItineraryResponse;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
+import io.travelos.contracts.order.v1.CancelOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.order.v1.GetOrderRequest;
 import io.travelos.contracts.order.v1.Order;
 import io.travelos.contracts.order.v1.OrderServiceGrpc;
 import io.travelos.contracts.policy.v1.EvaluateTripRequest;
@@ -136,6 +138,16 @@ public class TripActivitiesImpl implements TripActivities {
   @Override
   public Trip updateComponents(UpdateComponentsRequest request) {
     return call(() -> travelCore().updateComponents(request));
+  }
+
+  @Override
+  public Order cancelOrder(CancelOrderCommand command) {
+    return call(() -> stub(OrderServiceGrpc::newBlockingStub, "order").cancelOrder(command));
+  }
+
+  @Override
+  public Order getOrder(GetOrderRequest request) {
+    return call(() -> stub(OrderServiceGrpc::newBlockingStub, "order").getOrder(request));
   }
 
   /** The workflow's identity on every call. */

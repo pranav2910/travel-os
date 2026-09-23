@@ -1,0 +1,42 @@
+[PASS   ] P4-R01: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 59816, 'display': 'USD 598.16'}
+[PASS   ] P4-R02: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 58500, 'display': 'USD 585.00'}
+[PASS   ] P4-R03: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 80631, 'display': 'USD 806.31'}
+[FAIL   ] P4-R04: 422 INTENT_INVALID -> REJECTED-422
+[PASS   ] P4-R05: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 56849, 'display': 'USD 568.49'}
+[PASS   ] P4-R06: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43178, 'display': 'USD 431.78'}
+[PASS   ] P4-R07: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 32627, 'display': 'USD 326.27'}
+[PASS   ] P4-R08: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 27959, 'display': 'USD 279.59'}
+[PASS   ] P4-R09: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 80692, 'display': 'USD 806.92'}
+[PASS   ] P4-R09b: 202  -> FAILED POLICY/ALL_CANDIDATES_DENIED total=None
+[PASS   ] P4-R10: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 47572, 'display': 'USD 475.72'}
+[PASS   ] P4-R11: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 38424, 'display': 'USD 384.24'}
+[PASS   ] P4-R12: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 54241, 'display': 'USD 542.41'}
+[PASS   ] P4-R13: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 27446, 'display': 'USD 274.46'}
+[PASS   ] P4-R14: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 60722, 'display': 'USD 607.22'}
+[PASS   ] P4-R15: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 73688, 'display': 'USD 736.88'}
+[PASS   ] P4-R16: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 77167, 'display': 'USD 771.67'}
+[PASS   ] P4-R17: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 99890, 'display': 'USD 998.90'}
+[PASS   ] P4-R18: 422 INTENT_INVALID -> REJECTED-422
+[PASS   ] P4-R19: 400 VALIDATION_FAILED -> REJECTED-422
+[PASS   ] P4-R20: 422 UNKNOWN_LOCATION -> REJECTED-422
+[PASS   ] P4-R21: 422 UNKNOWN_LOCATION -> REJECTED-422
+[PASS   ] P4-R22: 422 UNKNOWN_LOCATION -> REJECTED-422
+[PASS   ] P4-R23: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 32627, 'display': 'USD 326.27'}
+[PASS   ] P4-R24: 422 INTENT_INVALID -> REJECTED-422
+[PASS   ] P4-R25: 422 INTENT_INVALID -> REJECTED-422
+[PASS   ] P4-R26: 422 DEPARTURE_IN_PAST -> REJECTED-422
+[PASS   ] P4-R27: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 32627, 'display': 'USD 326.27'}
+[PASS   ] P4-R28: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 48436, 'display': 'USD 484.36'}
+[PASS   ] P4-R29: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 31396, 'display': 'USD 313.96'}
+[PASS   ] P4-R30: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 24795, 'display': 'USD 247.95'}
+[PASS   ] P4-D01: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'}
+[PASS   ] P4-D02: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'}
+[PASS   ] P4-D03: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'}
+[PASS   ] P4-D04: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'}
+[PASS   ] P4-D05: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'}
+[PASS   ] P4-D06: 400  -> REJECTED-422
+[PASS   ] P4-D07: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'}
+[PASS   ] P4-R10-ORDER: 2 flights; instants ordered=True; sample=[('DL168', '2026-10-27T17:45:00Z', '2026-10-27T22:45:00Z'), ('DL368',
+[PASS   ] P4-R28-ORDER: 2 flights; instants ordered=True; sample=[('DL131', '2026-12-30T17:45:00Z', '2026-12-30T23:15:00Z'), ('DL331',
+[PASS   ] P4-R06-ORDER: 2 flights; instants ordered=True; sample=[('DL366', '2026-10-23T17:45:00Z', '2026-10-23T21:45:00Z'), ('DL566',
+{'FAIL': 29, 'PASS': 118, 'NOT_IMPLEMENTED': 2}

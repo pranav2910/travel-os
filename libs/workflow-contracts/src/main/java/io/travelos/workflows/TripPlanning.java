@@ -19,6 +19,12 @@ public final class TripPlanning {
   }
 
   public static final String SIGNAL_APPROVAL_DECIDED = "approvalDecided";
+
+  /**
+   * The requester withdrew the trip (Travel Core recorded CANCELLED); stop waiting, book nothing.
+   */
+  public static final String SIGNAL_CANCELLED = "cancelled";
+
   public static final String QUERY_STAGE = "stage";
 
   private TripPlanning() {}

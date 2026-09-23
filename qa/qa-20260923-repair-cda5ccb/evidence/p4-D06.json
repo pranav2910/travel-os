@@ -1,0 +1,23 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb D06",
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2027-02-29T05:00:00Z",
+   "arrivalDeadline": "2027-02-29T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 400,
+  "body": {
+   "detail": "Failed to read request",
+   "instance": "/api/v1/trips",
+   "status": 400,
+   "title": "Bad Request"
+  }
+ },
+ "final": null,
+ "components": []
+}

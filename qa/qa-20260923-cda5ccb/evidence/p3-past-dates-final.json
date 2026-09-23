@@ -1,0 +1,42 @@
+{
+ "tripId": "trip_01M363PWWQVVCRXHVT6AXBJXJ6",
+ "tenantId": "acme",
+ "travelerId": "emp_1001",
+ "status": "BOOKED",
+ "source": "API",
+ "intent": {
+  "origin": "BOS",
+  "destination": "SEA",
+  "earliestDeparture": "2025-01-10T05:00:00Z",
+  "arrivalDeadline": "2025-01-10T23:00:00Z",
+  "returnAfter": "2025-01-12T10:00:00Z",
+  "latestReturn": "2025-01-12T23:00:00Z",
+  "purpose": "qa-20260923-cda5ccb departure in the past (2025-01-10)",
+  "hotelRequired": false,
+  "travelers": 1,
+  "itinerary": null
+ },
+ "evidence": {
+  "selectedBundleId": "bdl_01M363PXCJNG5MH3CCTTQ6YSHS",
+  "optimizationRunId": "opt_01M363PXWBVAF3MXQMYEGN35AF",
+  "policyDecisionId": "pd_01M363PXJBBBKE8PTY2GJRSM7H",
+  "approvalId": null,
+  "orderId": "ord_01M363PYDYTFC45CHXQQTDNSHN"
+ },
+ "createdBy": "human/alice",
+ "version": 4,
+ "createdAt": "2026-09-23T03:07:23.415668Z",
+ "updatedAt": "2026-09-23T03:07:25.160690Z",
+ "traveler": {
+  "travelerId": "emp_1001",
+  "givenName": "Alice",
+  "familyName": "Nguyen",
+  "email": "alice@acme.example"
+ },
+ "total": {
+  "currency": "USD",
+  "amountMinor": 43507,
+  "display": "USD 435.07"
+ },
+ "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+}

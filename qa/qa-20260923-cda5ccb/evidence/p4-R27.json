@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R27",
+   "origin": "JFK",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2027-10-22T10:00:00Z",
+   "latestReturn": "2027-10-22T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643NPSZ94Z51RDWGTBYQFM",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "JFK",
+    "destination": "LHR",
+    "earliestDeparture": "2026-10-22T05:00:00Z",
+    "arrivalDeadline": "2026-10-22T23:59:00Z",
+    "returnAfter": "2027-10-22T10:00:00Z",
+    "latestReturn": "2027-10-22T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb R27",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:22.041556Z",
+   "updatedAt": "2026-09-23T03:14:22.041556Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643NPSZ94Z51RDWGTBYQFM",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2027-10-22T10:00:00Z",
+   "latestReturn": "2027-10-22T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb R27",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643NZ3MVSFA5X70GM0ANDT",
+   "optimizationRunId": "opt_01M3643P1GQ6DZBBEMQW9W6STD",
+   "policyDecisionId": "pd_01M3643P02NPYSCW2H9TP7CQ83",
+   "approvalId": null,
+   "orderId": "ord_01M3643P2ZEATB0T71WEMH4T2G"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:22.041556Z",
+  "updatedAt": "2026-09-23T03:14:22.513850Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 32627,
+   "display": "USD 326.27"
+  },
+  "explanation": "For the JFK to LHR we chose DL352 JFK-LHR / return DL552 LHR-JFK via sandbox-air at USD 326.27. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

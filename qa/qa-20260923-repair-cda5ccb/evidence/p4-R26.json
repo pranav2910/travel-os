@@ -1,0 +1,27 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R26",
+   "origin": "JFK",
+   "destination": "LHR",
+   "earliestDeparture": "2026-01-10T05:00:00Z",
+   "arrivalDeadline": "2026-01-10T23:59:00Z",
+   "returnAfter": "2026-01-14T10:00:00Z",
+   "latestReturn": "2026-01-14T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 422,
+  "body": {
+   "detail": "the outbound window closed at 2026-01-10 18:59 America/New_York (2026-01-10T23:59:00Z); it is now 2026-09-23 00:58 America/New_York at JFK: choose a departure in the future",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "DEPARTURE_IN_PAST",
+   "type": "https://contracts.travelos.io/problems/departure-in-past",
+   "code": "DEPARTURE_IN_PAST"
+  }
+ },
+ "final": null,
+ "components": []
+}

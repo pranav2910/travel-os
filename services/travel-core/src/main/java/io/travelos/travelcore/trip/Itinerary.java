@@ -373,9 +373,7 @@ public record Itinerary(
   private static ZoneId zone(String iata) {
     return Locations.zoneOf(iata)
         .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "unknown location " + iata + ": the platform does not know its clock"));
+            () -> new IntentRejectedException("UNKNOWN_LOCATION", Locations.explainUnknown(iata)));
   }
 
   private static String idOrNew(@Nullable String id) {

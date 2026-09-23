@@ -1,0 +1,34 @@
+== 04:52:10 repair-after
+   exit 1 (see evidence/logs/repair-after.log)
+== 04:53:23 p01-followup
+   ok
+== 04:53:27 p01-journey
+   ok
+== 04:54:09 p01-failures
+   ok
+== 04:57:59 p03-trips
+   ok
+== 04:58:08 p04-routes
+   ok
+== 04:58:39 p05-policy
+   ok
+== 04:59:07 p05-followup
+   ok
+== 04:59:16 p06-styles
+   ok
+== 04:59:37 p09-workflow
+   ok
+== 04:59:50 p02-session
+   exit 1 (see evidence/logs/p02-session.log)
+== 05:00:49 p10-frontend
+   exit 1 (see evidence/logs/p10-frontend.log)
+== 05:01:55 p10b-keyboard
+   exit 1 (see evidence/logs/p10b-keyboard.log)
+== 05:02:40 p11-security
+   ok
+== 05:02:41 p12-outages
+   ok
+== 05:07:15 report
+   ok
+== done rc=1
+RUN_AFTER_EXIT=1

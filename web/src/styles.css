@@ -743,7 +743,7 @@ pre.json {
   padding: 4px 10px;
   border-radius: 999px;
   background: var(--surface-2);
-  color: var(--text-3);
+  color: var(--text-2); /* 7.0:1 on --surface-2; --text-3 was 4.26:1 (BUG-13) */
   font-size: 0.82rem;
 }
 .progress-steps li[data-state='done'] {

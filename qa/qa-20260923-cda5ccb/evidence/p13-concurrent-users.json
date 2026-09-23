@@ -1,0 +1,117 @@
+{
+ "results": [
+  {
+   "user": "alice",
+   "status": 202,
+   "trip": "trip_01M365BZYRKY14R07T7FRVPYMT",
+   "final": "BOOKED",
+   "seconds": 1.5
+  },
+  {
+   "user": "bob",
+   "status": 202,
+   "trip": "trip_01M365CESVYM909H65A0XYRQN3",
+   "final": "BOOKED",
+   "seconds": 16.7
+  },
+  {
+   "user": "carol",
+   "status": 202,
+   "trip": "trip_01M365C01G8W909VQTRR5QF1CW",
+   "final": "BOOKED",
+   "seconds": 1.6
+  },
+  {
+   "user": "dan",
+   "status": 202,
+   "trip": "trip_01M365C01EGKXEA8ET0YET5MBD",
+   "final": "BOOKED",
+   "seconds": 1.6
+  },
+  {
+   "user": "alice",
+   "status": 202,
+   "trip": "trip_01M365BZYVJMNGTH0P14RB8JPA",
+   "final": "BOOKED",
+   "seconds": 1.5
+  },
+  {
+   "user": "bob",
+   "status": 202,
+   "trip": "trip_01M365C01DFX75PH7GZ4A7KFC1",
+   "final": "BOOKED",
+   "seconds": 1.6
+  },
+  {
+   "user": "carol",
+   "status": 202,
+   "trip": "trip_01M365C4ZT5CB8AYHF8966F3F0",
+   "final": "BOOKED",
+   "seconds": 6.7
+  },
+  {
+   "user": "dan",
+   "status": 202,
+   "trip": "trip_01M365C4ZT5CB8AYHF8966F3EZ",
+   "final": "BOOKED",
+   "seconds": 6.7
+  },
+  {
+   "user": "alice",
+   "status": 202,
+   "trip": "trip_01M365BZZ7C8Y1JDCT99842A4F",
+   "final": "BOOKED",
+   "seconds": 1.5
+  },
+  {
+   "user": "bob",
+   "status": 202,
+   "trip": "trip_01M365C4ZVTY3EEGD0BCMD8AGR",
+   "final": "BOOKED",
+   "seconds": 6.7
+  }
+ ],
+ "owners": {
+  "trip_01M365BZYRKY14R07T7FRVPYMT": [
+   "emp_1001",
+   "acme"
+  ],
+  "trip_01M365CESVYM909H65A0XYRQN3": [
+   "emp_1002",
+   "acme"
+  ],
+  "trip_01M365C01G8W909VQTRR5QF1CW": [
+   "emp_1003",
+   "acme"
+  ],
+  "trip_01M365C01EGKXEA8ET0YET5MBD": [
+   "emp_1004",
+   "acme"
+  ],
+  "trip_01M365BZYVJMNGTH0P14RB8JPA": [
+   "emp_1001",
+   "acme"
+  ],
+  "trip_01M365C01DFX75PH7GZ4A7KFC1": [
+   "emp_1002",
+   "acme"
+  ],
+  "trip_01M365C4ZT5CB8AYHF8966F3F0": [
+   "emp_1003",
+   "acme"
+  ],
+  "trip_01M365C4ZT5CB8AYHF8966F3EZ": [
+   "emp_1004",
+   "acme"
+  ],
+  "trip_01M365BZZ7C8Y1JDCT99842A4F": [
+   "emp_1001",
+   "acme"
+  ],
+  "trip_01M365C4ZVTY3EEGD0BCMD8AGR": [
+   "emp_1002",
+   "acme"
+  ]
+ },
+ "wall_seconds": 16.73267412185669
+}

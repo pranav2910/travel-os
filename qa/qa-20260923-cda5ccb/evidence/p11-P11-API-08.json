@@ -1,0 +1,14 @@
+{
+ "status": 400,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "the Idempotency-Key header is required on this request",
+  "instance": "/api/v1/trips",
+  "status": 400,
+  "title": "IDEMPOTENCY_KEY_REQUIRED",
+  "type": "https://contracts.travelos.io/problems/idempotency-key-required",
+  "code": "IDEMPOTENCY_KEY_REQUIRED"
+ }
+}

@@ -1,0 +1,384 @@
+{
+ "status": 202,
+ "response": {
+  "tripId": "trip_01M36A1DCJT3GDE8V04NKMPGPK",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-11-02T05:00:00Z",
+   "latestReturn": "2026-11-02T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb seven legs",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPD",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPE",
+      "origin": "LHR",
+      "destination": "DXB",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPF",
+      "origin": "DXB",
+      "destination": "DEL",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPG",
+      "origin": "DEL",
+      "destination": "SIN",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPH",
+      "origin": "SIN",
+      "destination": "NRT",
+      "earliestDeparture": "2026-10-31T05:00:00Z",
+      "arrivalDeadline": "2026-10-31T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPJ",
+      "origin": "NRT",
+      "destination": "BOS",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:57:59.442857Z",
+  "updatedAt": "2026-09-23T04:57:59.442857Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A1DCJT3GDE8V04NKMPGPK",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "AWAITING_APPROVAL",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-11-02T05:00:00Z",
+   "latestReturn": "2026-11-02T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb seven legs",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPD",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPE",
+      "origin": "LHR",
+      "destination": "DXB",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPF",
+      "origin": "DXB",
+      "destination": "DEL",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPG",
+      "origin": "DEL",
+      "destination": "SIN",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPH",
+      "origin": "SIN",
+      "destination": "NRT",
+      "earliestDeparture": "2026-10-31T05:00:00Z",
+      "arrivalDeadline": "2026-10-31T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPJ",
+      "origin": "NRT",
+      "destination": "BOS",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A1H3K4N5F7FV9WMQSXZPF",
+   "optimizationRunId": "opt_01M36A1H3KVVRKYBG7XR8SJVZ6",
+   "policyDecisionId": "pd_01M36A1H4CGX9V5198J0JDF0XC",
+   "approvalId": "apr_01M36A1H64WHYPM3T9KQGF4QSD",
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T04:57:59.442857Z",
+  "updatedAt": "2026-09-23T04:58:03.332436Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 177141,
+   "display": "USD 1771.41"
+  },
+  "approval": {
+   "approvalId": "apr_01M36A1H64WHYPM3T9KQGF4QSD",
+   "tripId": "trip_01M36A1DCJT3GDE8V04NKMPGPK",
+   "requiredRole": "MANAGER",
+   "status": "PENDING",
+   "policyDecisionId": "pd_01M36A1H4CGX9V5198J0JDF0XC",
+   "requestedAt": "2026-09-23T04:58:03.332436Z",
+   "decidedBy": null,
+   "decidedAt": null,
+   "comment": null
+  },
+  "explanation": "For the BOS to LHR to DXB to DEL to SIN to NRT to BOS we chose DL821 BOS-LHR via sandbox-air; DL253 LHR-DXB via sandbox-air; DL402 DXB-DEL via sandbox-air; DL284 DEL-SIN via sandbox-air; DL737 SIN-NRT via sandbox-air; DL687 NRT-BOS via sandbox-air at USD 1771.41 (6 legs). 306 options were searched and 204 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 1771.41 exceeds the USD 1200.00 auto-approve limit. A manager's approval is required before booking.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPD",
+    "type": "AIR",
+    "status": "QUOTED",
+    "offerId": "off_01M36A1DXYQD2E3NWQ67GQ59J3",
+    "provider": "sandbox-air",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 34222,
+     "display": "USD 342.22"
+    },
+    "failureCode": null,
+    "summary": "DL821 BOS-LHR 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:03.296492Z"
+   },
+   {
+    "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPE",
+    "type": "AIR",
+    "status": "QUOTED",
+    "offerId": "off_01M36A1E1XM58YGMFNJFHE2XMW",
+    "provider": "sandbox-air",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 31014,
+     "display": "USD 310.14"
+    },
+    "failureCode": null,
+    "summary": "DL253 LHR-DXB 2026-10-25T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:03.296492Z"
+   },
+   {
+    "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPF",
+    "type": "AIR",
+    "status": "QUOTED",
+    "offerId": "off_01M36A1E4P9ZMTKVK74KWCBFRP",
+    "provider": "sandbox-air",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 25946,
+     "display": "USD 259.46"
+    },
+    "failureCode": null,
+    "summary": "DL402 DXB-DEL 2026-10-27T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:03.296492Z"
+   },
+   {
+    "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPG",
+    "type": "AIR",
+    "status": "QUOTED",
+    "offerId": "off_01M36A1E7HFACZTJN8BQPAHAXG",
+    "provider": "sandbox-air",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 26035,
+     "display": "USD 260.35"
+    },
+    "failureCode": null,
+    "summary": "DL284 DEL-SIN 2026-10-29T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:03.296492Z"
+   },
+   {
+    "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPH",
+    "type": "AIR",
+    "status": "QUOTED",
+    "offerId": "off_01M36A1EAQHDZ186CAC6YW14EB",
+    "provider": "sandbox-air",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 33116,
+     "display": "USD 331.16"
+    },
+    "failureCode": null,
+    "summary": "DL737 SIN-NRT 2026-10-31T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:03.296492Z"
+   },
+   {
+    "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPJ",
+    "type": "AIR",
+    "status": "QUOTED",
+    "offerId": "off_01M36A1EDSSPDBW2VRFREM52FK",
+    "provider": "sandbox-air",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 26808,
+     "display": "USD 268.08"
+    },
+    "failureCode": null,
+    "summary": "DL687 NRT-BOS 2026-11-02T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:03.296492Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPD",
+   "type": "AIR",
+   "status": "QUOTED",
+   "offerId": "off_01M36A1DXYQD2E3NWQ67GQ59J3",
+   "provider": "sandbox-air",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 34222,
+    "display": "USD 342.22"
+   },
+   "failureCode": null,
+   "summary": "DL821 BOS-LHR 2026-10-23T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:03.296492Z"
+  },
+  {
+   "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPE",
+   "type": "AIR",
+   "status": "QUOTED",
+   "offerId": "off_01M36A1E1XM58YGMFNJFHE2XMW",
+   "provider": "sandbox-air",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 31014,
+    "display": "USD 310.14"
+   },
+   "failureCode": null,
+   "summary": "DL253 LHR-DXB 2026-10-25T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:03.296492Z"
+  },
+  {
+   "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPF",
+   "type": "AIR",
+   "status": "QUOTED",
+   "offerId": "off_01M36A1E4P9ZMTKVK74KWCBFRP",
+   "provider": "sandbox-air",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 25946,
+    "display": "USD 259.46"
+   },
+   "failureCode": null,
+   "summary": "DL402 DXB-DEL 2026-10-27T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:03.296492Z"
+  },
+  {
+   "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPG",
+   "type": "AIR",
+   "status": "QUOTED",
+   "offerId": "off_01M36A1E7HFACZTJN8BQPAHAXG",
+   "provider": "sandbox-air",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 26035,
+    "display": "USD 260.35"
+   },
+   "failureCode": null,
+   "summary": "DL284 DEL-SIN 2026-10-29T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:03.296492Z"
+  },
+  {
+   "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPH",
+   "type": "AIR",
+   "status": "QUOTED",
+   "offerId": "off_01M36A1EAQHDZ186CAC6YW14EB",
+   "provider": "sandbox-air",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 33116,
+    "display": "USD 331.16"
+   },
+   "failureCode": null,
+   "summary": "DL737 SIN-NRT 2026-10-31T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:03.296492Z"
+  },
+  {
+   "componentId": "cmp_01M36A1DCJT3GDE8V04NKMPGPJ",
+   "type": "AIR",
+   "status": "QUOTED",
+   "offerId": "off_01M36A1EDSSPDBW2VRFREM52FK",
+   "provider": "sandbox-air",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 26808,
+    "display": "USD 268.08"
+   },
+   "failureCode": null,
+   "summary": "DL687 NRT-BOS 2026-11-02T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:03.296492Z"
+  }
+ ]
+}

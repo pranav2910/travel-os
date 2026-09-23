@@ -48,7 +48,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Import(TestTokens.class)
+@Import({TestTokens.class, TestClock.class})
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class TripApiIntegrationTest {
@@ -274,6 +274,145 @@ class TripApiIntegrationTest {
     }
   }
 
+  // ---------------------------------------------------------------- catalog, clock, limits
+
+  @Nested
+  class CatalogAndClock {
+
+    @Test
+    void anyThreeLettersIsNotAnAirport() {
+      // BUG-01: the round-trip path accepted any code and the sandbox booked it
+      ResponseEntity<String> response =
+          post(
+              "/api/v1/trips",
+              TestTokens.alice(),
+              UUID.randomUUID().toString(),
+              body(INTENT.replace("\"origin\":\"BOS\"", "\"origin\":\"QQQ\""), null));
+      assertThat(response.getStatusCode().value()).isEqualTo(422);
+      JsonNode problem = json.readTree(response.getBody());
+      assertThat(problem.get("code").asString()).isEqualTo("UNKNOWN_LOCATION");
+      assertThat(problem.get("detail").asString()).contains("QQQ");
+    }
+
+    @Test
+    void aCityCodeIsResolvedToItsAirportsForTheRequester() {
+      ResponseEntity<String> response =
+          post(
+              "/api/v1/trips",
+              TestTokens.alice(),
+              UUID.randomUUID().toString(),
+              body(INTENT.replace("\"destination\":\"SEA\"", "\"destination\":\"NYC\""), null));
+      assertThat(response.getStatusCode().value()).isEqualTo(422);
+      JsonNode problem = json.readTree(response.getBody());
+      assertThat(problem.get("code").asString()).isEqualTo("UNKNOWN_LOCATION");
+      assertThat(problem.get("detail").asString())
+          .contains("NYC is a city, not an airport")
+          .contains("JFK, EWR, LGA");
+    }
+
+    @Test
+    void departuresInThePastAreRefusedInTheDeparturesLocalTime() {
+      // BUG-03: the fixture flies 2026-10-06; sixty days later that window is closed
+      TestClock.advance(Duration.ofDays(60));
+      try {
+        ResponseEntity<String> response =
+            post(
+                "/api/v1/trips",
+                TestTokens.alice(),
+                UUID.randomUUID().toString(),
+                body(INTENT, null));
+        assertThat(response.getStatusCode().value()).isEqualTo(422);
+        JsonNode problem = json.readTree(response.getBody());
+        assertThat(problem.get("code").asString()).isEqualTo("DEPARTURE_IN_PAST");
+        assertThat(problem.get("detail").asString())
+            .as("17:00Z on the 6th is 13:00 in Boston, where the trip departs")
+            .contains("2026-10-06 13:00 America/New_York");
+      } finally {
+        TestClock.reset();
+      }
+      // yesterday, judged at the platform clock
+      java.time.Instant now = TestClock.now();
+      ResponseEntity<String> yesterday =
+          post(
+              "/api/v1/trips",
+              TestTokens.alice(),
+              UUID.randomUUID().toString(),
+              body(oneWay(now.minus(Duration.ofHours(30)), now.minus(Duration.ofHours(20))), null));
+      assertThat(yesterday.getStatusCode().value()).isEqualTo(422);
+      assertThat(json.readTree(yesterday.getBody()).get("code").asString())
+          .isEqualTo("DEPARTURE_IN_PAST");
+      // a window that closed a second ago is closed
+      ResponseEntity<String> justClosed =
+          post(
+              "/api/v1/trips",
+              TestTokens.alice(),
+              UUID.randomUUID().toString(),
+              body(oneWay(now.minus(Duration.ofHours(4)), now.minusSeconds(1)), null));
+      assertThat(justClosed.getStatusCode().value()).isEqualTo(422);
+      // later today is fine even though the window opened earlier
+      ResponseEntity<String> laterToday =
+          post(
+              "/api/v1/trips",
+              TestTokens.alice(),
+              UUID.randomUUID().toString(),
+              body(oneWay(now.minus(Duration.ofHours(4)), now.plus(Duration.ofHours(6))), null));
+      assertThat(laterToday.getStatusCode().value()).as(laterToday.getBody()).isEqualTo(202);
+    }
+
+    @Test
+    void concurrentIdenticalRequestsMakeOneTripAndEveryAnswerIsTheSame() throws Exception {
+      // BUG-07: five identical submits raced past the key lookup; one of them answered 500
+      String key = "race-" + UUID.randomUUID();
+      String payload = body(INTENT, null);
+      long before = tripCount();
+      java.util.concurrent.ExecutorService pool =
+          java.util.concurrent.Executors.newFixedThreadPool(5);
+      java.util.concurrent.CountDownLatch go = new java.util.concurrent.CountDownLatch(1);
+      List<java.util.concurrent.Future<ResponseEntity<String>>> answers = new ArrayList<>();
+      for (int i = 0; i < 5; i++) {
+        answers.add(
+            pool.submit(
+                () -> {
+                  go.await();
+                  return post("/api/v1/trips", TestTokens.alice(), key, payload);
+                }));
+      }
+      go.countDown();
+      java.util.Set<String> tripIds = new java.util.HashSet<>();
+      for (java.util.concurrent.Future<ResponseEntity<String>> f : answers) {
+        ResponseEntity<String> r = f.get(60, java.util.concurrent.TimeUnit.SECONDS);
+        assertThat(r.getStatusCode().value()).as(r.getBody()).isEqualTo(202);
+        tripIds.add(json.readTree(r.getBody()).get("tripId").asString());
+      }
+      pool.shutdown();
+      assertThat(tripIds).hasSize(1);
+      assertThat(tripCount()).isEqualTo(before + 1);
+    }
+
+    @Test
+    void listLimitsOutsideTheRangeAreRefusedNotClamped() {
+      // BUG-06
+      for (String bad : List.of("0", "-1", "201", "400")) {
+        ResponseEntity<String> r = get("/api/v1/trips?limit=" + bad, TestTokens.alice());
+        assertThat(r.getStatusCode().value()).as("limit=" + bad).isEqualTo(422);
+        assertThat(json.readTree(r.getBody()).get("code").asString())
+            .isEqualTo("LIMIT_OUT_OF_RANGE");
+      }
+      assertThat(get("/api/v1/trips?limit=1", TestTokens.alice()).getStatusCode().value())
+          .isEqualTo(200);
+      assertThat(get("/api/v1/trips?limit=200", TestTokens.alice()).getStatusCode().value())
+          .isEqualTo(200);
+    }
+
+    private String oneWay(java.time.Instant earliest, java.time.Instant deadline) {
+      return "{\"origin\":\"BOS\",\"destination\":\"SEA\",\"earliestDeparture\":\""
+          + earliest
+          + "\",\"arrivalDeadline\":\""
+          + deadline
+          + "\",\"purpose\":\"same-day visit\"}";
+    }
+  }
+
   // ---------------------------------------------------------------- authn / authz / tenancy
 
   @Nested
@@ -372,9 +511,21 @@ class TripApiIntegrationTest {
       assertThat(json.readTree(asTraveler.getBody()).get("code").asString())
           .isEqualTo("NOT_AN_ARRANGER");
 
-      ResponseEntity<String> asManager =
+      // BUG-04: a reservation is made in a name; an arranger must say whose
+      ResponseEntity<String> anonymous =
           post("/api/v1/trips", TestTokens.bob(), UUID.randomUUID().toString(), forDan);
-      assertThat(asManager.getStatusCode().value()).isEqualTo(202);
+      assertThat(anonymous.getStatusCode().value()).isEqualTo(422);
+      assertThat(json.readTree(anonymous.getBody()).get("code").asString())
+          .isEqualTo("TRAVELER_IDENTITY_REQUIRED");
+
+      String forDanNamed =
+          "{\"travelerId\":\"emp_1004\",\"traveler\":{\"givenName\":\"Dan\","
+              + "\"familyName\":\"Okafor\",\"email\":\"dan@acme.example\"},\"intent\":"
+              + INTENT
+              + "}";
+      ResponseEntity<String> asManager =
+          post("/api/v1/trips", TestTokens.bob(), UUID.randomUUID().toString(), forDanNamed);
+      assertThat(asManager.getStatusCode().value()).as(asManager.getBody()).isEqualTo(202);
       assertThat(json.readTree(asManager.getBody()).get("travelerId").asString())
           .isEqualTo("emp_1004");
       assertThat(json.readTree(asManager.getBody()).get("createdBy").asString())

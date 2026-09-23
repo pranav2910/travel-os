@@ -1,0 +1,12 @@
+{
+ "status": 405,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "Method 'DELETE' is not supported.",
+  "instance": "/api/v1/trips",
+  "status": 405,
+  "title": "Method Not Allowed"
+ }
+}

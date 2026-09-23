@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R10",
+   "origin": "SEA",
+   "destination": "SYD",
+   "earliestDeparture": "2026-10-26T05:00:00Z",
+   "arrivalDeadline": "2026-10-26T23:59:00Z",
+   "returnAfter": "2026-11-02T10:00:00Z",
+   "latestReturn": "2026-11-02T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643BQB2HW00YM1ZMDRPCN8",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "SEA",
+    "destination": "SYD",
+    "earliestDeparture": "2026-10-26T05:00:00Z",
+    "arrivalDeadline": "2026-10-26T23:59:00Z",
+    "returnAfter": "2026-11-02T10:00:00Z",
+    "latestReturn": "2026-11-02T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb R10",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:11.819317Z",
+   "updatedAt": "2026-09-23T03:14:11.819317Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643BQB2HW00YM1ZMDRPCN8",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "SEA",
+   "destination": "SYD",
+   "earliestDeparture": "2026-10-26T05:00:00Z",
+   "arrivalDeadline": "2026-10-26T23:59:00Z",
+   "returnAfter": "2026-11-02T10:00:00Z",
+   "latestReturn": "2026-11-02T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb R10",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643BTYK538B3AQAHMQVQM4",
+   "optimizationRunId": "opt_01M3643BY7XY5GWDERFEY5M75J",
+   "policyDecisionId": "pd_01M3643BVR459ENKN5VGDH036R",
+   "approvalId": null,
+   "orderId": "ord_01M3643C0F90PMAM36TGC4K6RG"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:11.819317Z",
+  "updatedAt": "2026-09-23T03:14:12.141057Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 47572,
+   "display": "USD 475.72"
+  },
+  "explanation": "For the SEA to SYD we chose DL168 SEA-SYD / return DL368 SYD-SEA via sandbox-air at USD 475.72. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

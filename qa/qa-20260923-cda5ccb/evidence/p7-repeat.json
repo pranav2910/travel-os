@@ -1,0 +1,23 @@
+[
+ {
+  "trip": "trip_01M3645SMWZKJCPAMZKM4C2DQK",
+  "final": "FAILED",
+  "code": "NEEDS_CLARIFICATION",
+  "origin": null,
+  "destination": null
+ },
+ {
+  "trip": "trip_01M3645V4NTXT98R0613M9B0NY",
+  "final": "FAILED",
+  "code": "NEEDS_CLARIFICATION",
+  "origin": null,
+  "destination": null
+ },
+ {
+  "trip": "trip_01M3645WM0R7XK0NHSH03N7M0T",
+  "final": "FAILED",
+  "code": "NEEDS_CLARIFICATION",
+  "origin": null,
+  "destination": null
+ }
+]

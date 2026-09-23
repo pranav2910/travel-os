@@ -1,0 +1,4 @@
+[PASS   ] P1-FAIL-01c: cancel 200 ; final=CANCELLED; orders=[]; history=[None, None]
+[PASS   ] P1-FAIL-06b: status=FAILED POLICY/ALL_CANDIDATES_DENIED; 69 decisions; reason codes=['CABIN_NOT_PERMITTED', 'FARE_ABOVE_POL
+[PASS   ] P1-PERSONA-01c: anonymous 422 TRAVELER_IDENTITY_REQUIRED; named 202 travelerId=emp_1001 snapshot={'travelerId': 'emp_1001', 'g
+{'FAIL': 20, 'PASS': 37}

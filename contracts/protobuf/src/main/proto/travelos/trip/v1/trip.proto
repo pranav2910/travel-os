@@ -20,6 +20,9 @@ enum TripStatus {
   BOOKED = 7;
   CANCELLED = 8;
   FAILED = 9;
+  // A booked trip whose cancellation was requested: the reservation is being released at the
+  // suppliers; CANCELLED only once that is established (or nothing was left to release).
+  CANCELLING = 10;
 }
 
 // What the traveler needs, independent of how it is fulfilled.

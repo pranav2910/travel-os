@@ -1,0 +1,16 @@
+{
+ "status": 422,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "policy document is invalid",
+  "instance": "/api/v1/policies",
+  "status": 422,
+  "title": "POLICY_INVALID",
+  "code": "POLICY_INVALID",
+  "problems": [
+   "trip.maxTotal must be >= 0"
+  ]
+ }
+}

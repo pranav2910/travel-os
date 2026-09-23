@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R30",
+   "origin": "DXB",
+   "destination": "SIN",
+   "earliestDeparture": "2026-10-19T05:00:00Z",
+   "arrivalDeadline": "2026-10-19T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643Q6FJSK4M0R3R4BGBCN1",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "DXB",
+    "destination": "SIN",
+    "earliestDeparture": "2026-10-19T05:00:00Z",
+    "arrivalDeadline": "2026-10-19T23:59:00Z",
+    "returnAfter": "2026-10-25T10:00:00Z",
+    "latestReturn": "2026-10-25T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb R30",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:23.567841Z",
+   "updatedAt": "2026-09-23T03:14:23.567841Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643Q6FJSK4M0R3R4BGBCN1",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "DXB",
+   "destination": "SIN",
+   "earliestDeparture": "2026-10-19T05:00:00Z",
+   "arrivalDeadline": "2026-10-19T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb R30",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643QGJWNK4D5K9CJMH9JW8",
+   "optimizationRunId": "opt_01M3643QKGPFDNDQWPTR4FP8JS",
+   "policyDecisionId": "pd_01M3643QHJVQFD9AQ6QH3500D9",
+   "approvalId": null,
+   "orderId": "ord_01M3643QPC3H2SP5HSDCDV38T3"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:23.567841Z",
+  "updatedAt": "2026-09-23T03:14:24.102766Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 24795,
+   "display": "USD 247.95"
+  },
+  "explanation": "For the DXB to SIN we chose DL545 DXB-SIN / return DL745 SIN-DXB via sandbox-air at USD 247.95. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.4 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

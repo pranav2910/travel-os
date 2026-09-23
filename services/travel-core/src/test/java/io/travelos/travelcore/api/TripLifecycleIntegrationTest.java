@@ -63,7 +63,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Import({TestTokens.class, RecordingApprovalSignaler.class})
+@Import({TestTokens.class, TestClock.class, RecordingApprovalSignaler.class})
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -357,6 +357,142 @@ class TripLifecycleIntegrationTest {
   }
 
   @Test
+  @org.junit.jupiter.api.Order(7)
+  void cancellingABookedTripReleasesTheReservationBeforeItIsCancelled() {
+    // BUG-08: the trip said CANCELLED while the order stayed CONFIRMED at the supplier
+    String booked = createAsAlice();
+    transition(booked, TripStatus.PLANNING, b -> {});
+    transition(
+        booked,
+        TripStatus.APPROVED,
+        b ->
+            b.setSelectedBundleId(BUNDLE)
+                .setOptimizationRunId(OPT_RUN)
+                .setPolicyDecisionId(DECISION)
+                .setTotal(usd(99000)));
+    transition(booked, TripStatus.BOOKING, b -> {});
+    transition(booked, TripStatus.BOOKED, b -> b.setOrderId(ORDER));
+    assertThatThrownBy(() -> transition(booked, TripStatus.CANCELLED, b -> {}))
+        .as("nobody, not even the workflow, cancels a booked trip without releasing it")
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.FAILED_PRECONDITION));
+
+    ResponseEntity<String> first = cancel(booked, TestTokens.alice(), "Meeting moved to video");
+    assertThat(first.getStatusCode().value()).as(first.getBody()).isEqualTo(200);
+    assertThat(json.readTree(first.getBody()).get("status").asString()).isEqualTo("CANCELLING");
+    ConsumerRecord<String, String> requested =
+        awaitEvent(booked, "travel.trip.cancellation-requested");
+    JsonNode requestedData = json.readTree(requested.value()).get("data");
+    assertThat(requestedData.get("orderId").asString()).isEqualTo(ORDER);
+    assertThat(requestedData.get("requestedBy").asString()).isEqualTo("human/alice");
+    ResponseEntity<String> again = cancel(booked, TestTokens.alice(), "Meeting moved to video");
+    assertThat(again.getStatusCode().value()).isEqualTo(200);
+    assertThat(json.readTree(again.getBody()).get("status").asString()).isEqualTo("CANCELLING");
+
+    // a supplier refused part of it: still CANCELLING, and it says why; the same report twice is
+    // one
+    Trip incomplete =
+        transition(
+            booked,
+            TripStatus.CANCELLING,
+            b ->
+                b.setFailureStage("CANCELLATION")
+                    .setFailureCode("CANCELLATION_INCOMPLETE")
+                    .setReason("the hotel refused to release the room"));
+    assertThat(incomplete.getStatus()).isEqualTo(TripStatus.CANCELLING);
+    assertThat(incomplete.getFailureCode()).isEqualTo("CANCELLATION_INCOMPLETE");
+    transition(
+        booked,
+        TripStatus.CANCELLING,
+        b ->
+            b.setFailureStage("CANCELLATION")
+                .setFailureCode("CANCELLATION_INCOMPLETE")
+                .setReason("the hotel refused to release the room"));
+    awaitEvent(booked, "travel.trip.cancellation-incomplete");
+    JsonNode stuck = json.readTree(get("/api/v1/trips/" + booked, TestTokens.alice()).getBody());
+    assertThat(stuck.get("status").asString()).isEqualTo("CANCELLING");
+    assertThat(stuck.get("failureCode").asString()).isEqualTo("CANCELLATION_INCOMPLETE");
+
+    // released at last: CANCELLED now, and the failure is over
+    Trip cancelled =
+        transition(booked, TripStatus.CANCELLED, b -> b.setReason("every component released"));
+    assertThat(cancelled.getStatus()).isEqualTo(TripStatus.CANCELLED);
+    assertThat(cancelled.getFailureCode()).isEmpty();
+    awaitEvent(booked, "travel.trip.cancelled");
+    JsonNode history =
+        json.readTree(get("/api/v1/trips/" + booked + "/history", TestTokens.alice()).getBody());
+    List<String> moves = new ArrayList<>();
+    history.forEach(h -> moves.add(h.get("from").asString() + ">" + h.get("to").asString()));
+    assertThat(moves)
+        .containsSubsequence("BOOKED>CANCELLING", "CANCELLING>CANCELLING", "CANCELLING>CANCELLED");
+    assertThat(moves.stream().filter("CANCELLING>CANCELLING"::equals)).hasSize(1);
+    consumer.poll(Duration.ofMillis(500)).forEach(received::add);
+    assertThat(
+            received.stream()
+                .filter(r -> booked.equals(r.key()))
+                .map(r -> json.readTree(r.value()).get("eventType").asString())
+                .filter("travel.trip.cancellation-requested"::equals))
+        .as("one request to release, however often the traveler clicks")
+        .hasSize(1);
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(8)
+  void aWithdrawnTripCanNeitherBeApprovedNorBooked() {
+    String withdrawn = createAsAlice();
+    transition(withdrawn, TripStatus.PLANNING, b -> {});
+    transition(
+        withdrawn,
+        TripStatus.AWAITING_APPROVAL,
+        b ->
+            b.setSelectedBundleId(BUNDLE)
+                .setOptimizationRunId(OPT_RUN)
+                .setPolicyDecisionId(DECISION)
+                .setTotal(usd(99000)));
+    ResponseEntity<String> cancelled = cancel(withdrawn, TestTokens.alice(), "plans changed");
+    assertThat(cancelled.getStatusCode().value()).isEqualTo(200);
+    assertThat(json.readTree(cancelled.getBody()).get("status").asString()).isEqualTo("CANCELLED");
+    ResponseEntity<String> late = decide(withdrawn, TestTokens.bob(), "APPROVE", "late-1");
+    assertThat(late.getStatusCode().value()).isEqualTo(409);
+    assertThat(json.readTree(late.getBody()).get("code").asString())
+        .isEqualTo("TRIP_NOT_AWAITING_APPROVAL");
+    assertThatThrownBy(() -> transition(withdrawn, TripStatus.BOOKING, b -> {}))
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.FAILED_PRECONDITION));
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(9)
+  void aTripArrangedForSomeoneElseIsBookedInTheirName() {
+    // BUG-04: the workflow read an empty traveler snapshot for arranged trips
+    String named =
+        "{\"travelerId\":\"emp_1004\",\"traveler\":{\"givenName\":\"Dan\","
+            + "\"familyName\":\"Okafor\",\"email\":\"dan@acme.example\"},\"intent\":"
+            + INTENT
+            + "}";
+    ResponseEntity<String> created = postTrip(TestTokens.bob(), named);
+    assertThat(created.getStatusCode().value()).as(created.getBody()).isEqualTo(202);
+    String tripId = json.readTree(created.getBody()).get("tripId").asString();
+    Trip seen =
+        core.getTrip(GetTripRequest.newBuilder().setCtx(ctx("acme")).setTripId(tripId).build());
+    assertThat(seen.getTraveler().getTravelerId()).isEqualTo("emp_1004");
+    assertThat(seen.getTraveler().getGivenName()).isEqualTo("Dan");
+    assertThat(seen.getTraveler().getFamilyName()).isEqualTo("Okafor");
+    assertThat(seen.getTraveler().getEmail()).isEqualTo("dan@acme.example");
+    ResponseEntity<String> halfNamed =
+        postTrip(
+            TestTokens.bob(),
+            "{\"travelerId\":\"emp_1004\",\"traveler\":{\"givenName\":\"Dan\"},\"intent\":"
+                + INTENT
+                + "}");
+    assertThat(halfNamed.getStatusCode().value()).isEqualTo(422);
+    assertThat(json.readTree(halfNamed.getBody()).get("code").asString())
+        .isEqualTo("TRAVELER_IDENTITY_REQUIRED");
+  }
+
+  @Test
   @org.junit.jupiter.api.Order(99)
   void everyLifecycleEventIsContractValid() {
     await()
@@ -375,6 +511,8 @@ class TripLifecycleIntegrationTest {
                       "travel.trip.replanned",
                       "travel.trip.booked",
                       "travel.trip.failed",
+                      "travel.trip.cancellation-requested",
+                      "travel.trip.cancellation-incomplete",
                       "travel.trip.cancelled",
                       "travel.approval.requested",
                       "travel.approval.approved",
@@ -517,17 +655,31 @@ class TripLifecycleIntegrationTest {
   }
 
   private String create(String token) {
-    ResponseEntity<String> created =
-        http.post()
-            .uri("/api/v1/trips")
-            .contentType(MediaType.APPLICATION_JSON)
-            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-            .header("Idempotency-Key", UUID.randomUUID().toString())
-            .body("{\"intent\":" + INTENT + "}")
-            .retrieve()
-            .toEntity(String.class);
+    ResponseEntity<String> created = postTrip(token, "{\"intent\":" + INTENT + "}");
     assertThat(created.getStatusCode().value()).isEqualTo(202);
     return json.readTree(created.getBody()).get("tripId").asString();
+  }
+
+  private ResponseEntity<String> postTrip(String token, String body) {
+    return http.post()
+        .uri("/api/v1/trips")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header("Idempotency-Key", UUID.randomUUID().toString())
+        .body(body)
+        .retrieve()
+        .toEntity(String.class);
+  }
+
+  private ResponseEntity<String> cancel(String trip, String token, String reason) {
+    return http.post()
+        .uri("/api/v1/trips/" + trip + "/cancellation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header("Idempotency-Key", UUID.randomUUID().toString())
+        .body("{\"reason\":\"" + reason + "\"}")
+        .retrieve()
+        .toEntity(String.class);
   }
 
   private ApplyIntentExtractionRequest extraction(String trip, String result, String callId) {

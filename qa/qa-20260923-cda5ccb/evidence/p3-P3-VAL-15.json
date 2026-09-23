@@ -1,0 +1,23 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb invalid instant '2026-13-45T00:00:00Z'",
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-13-45T00:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-24T10:00:00Z",
+   "latestReturn": "2026-10-24T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 400,
+ "response": {
+  "detail": "Failed to read request",
+  "instance": "/api/v1/trips",
+  "status": 400,
+  "title": "Bad Request"
+ },
+ "stored": null
+}

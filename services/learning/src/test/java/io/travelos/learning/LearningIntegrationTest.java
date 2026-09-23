@@ -382,6 +382,31 @@ class LearningIntegrationTest {
                 .get("revision")
                 .asInt())
         .isEqualTo(2);
+    // BUG-12: the order was booked in USD; a EUR refund cannot be settled against it
+    ResponseEntity<String> eur =
+        post(
+            "/api/v1/learning/outcomes/refunds",
+            TestTokens.carol(),
+            refund.replace("\"currency\":\"USD\"", "\"currency\":\"EUR\"").replace("RF-1", "RF-2"));
+    assertThat(eur.getStatusCode().value()).isEqualTo(422);
+    assertThat(eur.getBody()).contains("CURRENCY_MISMATCH").contains("USD");
+    // BUG-11 (re-examined): a refund of zero is a legitimate settlement, recorded as one
+    ResponseEntity<String> zero =
+        post(
+            "/api/v1/learning/outcomes/refunds",
+            TestTokens.carol(),
+            refund.replace("30000", "0").replace("RF-1", "RF-3"));
+    assertThat(zero.getStatusCode().value()).as(zero.getBody()).isEqualTo(200);
+    assertThat(json.readTree(zero.getBody()).get("kind").asString()).isEqualTo("REFUND_SETTLED");
+    // a negative amount is not a refund
+    assertThat(
+            post(
+                    "/api/v1/learning/outcomes/refunds",
+                    TestTokens.carol(),
+                    refund.replace("30000", "-1").replace("RF-1", "RF-4"))
+                .getStatusCode()
+                .value())
+        .isEqualTo(400);
   }
 
   // ================================================================== 3. build, evaluate, rebuild

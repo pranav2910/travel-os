@@ -1,0 +1,94 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb probe bangor -> BOS",
+   "origin": "BGR",
+   "destination": "BOS",
+   "earliestDeparture": "2026-11-01T05:00:00Z",
+   "arrivalDeadline": "2026-11-01T23:59:00Z",
+   "returnAfter": "2026-11-03T10:00:00Z",
+   "latestReturn": "2026-11-03T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 202,
+ "response": {
+  "tripId": "trip_01M3630XGV8QHVC3GN72M2BTF9",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BGR",
+   "destination": "BOS",
+   "earliestDeparture": "2026-11-01T05:00:00Z",
+   "arrivalDeadline": "2026-11-01T23:59:00Z",
+   "returnAfter": "2026-11-03T10:00:00Z",
+   "latestReturn": "2026-11-03T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb probe bangor -> BOS",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T02:55:23.160085Z",
+  "updatedAt": "2026-09-23T02:55:23.160085Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3630XGV8QHVC3GN72M2BTF9",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BGR",
+   "destination": "BOS",
+   "earliestDeparture": "2026-11-01T05:00:00Z",
+   "arrivalDeadline": "2026-11-01T23:59:00Z",
+   "returnAfter": "2026-11-03T10:00:00Z",
+   "latestReturn": "2026-11-03T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb probe bangor -> BOS",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3630YTHA1VXST5MJEN63116",
+   "optimizationRunId": "opt_01M3630ZMKQ8KE994PMETEDXNG",
+   "policyDecisionId": "pd_01M3630Z9E9QR78KD4RVS983VF",
+   "approvalId": null,
+   "orderId": "ord_01M3631006BRTEJ05S80993NF6"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T02:55:23.160085Z",
+  "updatedAt": "2026-09-23T02:55:25.961274Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 59816,
+   "display": "USD 598.16"
+  },
+  "explanation": "For the BGR to BOS we chose DL302 BGR-BOS / return DL502 BOS-BGR via sandbox-air at USD 598.16. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v56. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ }
+}

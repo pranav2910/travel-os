@@ -1,0 +1,49 @@
+{
+ "carol": {
+  "tripId": "trip_01M36A1BFK97S1T25NEYS7CFSR",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-18T05:00:00Z",
+   "arrivalDeadline": "2026-11-18T23:59:00Z",
+   "returnAfter": "2026-11-20T10:00:00Z",
+   "latestReturn": "2026-11-20T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb persona: carol arranges for alice",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/carol",
+  "version": 0,
+  "createdAt": "2026-09-23T04:57:57.491811Z",
+  "updatedAt": "2026-09-23T04:57:57.491811Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "dan": {
+  "status": 403,
+  "body": {
+   "detail": "only MANAGER or TRAVEL_ADMIN may create trips for other travelers",
+   "instance": "/api/v1/trips",
+   "status": 403,
+   "title": "NOT_AN_ARRANGER",
+   "type": "https://contracts.travelos.io/problems/not-an-arranger",
+   "code": "NOT_AN_ARRANGER"
+  }
+ }
+}

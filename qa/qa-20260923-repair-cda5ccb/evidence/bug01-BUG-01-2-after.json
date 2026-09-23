@@ -1,0 +1,24 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-01 to QQQ",
+   "origin": "BOS",
+   "destination": "QQQ",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 422,
+ "body": {
+  "detail": "unknown location QQQ: the platform does not know its clock",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "UNKNOWN_LOCATION",
+  "type": "https://contracts.travelos.io/problems/unknown-location",
+  "code": "UNKNOWN_LOCATION"
+ }
+}

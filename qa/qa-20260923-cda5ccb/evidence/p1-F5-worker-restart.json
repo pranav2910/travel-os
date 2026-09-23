@@ -1,0 +1,142 @@
+{
+ "final": {
+  "tripId": "trip_01M363D8PE8BECJ9DJE7CBGAJ1",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-05T05:00:00Z",
+   "arrivalDeadline": "2026-11-05T23:59:00Z",
+   "returnAfter": "2026-11-07T10:00:00Z",
+   "latestReturn": "2026-11-07T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb F5 worker restart mid-flight",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M363D8S4RETJENT06B2B16CR",
+   "optimizationRunId": "opt_01M363D8W196Q8M34R2HSVAQM5",
+   "policyDecisionId": "pd_01M363D8T1VD3JJDCDH2APS9TN",
+   "approvalId": null,
+   "orderId": "ord_01M363D8XTF3HCCM7SQK886P18"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:02:07.822364Z",
+  "updatedAt": "2026-09-23T03:02:08.085433Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 42768,
+   "display": "USD 427.68"
+  },
+  "explanation": "For the BOS to SEA we chose DL236 BOS-SEA / return DL436 SEA-BOS via sandbox-air at USD 427.68. 63 options were searched and 21 were permitted by policy US_STANDARD_TRAVEL v56. It ranked first with a score of 86.6 (cost 73, time 100, risk 100, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M363D8XTF3HCCM7SQK886P18",
+   "tripId": "trip_01M363D8PE8BECJ9DJE7CBGAJ1",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M363D8S4RETJENT06B2B16CR",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M363D8Y3TJ7SCY09DGD4V7TZ",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 42768,
+    "display": "USD 427.68"
+   },
+   "policyDecisionId": "pd_01M363D8T1VD3JJDCDH2APS9TN",
+   "optimizationRunId": "opt_01M363D8W196Q8M34R2HSVAQM5",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M363D8XS0PHYDNP50G91ADC6",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTEtMDV8MjAyNi0xMS0wN3wxfEVDT05PTVl8MTc5MDEzMjUyNw",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M363D8Y3TJ7SCY09DGD4V7TZ",
+     "recordLocator": "B7N2LZ",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 42768,
+      "display": "USD 427.68"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL236",
+       "origin": "BOS",
+       "destination": "SEA",
+       "departure": "2026-11-05T06:00:00Z",
+       "arrival": "2026-11-05T12:30:00Z",
+       "cabin": "ECONOMY"
+      },
+      {
+       "direction": "INBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL436",
+       "origin": "SEA",
+       "destination": "BOS",
+       "departure": "2026-11-07T17:45:00Z",
+       "arrival": "2026-11-08T00:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ]
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T03:02:08.057687Z",
+   "updatedAt": "2026-09-23T03:02:08.070668Z"
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T03:02:07.822364Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:02:07.885367Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:02:08.029759Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:02:08.042902Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:02:08.085433Z"
+  }
+ ]
+}

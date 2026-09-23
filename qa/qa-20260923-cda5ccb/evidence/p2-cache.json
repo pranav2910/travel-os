@@ -1,0 +1,100 @@
+{
+ "zoe_reads_alice": [],
+ "alice_reads_zoe": [],
+ "alice_own_first": [
+  {
+   "decisionId": "pd_01M363PTJ6TEXNG0KF56P7EFCK",
+   "evaluationId": "dec_01M363PTJ5EWS0XK2F9GVTGDCC",
+   "tripId": "trip_01M363PSX1F00BRNPJA8Y97SBT",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M363PTGK7XCNCDJ971PM0VFW",
+   "action": null,
+   "policyId": "US_STANDARD_TRAVEL",
+   "policyVersion": 62,
+   "outcome": "ALLOW",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T03:07:21.029574Z",
+   "decision": {
+    "outcome": "ALLOW",
+    "policyId": "US_STANDARD_TRAVEL",
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD",
+      "amountMinor": "37095"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD",
+      "amountMinor": "52095"
+     },
+     "travelerIncentive": {
+      "currency": "USD",
+      "amountMinor": "2331"
+     }
+    },
+    "decisionId": "pd_01M363PTJ6TEXNG0KF56P7EFCK",
+    "evaluatedAt": "2026-09-23T03:07:21.029574Z",
+    "policyVersion": 62,
+    "rulesEvaluated": [
+     "CURRENCY",
+     "CABIN_PERMITTED",
+     "MAX_STOPS",
+     "LOWEST_LOGICAL_FARE",
+     "HOTEL_NIGHTLY_LIMIT",
+     "GROUND_TRANSFER_LIMIT",
+     "TRIP_BUDGET",
+     "MANAGER_APPROVAL_THRESHOLD",
+     "INCENTIVE_SHARE"
+    ]
+   }
+  }
+ ],
+ "zoe_own_first": [
+  {
+   "decisionId": "pd_01M363PTJX1QBZQ4R9YG5Q3694",
+   "evaluationId": "dec_01M363PTJVKDQ5KFAREVYFSNEZ",
+   "tripId": "trip_01M363PSZ38J38EN38W0Z1MZ0J",
+   "travelerId": "emp_2001",
+   "bundleId": "bdl_01M363PTH65FWW5AA7HXPY5P7N",
+   "action": null,
+   "policyId": "",
+   "policyVersion": 0,
+   "outcome": "DENY",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T03:07:21.051798Z",
+   "decision": {
+    "outcome": "DENY",
+    "reasons": [
+     {
+      "code": "NO_POLICY",
+      "ruleId": "POLICY_ASSIGNMENT",
+      "message": "tenant globex has no default travel policy; nothing can be booked until one is published"
+     }
+    ],
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD"
+     },
+     "travelerIncentive": {
+      "currency": "USD"
+     }
+    },
+    "decisionId": "pd_01M363PTJX1QBZQ4R9YG5Q3694",
+    "evaluatedAt": "2026-09-23T03:07:21.051798Z",
+    "rulesEvaluated": [
+     "POLICY_ASSIGNMENT"
+    ]
+   }
+  }
+ ]
+}

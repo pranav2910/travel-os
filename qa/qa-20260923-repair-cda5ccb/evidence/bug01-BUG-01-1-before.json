@@ -1,0 +1,52 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-01 QQQ",
+   "origin": "QQQ",
+   "destination": "BOS",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 202,
+ "body": {
+  "tripId": "trip_01M36946SEMKEH83ZF9HFM9BAX",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "QQQ",
+   "destination": "BOS",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-01 QQQ",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:42:02.414240Z",
+  "updatedAt": "2026-09-23T04:42:02.414240Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ }
+}

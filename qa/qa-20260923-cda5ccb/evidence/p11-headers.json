@@ -1,0 +1,15 @@
+{
+ "headers": {
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": null,
+  "X-Frame-Options": null,
+  "Referrer-Policy": null,
+  "Strict-Transport-Security": null,
+  "Permissions-Policy": null,
+  "Cache-Control": "no-store"
+ },
+ "cors": {
+  "status": 401,
+  "acao": null
+ }
+}

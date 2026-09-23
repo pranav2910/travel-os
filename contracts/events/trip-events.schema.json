@@ -297,6 +297,59 @@
           "$ref": "common.schema.json#/$defs/bundleId"
         }
       }
+    },
+    "travel.trip.cancellation-requested": {
+      "type": "object",
+      "required": [
+        "tripId",
+        "orderId",
+        "reason",
+        "requestedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "requestedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    },
+    "travel.trip.cancellation-incomplete": {
+      "type": "object",
+      "required": [
+        "tripId",
+        "orderId",
+        "reasonCode",
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "reasonCode": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
     }
   }
 }

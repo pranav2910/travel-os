@@ -1,0 +1,168 @@
+{
+ "final": {
+  "tripId": "trip_01M3644BYPYCHXHHQ7V4AM9QM8",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-24T05:00:00Z",
+   "latestReturn": "2026-10-24T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb SUP GBP LHR",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD501",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-10-22T05:00:00Z",
+      "arrivalDeadline": "2026-10-22T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD502",
+      "origin": "LHR",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-24T05:00:00Z",
+      "arrivalDeadline": "2026-10-24T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD503",
+      "city": "LHR",
+      "checkInDate": "2026-10-22",
+      "checkOutDate": "2026-10-24",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T03:14:44.822307Z",
+  "updatedAt": "2026-09-23T03:14:45.395159Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "POLICY",
+  "failureCode": "ALL_CANDIDATES_DENIED",
+  "components": [
+   {
+    "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD501",
+    "type": "AIR",
+    "status": "PLANNED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": null,
+    "summary": "leg BOS-LHR",
+    "updatedAt": "2026-09-23T03:14:45.270939Z"
+   },
+   {
+    "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD503",
+    "type": "HOTEL",
+    "status": "FAILED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": "ALL_CANDIDATES_DENIED",
+    "summary": "stay in LHR 2026-10-22 to 2026-10-24",
+    "updatedAt": "2026-09-23T03:14:45.384388Z"
+   },
+   {
+    "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD502",
+    "type": "AIR",
+    "status": "PLANNED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": null,
+    "summary": "leg LHR-BOS",
+    "updatedAt": "2026-09-23T03:14:45.270939Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD501",
+   "type": "AIR",
+   "status": "PLANNED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": null,
+   "summary": "leg BOS-LHR",
+   "updatedAt": "2026-09-23T03:14:45.270939Z"
+  },
+  {
+   "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD503",
+   "type": "HOTEL",
+   "status": "FAILED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": "ALL_CANDIDATES_DENIED",
+   "summary": "stay in LHR 2026-10-22 to 2026-10-24",
+   "updatedAt": "2026-09-23T03:14:45.384388Z"
+  },
+  {
+   "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD502",
+   "type": "AIR",
+   "status": "PLANNED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": null,
+   "summary": "leg LHR-BOS",
+   "updatedAt": "2026-09-23T03:14:45.270939Z"
+  }
+ ],
+ "orders": [],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T03:14:44.822307Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:14:45.259692Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "FAILED",
+   "reason": "every offer for stay in LHR 2026-10-22 to 2026-10-24 was denied by policy",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:14:45.395159Z"
+  }
+ ]
+}

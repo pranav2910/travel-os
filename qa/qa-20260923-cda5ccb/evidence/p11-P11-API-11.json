@@ -1,0 +1,14 @@
+{
+ "status": 422,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "mode must be OFF, SHADOW or ACTIVE",
+  "instance": "/api/v1/learning/config",
+  "status": 422,
+  "title": "UNKNOWN_MODE",
+  "type": "https://contracts.travelos.io/problems/unknown-mode",
+  "code": "UNKNOWN_MODE"
+ }
+}

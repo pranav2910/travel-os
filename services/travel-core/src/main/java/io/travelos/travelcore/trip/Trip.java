@@ -106,6 +106,16 @@ public record Trip(
     return copy(status, intent, evidence, version, updatedAt, total, stage, code, explanation);
   }
 
+  /** Records a failure on the trip as it stands (no lifecycle move): a new version, a new time. */
+  public Trip withFailure(String stage, String code, Instant now) {
+    return copy(status, intent, evidence, version + 1, now, total, stage, code, explanation);
+  }
+
+  /** The failure is over (e.g. an incomplete cancellation finally released everything). */
+  public Trip withoutFailure() {
+    return copy(status, intent, evidence, version, updatedAt, total, null, null, explanation);
+  }
+
   public Trip withExplanation(@Nullable String narration) {
     return copy(
         status, intent, evidence, version, updatedAt, total, failureStage, failureCode, narration);

@@ -1,0 +1,6 @@
+{
+ "before": 125,
+ "after": 125,
+ "missing": [],
+ "stack_up_tail": "ady: travel.disruption\ntopic ready: travel.expense\ntopic ready: travel.demand\ntopic ready: travel.learning\ntopic ready: travel.agent\ntopic ready: travel.audit\n--- topics on kafka:29092 ---\n__consumer_offsets\ntravel.agent\ntravel.approval\ntravel.audit\ntravel.demand\ntravel.disruption\ntravel.expense\ntravel.intent\ntravel.learning\ntravel.optimization\ntravel.order\ntravel.policy\ntravel.search\ntravel.trip\n"
+}

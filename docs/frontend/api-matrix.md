@@ -14,7 +14,7 @@ Roles come from the token (`roles` claim); the server decides on every request. 
 | Overview, Trips | `GET /api/v1/trips?limit=` (travel-core) | any | the caller's own trips |
 | Overview, Approvals inbox | `GET /api/v1/trips?scope=tenant&status=AWAITING_APPROVAL` (travel-core) | M A F | new in this phase; travelers get 403 `NOT_TENANT_WIDE`; unknown status 422 |
 | New trip | `POST /api/v1/trips` (travel-core) | any; `travelerId` for others M A | body `{request?, intent?, travelerId?, source:WEB}`; key fixed per payload until answered; replay returns the same trip, a changed body with an old key is 409 `IDEMPOTENCY_KEY_REUSED`; 400 `fields` for validation, 422 for domain refusals (e.g. `HOTEL_DETAILS_INSUFFICIENT`). **Submitting may book immediately** when policy allows it without approval. |
-| Trip detail | `GET /api/v1/trips/{id}`, `/history`, `/decisions`, `/components` | T M A F | 404 for other tenants and other travelers (existence is not disclosed); polled with backoff until BOOKED/COMPLETED/CANCELLED/FAILED or AWAITING_APPROVAL |
+| Trip detail | `GET /api/v1/trips/{id}`, `/history`, `/decisions`, `/components` | T M A F | 404 for other tenants and other travelers (existence is not disclosed); polled with backoff until BOOKED/COMPLETED/CANCELLED/FAILED or AWAITING_APPROVAL (CANCELLING keeps polling) |
 | Trip detail: bookings | `GET /api/v1/orders?tripId=` (order) | T M A F | items with supplier refs, flights (UTC), hotels/ground with IANA zones, changes, exposures |
 | Trip detail: why | `GET /api/v1/audit/trips/{id}/decisions` (audit), `GET /api/v1/policy-decisions?tripId=` (policy) | T M A F | narrative, learning section (mode, applied, contributions), policy reasons |
 | Trip detail: disruptions | `GET /api/v1/trips/{id}/disruptions` (disruption) | T M A F | |
@@ -45,7 +45,8 @@ Roles come from the token (`roles` claim); the server decides on every request. 
 
 ## Lifecycle states shown
 
-- Trip: DRAFT · SUBMITTED · PLANNING · AWAITING_APPROVAL · APPROVED · BOOKING · BOOKED · COMPLETED · CANCELLED · FAILED
+- Trip: DRAFT · SUBMITTED · PLANNING · AWAITING_APPROVAL · APPROVED · BOOKING · BOOKED · COMPLETED · CANCELLING · CANCELLED · FAILED
+  (CANCELLING: a booked trip whose reservation is being released at the suppliers; CANCELLED only once it is, or once a person resolved a refused release — `failureCode` CANCELLATION_INCOMPLETE meanwhile)
   (terminal: BOOKED, COMPLETED, CANCELLED, FAILED; the app stops polling there and at AWAITING_APPROVAL).
   An approved trip can go back to PLANNING: sandbox quotes live 20 minutes, so a plan approved after
   a longer wait is searched again from scratch (history reason "re-planning", replan reason

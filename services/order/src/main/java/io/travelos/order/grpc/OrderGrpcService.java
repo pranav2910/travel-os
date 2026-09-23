@@ -49,7 +49,7 @@ public class OrderGrpcService extends OrderServiceGrpc.OrderServiceImplBase {
 
   @Override
   public void cancelOrder(CancelOrderCommand request, StreamObserver<Order> observer) {
-    observer.onNext(toProto(orders.cancel(request)));
+    observer.onNext(withChanges(orders.cancel(request)));
     observer.onCompleted();
   }
 

@@ -1,0 +1,36 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-01 itinerary LON",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "BOS",
+      "destination": "JFK",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "origin": "JFK",
+      "destination": "LON",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": []
+   }
+  }
+ },
+ "status": 422,
+ "body": {
+  "detail": "LON is a city, not an airport: use one of LHR, LGW (the platform searches one airport per leg)",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "UNKNOWN_LOCATION",
+  "type": "https://contracts.travelos.io/problems/unknown-location",
+  "code": "UNKNOWN_LOCATION"
+ }
+}

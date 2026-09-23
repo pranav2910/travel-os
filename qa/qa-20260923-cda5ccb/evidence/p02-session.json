@@ -1,0 +1,55 @@
+{
+ "invalidPassword": {
+  "stillOnKeycloak": true,
+  "message": "Invalid username or password."
+ },
+ "emptyPassword": {
+  "stillOnKeycloak": true
+ },
+ "whitespaceUsername": {
+  "signedIn": true,
+  "url": "http://localhost:8080/"
+ },
+ "deepLinkSignedOut": {
+  "askedToSignIn": false,
+  "noProtectedContent": true
+ },
+ "deepLinkReturn": {
+  "landedOn": "/approvals",
+  "approvalsHeading": true
+ },
+ "refreshKeepsSession": {
+  "stillSignedIn": true,
+  "pathname": "/approvals"
+ },
+ "storage": {
+  "local": [],
+  "session": [],
+  "cookies": ""
+ },
+ "tokenInStorage": false,
+ "secondTab": {
+  "signedIn": true
+ },
+ "backAfterLogout": {
+  "url": "/approvals",
+  "protectedVisible": false,
+  "signInVisible": true
+ },
+ "forwardAfterLogout": {
+  "protectedVisible": false
+ },
+ "secondTabAfterLogout": {
+  "signedInStill": false,
+  "askedToSignIn": true
+ },
+ "revocation": {
+  "admin": "logout-all -> 204",
+  "afterSubmit": {
+   "url": "/trips/trip_01M363Q8EKGB0AY67CPWBJHKQC",
+   "signInVisible": false,
+   "tripCreated": true,
+   "bodyText": "qa session revoked mid-form \n✓\nBooked\n\nBOS → SEA → BOS · trip_01M363Q8EKGB0AY67CPWBJHKQC\n\nCancel trip\nConfirm the trip happened\n✓ Submitted\n✓ Search, policy, optimizer\nApproval (not needed)\n✓ Booking\nBooked\nRequest\nRoute\nBOS → SEA → BOS\nOutbound\nafter Dec 12, 2026, 06:00 UTC, arrive by Dec 12, 2026,"
+  }
+ }
+}

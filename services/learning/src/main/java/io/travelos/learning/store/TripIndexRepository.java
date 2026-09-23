@@ -64,12 +64,13 @@ public class TripIndexRepository {
   public void upsertItem(TenantId tenant, OrderItemRef item, Instant now) {
     jdbc.sql(
             """
-            INSERT INTO order_item (tenant_id, order_id, item_id, trip_id, component_id, item_type, provider, supplier_key, status, updated_at)
-            VALUES (:t, :order, :item, :trip, :component, :type, :provider, :key, :status, :now)
+            INSERT INTO order_item (tenant_id, order_id, item_id, trip_id, component_id, item_type, provider, supplier_key, status, currency, updated_at)
+            VALUES (:t, :order, :item, :trip, :component, :type, :provider, :key, :status, :currency, :now)
             ON CONFLICT (tenant_id, order_id, item_id) DO UPDATE SET
               component_id = COALESCE(EXCLUDED.component_id, order_item.component_id),
               provider = COALESCE(EXCLUDED.provider, order_item.provider),
               supplier_key = COALESCE(EXCLUDED.supplier_key, order_item.supplier_key),
+              currency = COALESCE(EXCLUDED.currency, order_item.currency),
               status = EXCLUDED.status, updated_at = EXCLUDED.updated_at
             """)
         .param("t", tenant.value())
@@ -81,6 +82,7 @@ public class TripIndexRepository {
         .param("provider", item.provider())
         .param("key", item.supplierKey())
         .param("status", item.status())
+        .param("currency", item.currency())
         .param("now", Rows.ts(now))
         .update();
   }
@@ -124,6 +126,7 @@ public class TripIndexRepository {
         rs.getString("item_type"),
         rs.getString("provider"),
         rs.getString("supplier_key"),
-        rs.getString("status"));
+        rs.getString("status"),
+        rs.getString("currency"));
   }
 }

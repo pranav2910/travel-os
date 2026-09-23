@@ -1,0 +1,271 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R15",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "JFK",
+      "destination": "CDG",
+      "earliestDeparture": "2028-02-28T05:00:00Z",
+      "arrivalDeadline": "2028-02-28T23:59:00Z"
+     },
+     {
+      "origin": "CDG",
+      "destination": "JFK",
+      "earliestDeparture": "2028-03-01T05:00:00Z",
+      "arrivalDeadline": "2028-03-01T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "city": "CDG",
+      "checkInDate": "2028-02-28",
+      "checkOutDate": "2028-03-01",
+      "required": true
+     }
+    ],
+    "transfers": []
+   }
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643FRJK9ZWEHJRAY5Y0XKZ",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "JFK",
+    "destination": "CDG",
+    "earliestDeparture": "2028-02-28T05:00:00Z",
+    "arrivalDeadline": "2028-02-28T23:59:00Z",
+    "returnAfter": "2028-03-01T05:00:00Z",
+    "latestReturn": "2028-03-01T23:59:00Z",
+    "purpose": "qa-20260923-cda5ccb R15",
+    "hotelRequired": true,
+    "travelers": 1,
+    "itinerary": {
+     "legs": [
+      {
+       "componentId": "cmp_01M3643FRHM6PPQ5XAG3FCDD28",
+       "origin": "JFK",
+       "destination": "CDG",
+       "earliestDeparture": "2028-02-28T05:00:00Z",
+       "arrivalDeadline": "2028-02-28T23:59:00Z"
+      },
+      {
+       "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKX",
+       "origin": "CDG",
+       "destination": "JFK",
+       "earliestDeparture": "2028-03-01T05:00:00Z",
+       "arrivalDeadline": "2028-03-01T23:59:00Z"
+      }
+     ],
+     "stays": [
+      {
+       "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKY",
+       "city": "CDG",
+       "checkInDate": "2028-02-28",
+       "checkOutDate": "2028-03-01",
+       "required": true
+      }
+     ],
+     "transfers": [],
+     "currency": "USD"
+    }
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:15.954447Z",
+   "updatedAt": "2026-09-23T03:14:15.954447Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643FRJK9ZWEHJRAY5Y0XKZ",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "CDG",
+   "earliestDeparture": "2028-02-28T05:00:00Z",
+   "arrivalDeadline": "2028-02-28T23:59:00Z",
+   "returnAfter": "2028-03-01T05:00:00Z",
+   "latestReturn": "2028-03-01T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb R15",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M3643FRHM6PPQ5XAG3FCDD28",
+      "origin": "JFK",
+      "destination": "CDG",
+      "earliestDeparture": "2028-02-28T05:00:00Z",
+      "arrivalDeadline": "2028-02-28T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKX",
+      "origin": "CDG",
+      "destination": "JFK",
+      "earliestDeparture": "2028-03-01T05:00:00Z",
+      "arrivalDeadline": "2028-03-01T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKY",
+      "city": "CDG",
+      "checkInDate": "2028-02-28",
+      "checkOutDate": "2028-03-01",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643G04M9KZV93JYJ2S44JK",
+   "optimizationRunId": "opt_01M3643G04MRJQPE7T5X39EQPS",
+   "policyDecisionId": "pd_01M3643G14C3P5B7QHK6QPGGSE",
+   "approvalId": null,
+   "orderId": "ord_01M3643H0ES3G2EKTQJHV5JH2D"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:15.954447Z",
+  "updatedAt": "2026-09-23T03:14:17.430316Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 73688,
+   "display": "USD 736.88"
+  },
+  "explanation": "For the JFK to CDG to JFK we chose DL366 JFK-CDG via sandbox-air; DL398 CDG-JFK via sandbox-air; hotel Budget Inn in CDG (2 nights, 2028-02-28) at USD 736.88 (2 legs, 1 stays). 106 options were searched and 72 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.5 (cost 99, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M3643FRHM6PPQ5XAG3FCDD28",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3643FWE1CZKK43QT5CTVZ44",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3643H0NYXMTQW0Y0R38CGDV",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 27850,
+     "display": "USD 278.50"
+    },
+    "failureCode": null,
+    "summary": "DL366 JFK-CDG 2028-02-28T17:45:00Z",
+    "updatedAt": "2026-09-23T03:14:17.329773Z"
+   },
+   {
+    "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKX",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3643FWYWB9B57FJ6N6R7AAX",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3643H0W9BBMSCH8XAFQWBSX",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 22038,
+     "display": "USD 220.38"
+    },
+    "failureCode": null,
+    "summary": "DL398 CDG-JFK 2028-03-01T17:45:00Z",
+    "updatedAt": "2026-09-23T03:14:17.329773Z"
+   },
+   {
+    "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKY",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3643FXB9VFZGM1PCEQ5SJ2A",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M3643H10TWC9WDJD7DQV0MTE",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 23800,
+     "display": "USD 238.00"
+    },
+    "failureCode": null,
+    "summary": "Budget Inn CDG 2028-02-28 to 2028-03-01 (2 nights)",
+    "updatedAt": "2026-09-23T03:14:17.329773Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M3643FRHM6PPQ5XAG3FCDD28",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M3643FWE1CZKK43QT5CTVZ44",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M3643H0NYXMTQW0Y0R38CGDV",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 27850,
+    "display": "USD 278.50"
+   },
+   "failureCode": null,
+   "summary": "DL366 JFK-CDG 2028-02-28T17:45:00Z",
+   "updatedAt": "2026-09-23T03:14:17.329773Z"
+  },
+  {
+   "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKX",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M3643FWYWB9B57FJ6N6R7AAX",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M3643H0W9BBMSCH8XAFQWBSX",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 22038,
+    "display": "USD 220.38"
+   },
+   "failureCode": null,
+   "summary": "DL398 CDG-JFK 2028-03-01T17:45:00Z",
+   "updatedAt": "2026-09-23T03:14:17.329773Z"
+  },
+  {
+   "componentId": "cmp_01M3643FRJK9ZWEHJRAY5Y0XKY",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M3643FXB9VFZGM1PCEQ5SJ2A",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M3643H10TWC9WDJD7DQV0MTE",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 23800,
+    "display": "USD 238.00"
+   },
+   "failureCode": null,
+   "summary": "Budget Inn CDG 2028-02-28 to 2028-03-01 (2 nights)",
+   "updatedAt": "2026-09-23T03:14:17.329773Z"
+  }
+ ]
+}

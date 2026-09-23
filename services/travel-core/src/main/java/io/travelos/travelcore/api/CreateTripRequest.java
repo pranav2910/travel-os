@@ -1,7 +1,9 @@
 package io.travelos.travelcore.api;
 
+import io.travelos.travelcore.trip.TravelerIdentity;
 import io.travelos.travelcore.trip.TripSource;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
@@ -14,9 +16,22 @@ import org.jspecify.annotations.Nullable;
  * @param request what the traveler said, e.g. "I need to be in Seattle before 9am Tuesday..."
  * @param intent the structured need, when the client already knows it
  * @param source defaults to API
+ * @param traveler who the trip is for, required when {@code travelerId} is someone else (the
+ *     reservation is made in their name); the caller's own trips take it from their token
  */
 public record CreateTripRequest(
     @Nullable @Size(max = 64) String travelerId,
     @Nullable @Size(max = 4000) String request,
     @Nullable @Valid IntentRequest intent,
-    @Nullable TripSource source) {}
+    @Nullable TripSource source,
+    @Nullable @Valid TravelerRequest traveler) {
+
+  public record TravelerRequest(
+      @Nullable @Size(max = 100) String givenName,
+      @Nullable @Size(max = 100) String familyName,
+      @Nullable @Email @Size(max = 254) String email) {
+    TravelerIdentity toDomain() {
+      return new TravelerIdentity(givenName, familyName, email);
+    }
+  }
+}

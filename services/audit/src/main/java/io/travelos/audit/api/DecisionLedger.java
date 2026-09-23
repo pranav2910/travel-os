@@ -45,6 +45,7 @@ public record DecisionLedger(
     Map<String, Object> approval = null;
     Map<String, Object> order = null;
     Map<String, Object> failure = null;
+    Map<String, Object> cancellation = null;
     int policyEvaluated = 0;
     int policyViolations = 0;
     Map<String, Map<String, Object>> policyByBundle = new LinkedHashMap<>();
@@ -122,6 +123,16 @@ public record DecisionLedger(
         case "travel.trip.booked" -> {
           status = "BOOKED";
           components(componentsById, d);
+        }
+        case "travel.trip.cancellation-requested" -> {
+          status = "CANCELLING";
+          cancellation = new LinkedHashMap<>(d);
+        }
+        case "travel.trip.cancellation-incomplete" -> {
+          // the reservation is still confirmed somewhere: the trip is not cancelled yet
+          status = "CANCELLING";
+          failure = new LinkedHashMap<>(d);
+          failure.put("stage", "CANCELLATION");
         }
         case "travel.trip.cancelled" -> status = "CANCELLED";
         case "travel.trip.failed" -> {
@@ -333,7 +344,25 @@ public record DecisionLedger(
       }
       narrative.add("Itinerary components: " + componentsById.size() + " (" + byStatus + ").");
     }
-    if (failure != null) {
+    if (cancellation != null) {
+      narrative.add(
+          "Cancellation requested by "
+              + str(cancellation, "requestedBy", "the traveler")
+              + " ("
+              + str(cancellation, "reason", "no reason given")
+              + "): the reservation is released at the suppliers before the trip counts as"
+              + " cancelled.");
+    }
+    if (failure != null && "CANCELLATION".equals(failure.get("stage"))) {
+      narrative.add(
+          "The cancellation is incomplete: "
+              + failure.get("reasonCode")
+              + (failure.get("message") == null ? "" : " (" + failure.get("message") + ")")
+              + (status.equals("CANCELLED")
+                  ? ". A person resolved it; the trip is cancelled."
+                  : ". The refused component stays confirmed at its supplier until a person"
+                      + " resolves the exposure; the trip is not cancelled yet."));
+    } else if (failure != null) {
       narrative.add(
           "The trip failed at "
               + failure.get("stage")

@@ -115,7 +115,7 @@ class TravelIntentTest {
                     .withExplicitStay())
         .isInstanceOf(TravelIntent.HotelRequestException.class)
         .hasMessageContaining("ambiguous");
-    // a destination whose clock the platform does not know
+    // a destination outside the catalog is refused as such, not as a hotel problem (BUG-01)
     assertThatThrownBy(
             () ->
                 new TravelIntent(
@@ -129,8 +129,9 @@ class TravelIntentTest {
                         true,
                         1)
                     .withExplicitStay())
-        .isInstanceOf(TravelIntent.HotelRequestException.class)
-        .hasMessageContaining("local clock");
+        .isInstanceOfSatisfying(
+            IntentRejectedException.class, e -> assertThat(e.code()).isEqualTo("UNKNOWN_LOCATION"))
+        .hasMessageContaining("unknown location QQQ");
     assertThat(new TravelIntent.HotelRequestException("x").code())
         .isEqualTo("HOTEL_DETAILS_INSUFFICIENT");
   }

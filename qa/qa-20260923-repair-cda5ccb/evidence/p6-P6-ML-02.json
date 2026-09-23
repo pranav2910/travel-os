@@ -1,0 +1,277 @@
+{
+ "final": {
+  "tripId": "trip_01M36A458CTFFVF1FBQSF6JTPC",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "ORD",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-29T05:00:00Z",
+   "latestReturn": "2026-10-29T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb ML2",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A458B9FASXEM8REXXC5EJ",
+      "origin": "JFK",
+      "destination": "ORD",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A458B9FASXEM8REXXC5EK",
+      "origin": "ORD",
+      "destination": "DEN",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A458B9FASXEM8REXXC5EM",
+      "origin": "DEN",
+      "destination": "SFO",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A458B9FASXEM8REXXC5EN",
+      "origin": "SFO",
+      "destination": "JFK",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A45ZNYS07N4AH9P00F79B",
+   "optimizationRunId": "opt_01M36A45ZMFK7556W0NZ27QR3S",
+   "policyDecisionId": "pd_01M36A462VX9F7MRKZ0WB8MKZD",
+   "approvalId": null,
+   "orderId": "ord_01M36A4753SXK2D2ZNK4CRDD5W"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:59:29.420313Z",
+  "updatedAt": "2026-09-23T04:59:31.561412Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 107764,
+   "display": "USD 1077.64"
+  },
+  "explanation": "For the JFK to ORD to DEN to SFO to JFK we chose DL329 JFK-ORD via sandbox-air; DL839 ORD-DEN via sandbox-air; DL834 DEN-SFO via sandbox-air; DL578 SFO-JFK via sandbox-air at USD 1077.64 (4 legs). 204 options were searched and 68 were permitted by policy US_STANDARD_TRAVEL v91. It ranked first with a score of 96.4 (cost 94, time 100, risk 100, preference 100, experience 88). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A458B9FASXEM8REXXC5EJ",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A45Q9SXM29ATM85VYP8GB",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A475AFZD73Z1W70MQA7P0",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 28093,
+     "display": "USD 280.93"
+    },
+    "failureCode": null,
+    "summary": "DL329 JFK-ORD 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:31.460691Z"
+   },
+   {
+    "componentId": "cmp_01M36A458B9FASXEM8REXXC5EK",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A45QQXHYHGSH0QZQ0E67X",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A475ESZR3MNWFAQNBQR5P",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 22762,
+     "display": "USD 227.62"
+    },
+    "failureCode": null,
+    "summary": "DL839 ORD-DEN 2026-10-25T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:31.460691Z"
+   },
+   {
+    "componentId": "cmp_01M36A458B9FASXEM8REXXC5EM",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A45R4A2XKJNH0DRKF4FYD",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A475JB0R6RMTYT5PDETFP",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 21423,
+     "display": "USD 214.23"
+    },
+    "failureCode": null,
+    "summary": "DL834 DEN-SFO 2026-10-27T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:31.460691Z"
+   },
+   {
+    "componentId": "cmp_01M36A458B9FASXEM8REXXC5EN",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A45RH9Q53321SSG3G634C",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A475PN6TWFPNY9ZYKYFEB",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 35486,
+     "display": "USD 354.86"
+    },
+    "failureCode": null,
+    "summary": "DL578 SFO-JFK 2026-10-29T06:00:00Z",
+    "updatedAt": "2026-09-23T04:59:31.460691Z"
+   }
+  ]
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M36A4753SXK2D2ZNK4CRDD5W",
+   "tripId": "trip_01M36A458CTFFVF1FBQSF6JTPC",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A45ZNYS07N4AH9P00F79B",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36A475AFZD73Z1W70MQA7P0",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 107764,
+    "display": "USD 1077.64"
+   },
+   "policyDecisionId": "pd_01M36A462VX9F7MRKZ0WB8MKZD",
+   "optimizationRunId": "opt_01M36A45ZMFK7556W0NZ27QR3S",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36A4752YZ55FCH42C3PGX6S",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxKRkt8T1JEfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDEzOTU2OQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A475AFZD73Z1W70MQA7P0",
+     "recordLocator": "NTLS38",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 28093,
+      "display": "USD 280.93"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL329",
+       "origin": "JFK",
+       "destination": "ORD",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T23:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A458B9FASXEM8REXXC5EJ"
+    },
+    {
+     "itemId": "itm_01M36A4753SXK2D2ZNK4CRDD5S",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxPUkR8REVOfDIwMjYtMTAtMjV8LXwyfEVDT05PTVl8MTc5MDEzOTU2OQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A475ESZR3MNWFAQNBQR5P",
+     "recordLocator": "BPM46Y",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 22762,
+      "display": "USD 227.62"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL839",
+       "origin": "ORD",
+       "destination": "DEN",
+       "departure": "2026-10-25T17:45:00Z",
+       "arrival": "2026-10-25T21:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A458B9FASXEM8REXXC5EK"
+    },
+    {
+     "itemId": "itm_01M36A4753SXK2D2ZNK4CRDD5T",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxERU58U0ZPfDIwMjYtMTAtMjd8LXwyfEVDT05PTVl8MTc5MDEzOTU2OQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A475JB0R6RMTYT5PDETFP",
+     "recordLocator": "QLM266",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 21423,
+      "display": "USD 214.23"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL834",
+       "origin": "DEN",
+       "destination": "SFO",
+       "departure": "2026-10-27T17:45:00Z",
+       "arrival": "2026-10-27T22:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A458B9FASXEM8REXXC5EM"
+    },
+    {
+     "itemId": "itm_01M36A4753SXK2D2ZNK4CRDD5V",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxTRk98SkZLfDIwMjYtMTAtMjl8LXwwfEVDT05PTVl8MTc5MDEzOTU2OQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A475PN6TWFPNY9ZYKYFEB",
+     "recordLocator": "TRYCX5",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 35486,
+      "display": "USD 354.86"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL578",
+       "origin": "SFO",
+       "destination": "JFK",
+       "departure": "2026-10-29T06:00:00Z",
+       "arrival": "2026-10-29T12:30:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A458B9FASXEM8REXXC5EN"
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:59:31.362958Z",
+   "updatedAt": "2026-09-23T04:59:31.383791Z"
+  }
+ ]
+}

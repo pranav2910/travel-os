@@ -1,0 +1,99 @@
+{
+ "tripId": "trip_01M3644V854A7CX3B0MWZGF0XK",
+ "travelerId": "emp_1001",
+ "status": "BOOKED",
+ "plan": {
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507
+  },
+  "status": "APPROVED",
+  "tripId": "trip_01M3644V854A7CX3B0MWZGF0XK",
+  "policyDecisionId": "pd_01M3644VBWJAJ907VQBSDHF3TF",
+  "requiresApproval": false,
+  "selectedBundleId": "bdl_01M3644VB4AMK6MM4JGD975GG9",
+  "optimizationRunId": "opt_01M3644VD8DZW3E12CREPTB4PT",
+  "occurredAt": "2026-09-23T03:15:00.673189Z"
+ },
+ "policy": {
+  "tripId": "trip_01M3644V854A7CX3B0MWZGF0XK",
+  "outcome": "ALLOW",
+  "reasons": [],
+  "bundleId": "bdl_01M3644VB4AMK6MM4JGD975GG9",
+  "policyId": "US_STANDARD_TRAVEL",
+  "economics": {
+   "travelerPays": {
+    "currency": "USD",
+    "amountMinor": 0
+   },
+   "referenceFare": {
+    "currency": "USD",
+    "amountMinor": 37095
+   },
+   "inPolicyCeiling": {
+    "currency": "USD",
+    "amountMinor": 52095
+   },
+   "travelerIncentive": {
+    "currency": "USD",
+    "amountMinor": 2147
+   }
+  },
+  "decisionId": "pd_01M3644VBWJAJ907VQBSDHF3TF",
+  "travelerId": "emp_1001",
+  "evaluatedFor": "agent/trip-planner/v1",
+  "policyVersion": 69,
+  "rulesEvaluated": [
+   "CURRENCY",
+   "CABIN_PERMITTED",
+   "MAX_STOPS",
+   "LOWEST_LOGICAL_FARE",
+   "HOTEL_NIGHTLY_LIMIT",
+   "GROUND_TRANSFER_LIMIT",
+   "TRIP_BUDGET",
+   "MANAGER_APPROVAL_THRESHOLD",
+   "INCENTIVE_SHARE"
+  ],
+  "requiresApproval": false,
+  "candidatesEvaluated": 69,
+  "candidatesDenied": 46
+ },
+ "order": {
+  "items": [
+   {
+    "type": "AIR",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507
+    },
+    "itemId": "itm_01M3644VENBSS62YE7ESR8XTTK",
+    "status": "CONFIRMED",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3644VETZA0GZPNBZZPG3FGM",
+    "supplierKey": "air:UA",
+    "recordLocator": "UKAJRV"
+   }
+  ],
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507
+  },
+  "status": "CONFIRMED",
+  "tripId": "trip_01M3644V854A7CX3B0MWZGF0XK",
+  "orderId": "ord_01M3644VEPHY6X43BAA6D82S93",
+  "supplier": "sandbox-air",
+  "idempotencyKey": "trip_01M3644V854A7CX3B0MWZGF0XK:CREATE-ORDER:1",
+  "policyDecisionId": "pd_01M3644VBWJAJ907VQBSDHF3TF",
+  "optimizationRunId": "opt_01M3644VD8DZW3E12CREPTB4PT",
+  "externalOrderId": "SBX-01M3644VETZA0GZPNBZZPG3FGM"
+ },
+ "disruptions": [],
+ "narrative": [
+  "Policy US_STANDARD_TRAVEL v69 evaluated 69 candidates, 46 denied; the selected itinerary was ALLOW.",
+  "No approval was required for USD 435.07.",
+  "Order ord_01M3644VEPHY6X43BAA6D82S93 was confirmed at sandbox-air (reference SBX-01M3644VETZA0GZPNBZZPG3FGM) for USD 435.07."
+ ],
+ "eventCount": 120,
+ "components": [],
+ "replans": []
+}

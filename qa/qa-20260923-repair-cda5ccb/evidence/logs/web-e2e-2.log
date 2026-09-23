@@ -1,0 +1,66 @@
+cd web && E2E_BASE_URL=http://localhost:8080 E2E_KEYCLOAK_URL=http://localhost:8180 E2E_SUPPLIER_URL=http://localhost:8084 npx playwright test
+
+Running 20 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/approvals.spec.ts:14:3 › manager approvals › a trip needing approval waits; the traveler cannot self-approve; the manager approves; a stale decision conflicts (7.9s)
+  ✓   2 [chromium] › e2e/approvals.spec.ts:61:3 › manager approvals › a rejected trip ends honestly (7.2s)
+  ✓   3 [chromium] › e2e/auth.spec.ts:5:3 › sign-in and session › signs in through Keycloak with PKCE, restores after reload, signs out, and isolates caches between users (988ms)
+  ✓   4 [chromium] › e2e/auth.spec.ts:28:3 › sign-in and session › protected routes ask to sign in and role-gated areas are refused to a traveler (480ms)
+  ✓   5 [chromium] › e2e/auth.spec.ts:39:3 › sign-in and session › an expired token sends the user back to sign in (434ms)
+  ✓   6 [chromium] › e2e/booking.spec.ts:17:3 › traveler booking › a round trip is booked with the sandbox airline, survives a reload, and explains itself (4.0s)
+  ✓   7 [chromium] › e2e/booking.spec.ts:48:3 › traveler booking › a multi-city itinerary with a hotel and a transfer books every component (6.8s)
+  ✓   8 [chromium] › e2e/booking.spec.ts:88:3 › traveler booking › a double submit and a lost answer create one trip (768ms)
+  ✓   9 [chromium] › e2e/booking.spec.ts:120:3 › traveler booking › a budget denial is explained and nothing is booked (3.7s)
+  ✓  10 [chromium] › e2e/cancellation.spec.ts:22:3 › cancelling a booked trip › a booked round trip is released at the airline before it reads Cancelled (5.8s)
+  ✘  11 [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure (8.9s)
+  ✓  12 [chromium] › e2e/demand.spec.ts:58:3 › demand and connectors › detected demand converts into exactly one trip, however many times it is asked (3.1s)
+  ✓  13 [chromium] › e2e/demand.spec.ts:135:3 › demand and connectors › connectors are labelled simulated and a travel admin can sync them (386ms)
+  ✓  14 [chromium] › e2e/isolation.spec.ts:14:3 › tenant and traveler isolation › a deep link to another tenant's trip is not found; a peer traveler is not found; direct mutations are refused (4.1s)
+  ✓  15 [chromium] › e2e/learning.spec.ts:5:3 › learning administration › shows the real mode and evidence, refuses a stale activation with a 409, and rolls back to the baseline (5.6s)
+  ✓  16 [chromium] › e2e/operations.spec.ts:54:3 › disruptions and exposures › a cancelled flight needing a person is decided by a manager, not the traveler; states stay honest (8.9s)
+  ✓  17 [chromium] › e2e/operations.spec.ts:107:3 › disruptions and exposures › Finance sees open exposures; a traveler is refused the exposure list and refund recording (7.4s)
+  ✓  18 [chromium] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan (929ms)
+  ✓  19 [mobile] › e2e/mobile.spec.ts:5:3 › narrow screens › the primary journeys are usable at phone width without horizontal scrolling (2.1s)
+  ✓  20 [webkit-smoke] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan (1.6s)
+
+
+  1) [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure 
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 0
+    + Received  + 1
+
+      Array [
+        "CANCELLED",
+    +   "CANCELLED",
+      ]
+
+      122 |     const hotel = pending[0]!.items.find((i) => i.type === 'HOTEL')!;
+      123 |     expect(hotel.status).toBe('CANCEL_FAILED');
+    > 124 |     expect(pending[0]!.items.filter((i) => i.type === 'AIR').map((i) => i.status)).toEqual([
+          |                                                                                    ^
+      125 |       'CANCELLED',
+      126 |     ]);
+      127 |     const open = pending[0]!.exposures!.filter((e) => e.status === 'OPEN');
+        at /Users/pranavsaipalla/travel-os/web/e2e/cancellation.spec.ts:124:84
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure 
+  19 passed (1.4m)
+make: *** [web-e2e] Error 1
+WEB_E2E_2_EXIT=2

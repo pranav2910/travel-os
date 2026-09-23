@@ -1,0 +1,54 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-10 FCO/NRT/DXB/SIN itinerary",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "JFK",
+      "destination": "FCO",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     },
+     {
+      "origin": "FCO",
+      "destination": "DXB",
+      "earliestDeparture": "2026-11-05T05:00:00Z",
+      "arrivalDeadline": "2026-11-05T23:59:00Z"
+     },
+     {
+      "origin": "DXB",
+      "destination": "SIN",
+      "earliestDeparture": "2026-11-08T05:00:00Z",
+      "arrivalDeadline": "2026-11-08T23:59:00Z"
+     },
+     {
+      "origin": "SIN",
+      "destination": "NRT",
+      "earliestDeparture": "2026-11-11T05:00:00Z",
+      "arrivalDeadline": "2026-11-11T23:59:00Z"
+     },
+     {
+      "origin": "NRT",
+      "destination": "JFK",
+      "earliestDeparture": "2026-11-14T05:00:00Z",
+      "arrivalDeadline": "2026-11-14T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": []
+   }
+  }
+ },
+ "status": 422,
+ "body": {
+  "detail": "unknown location FCO: the platform does not know its clock",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "INTENT_INVALID",
+  "type": "https://contracts.travelos.io/problems/intent-invalid",
+  "code": "INTENT_INVALID"
+ }
+}

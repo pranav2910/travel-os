@@ -30,7 +30,7 @@ export function stepState(
     if (idx === failedAt) return 'failed';
     return 'todo';
   }
-  if (trip.status === 'CANCELLED') return 'skipped';
+  if (trip.status === 'CANCELLED' || trip.status === 'CANCELLING') return 'skipped';
   if (step.statuses.includes(trip.status)) return 'current';
   const current = order.indexOf(trip.status);
   const first = order.indexOf(step.statuses[0]!);
@@ -80,6 +80,28 @@ export function isTerminal(status: TripStatus): boolean {
   return (
     status === 'BOOKED' || status === 'COMPLETED' || status === 'CANCELLED' || status === 'FAILED'
   );
+}
+
+/** Whether the traveler (or a travel admin) may ask to cancel: not once it is over or already asked. */
+export function canRequestCancellation(status: TripStatus): boolean {
+  // BOOKED counts as terminal for polling, but a booked trip can still be released
+  return status === 'BOOKED' || (!isTerminal(status) && status !== 'CANCELLING');
+}
+
+/** Why a cancellation is still in progress, in the platform's own words. */
+export function explainCancelling(trip: TripResponse): string {
+  switch (trip.failureCode) {
+    case 'CANCELLATION_INCOMPLETE':
+      return 'A supplier refused to release part of the reservation. It stays confirmed at that supplier until a person resolves the exposure; the trip is not cancelled yet.';
+    case 'CANCELLATION_UNRESOLVED':
+      return 'The reservation was not fully released within 30 days. A travel admin must finish the cancellation by hand; the trip is not cancelled yet.';
+    case undefined:
+    case null:
+    case '':
+      return 'The reservation is being released at the suppliers. The trip is cancelled only once every component is released.';
+    default:
+      return `The reservation could not be released (${trip.failureCode}). A person must finish the cancellation; the trip is not cancelled yet.`;
+  }
 }
 
 /** The distinct reasons policy gave for denying options, most frequent first: the backend's words, not a guess. */

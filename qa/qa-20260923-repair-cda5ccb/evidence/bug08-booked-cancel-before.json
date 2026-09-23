@@ -1,0 +1,312 @@
+{
+ "first": {
+  "tripId": "trip_01M3693K4F6QPR4WWHSKWADBS6",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-08 booked cancel",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3693MFW673WD9M1H9638NPK",
+   "optimizationRunId": "opt_01M3693N3F1PSENFE2SAACRSYH",
+   "policyDecisionId": "pd_01M3693MV5BSD662EZZCSWZGN7",
+   "approvalId": null,
+   "orderId": "ord_01M3693NCWHGR8BH3YCQBZY3Y1"
+  },
+  "createdBy": "human/alice",
+  "version": 5,
+  "createdAt": "2026-09-23T04:41:42.284690Z",
+  "updatedAt": "2026-09-23T04:41:45.605899Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v74. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "final": {
+  "tripId": "trip_01M3693K4F6QPR4WWHSKWADBS6",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-08 booked cancel",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3693MFW673WD9M1H9638NPK",
+   "optimizationRunId": "opt_01M3693N3F1PSENFE2SAACRSYH",
+   "policyDecisionId": "pd_01M3693MV5BSD662EZZCSWZGN7",
+   "approvalId": null,
+   "orderId": "ord_01M3693NCWHGR8BH3YCQBZY3Y1"
+  },
+  "createdBy": "human/alice",
+  "version": 5,
+  "createdAt": "2026-09-23T04:41:42.284690Z",
+  "updatedAt": "2026-09-23T04:41:45.605899Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v74. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "orders_before": [
+  {
+   "orderId": "ord_01M3693NCWHGR8BH3YCQBZY3Y1",
+   "tripId": "trip_01M3693K4F6QPR4WWHSKWADBS6",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M3693MFW673WD9M1H9638NPK",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M3693NH952MJSP42JYEAMPV6",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "policyDecisionId": "pd_01M3693MV5BSD662EZZCSWZGN7",
+   "optimizationRunId": "opt_01M3693N3F1PSENFE2SAACRSYH",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M3693NB250HKAJEF4NQ7GZVX",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTAtMjN8MjAyNi0xMC0yNXw3fEVDT05PTVl8MTc5MDEzODUwMw",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M3693NH952MJSP42JYEAMPV6",
+     "recordLocator": "7J3BQJ",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 43507,
+      "display": "USD 435.07"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA243",
+       "origin": "BOS",
+       "destination": "SEA",
+       "departure": "2026-10-23T08:30:00Z",
+       "arrival": "2026-10-23T15:00:00Z",
+       "cabin": "ECONOMY"
+      },
+      {
+       "direction": "INBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA343",
+       "origin": "SEA",
+       "destination": "BOS",
+       "departure": "2026-10-25T11:15:00Z",
+       "arrival": "2026-10-25T17:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ]
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:41:44.544180Z",
+   "updatedAt": "2026-09-23T04:41:44.774160Z"
+  }
+ ],
+ "orders_after": [
+  {
+   "orderId": "ord_01M3693NCWHGR8BH3YCQBZY3Y1",
+   "tripId": "trip_01M3693K4F6QPR4WWHSKWADBS6",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M3693MFW673WD9M1H9638NPK",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M3693NH952MJSP42JYEAMPV6",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "policyDecisionId": "pd_01M3693MV5BSD662EZZCSWZGN7",
+   "optimizationRunId": "opt_01M3693N3F1PSENFE2SAACRSYH",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M3693NB250HKAJEF4NQ7GZVX",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTAtMjN8MjAyNi0xMC0yNXw3fEVDT05PTVl8MTc5MDEzODUwMw",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M3693NH952MJSP42JYEAMPV6",
+     "recordLocator": "7J3BQJ",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 43507,
+      "display": "USD 435.07"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA243",
+       "origin": "BOS",
+       "destination": "SEA",
+       "departure": "2026-10-23T08:30:00Z",
+       "arrival": "2026-10-23T15:00:00Z",
+       "cabin": "ECONOMY"
+      },
+      {
+       "direction": "INBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA343",
+       "origin": "SEA",
+       "destination": "BOS",
+       "departure": "2026-10-25T11:15:00Z",
+       "arrival": "2026-10-25T17:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ]
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:41:44.544180Z",
+   "updatedAt": "2026-09-23T04:41:44.774160Z"
+  }
+ ],
+ "supplier_before": [
+  [
+   "sandbox-air",
+   "SBX-01M3693NH952MJSP42JYEAMPV6",
+   "CONFIRMED"
+  ]
+ ],
+ "supplier_after": [
+  [
+   "sandbox-air",
+   "SBX-01M3693NH952MJSP42JYEAMPV6",
+   "CONFIRMED"
+  ]
+ ],
+ "again": {
+  "status": 200,
+  "body": {
+   "tripId": "trip_01M3693K4F6QPR4WWHSKWADBS6",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "CANCELLED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-23T05:00:00Z",
+    "arrivalDeadline": "2026-10-23T23:59:00Z",
+    "returnAfter": "2026-10-25T10:00:00Z",
+    "latestReturn": "2026-10-25T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb before BUG-08 booked cancel",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M3693MFW673WD9M1H9638NPK",
+    "optimizationRunId": "opt_01M3693N3F1PSENFE2SAACRSYH",
+    "policyDecisionId": "pd_01M3693MV5BSD662EZZCSWZGN7",
+    "approvalId": null,
+    "orderId": "ord_01M3693NCWHGR8BH3YCQBZY3Y1"
+   },
+   "createdBy": "human/alice",
+   "version": 5,
+   "createdAt": "2026-09-23T04:41:42.284690Z",
+   "updatedAt": "2026-09-23T04:41:45.605899Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v74. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  }
+ },
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:41:42.284690Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:41:43.510512Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:41:44.360305Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:41:44.375868Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:41:44.830905Z"
+  },
+  {
+   "from": "BOOKED",
+   "to": "CANCELLED",
+   "reason": "qa-20260923-repair-cda5ccb before meeting moved to video",
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:41:45.605899Z"
+  }
+ ],
+ "ledger_status": "CANCELLED"
+}

@@ -1,0 +1,2 @@
+[PASS   ] P4-R04: 202  -> BOOKED / total={'currency': 'USD', 'amountMinor': 33048, 'display': 'USD 330.48'}
+{'FAIL': 39, 'PASS': 210, 'NOT_IMPLEMENTED': 10, 'BLOCKED': 2, 'NOT_APPLICABLE': 1}

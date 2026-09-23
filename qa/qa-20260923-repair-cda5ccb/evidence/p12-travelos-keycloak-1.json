@@ -1,0 +1,9 @@
+{
+ "existing_token_api": 200,
+ "new_login": "<urlopen error [Errno 61] Connection refused>",
+ "recovered_health": "healthy",
+ "after": {
+  "new_login": "ok",
+  "api": 200
+ }
+}

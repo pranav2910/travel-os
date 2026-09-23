@@ -1,0 +1,28 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb origin four letters 'BOSS'",
+   "origin": "BOSS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-24T10:00:00Z",
+   "latestReturn": "2026-10-24T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 400,
+ "response": {
+  "detail": "request validation failed",
+  "instance": "/api/v1/trips",
+  "status": 400,
+  "title": "VALIDATION_FAILED",
+  "type": "https://contracts.travelos.io/problems/validation-failed",
+  "code": "VALIDATION_FAILED",
+  "fields": {
+   "intent.origin": "must be an IATA airport code"
+  }
+ },
+ "stored": null
+}

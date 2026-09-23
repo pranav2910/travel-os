@@ -1,0 +1,59 @@
+[PASS   ] BUG-08-1-after: booked=BOOKED; cancel 200 -> CANCELLING; final=CANCELLED; orders=['CANCELLED']; supplier before=[('sandbox-air
+[PASS   ] BUG-08-3-after: resolve 200; trip=CANCELLED/None; order=CANCELLED
+[PASS   ] BUG-08-2-after: cancel 200; trip=CANCELLING/CANCELLATION_INCOMPLETE; order=CANCELLATION_PENDING items=[('AIR', 'CANCELLED'), (
+[PASS   ] BUG-08-4-after: awaiting=AWAITING_APPROVAL; cancel 200 CANCELLED; late approval 409 TRIP_NOT_AWAITING_APPROVAL; final=CANCELLE
+[PASS   ] BUG-01-1-after: 422 UNKNOWN_LOCATION unknown location QQQ: the platform does not know its clock
+[PASS   ] BUG-01-2-after: 422 UNKNOWN_LOCATION unknown location QQQ: the platform does not know its clock
+[PASS   ] BUG-01-3-after: 422 UNKNOWN_LOCATION NYC is a city, not an airport: use one of JFK, EWR, LGA (the platform searches one airpor
+[PASS   ] BUG-01-4-after: 422 UNKNOWN_LOCATION LON is a city, not an airport: use one of LHR, LGW (the platform searches one airport per
+[PASS   ] BUG-01-5-after: 422 UNKNOWN_LOCATION unknown location QQQ: the platform does not know its clock
+[PASS   ] BUG-10-1-after: 202 
+[PASS   ] BUG-03-1-after: 422 DEPARTURE_IN_PAST the outbound window closed at 2026-09-22 23:59 America/New_York (2026-09-23T03:59:00Z); 
+[PASS   ] BUG-03-2-after: 422 DEPARTURE_IN_PAST the outbound window closed at 2025-01-10 18:00 America/New_York (2025-01-10T23:00:00Z); 
+[PASS   ] BUG-03-3-after: 422 DEPARTURE_IN_PAST the outbound window closed at 2026-09-23 00:52 America/New_York (2026-09-23T04:52:02Z); 
+[PASS   ] BUG-03-4-after: 202  
+[PASS   ] BUG-03-5-after: 202  
+[PASS   ] BUG-03-6-after: 202  
+[PASS   ] BUG-07-1-after: statuses=[202, 202, 202, 202, 202] codes=[None, None, None, None, None] distinct ids=1
+[PASS   ] BUG-05-1-after: 422 CURRENCY_UNSUPPORTED currency XXX is not supported: trips are priced in GBP, USD (the platform does not co
+[PASS   ] BUG-05-2-after: 202 
+[FAIL   ] BUG-05-3-after: codes=['ACTIVITY_io.grpc.StatusRuntimeException', 'ALL_CANDIDATES_DENIED', 'COMPENSATION_INCOMPLETE', 'NEEDS_C
+[PASS   ] BUG-04-1-after: anonymous 422 TRAVELER_IDENTITY_REQUIRED; named 202 snapshot={'travelerId': 'emp_1001', 'givenName': 'Alice', 
+[PASS   ] BUG-06-1-after: {"0": "422 LIMIT_OUT_OF_RANGE", "-1": "422 LIMIT_OUT_OF_RANGE", "201": "422 LIMIT_OUT_OF_RANGE", "200": "200 "
+[PASS   ] BUG-12-1-after: {"zero": "200 ", "one-cent": "200 ", "negative": "400 VALIDATION_FAILED", "eur-on-usd": "422 CURRENCY_MISMATCH
+[PASS   ] BUG-09-1-after: {"/": {"status": 200, "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'uns
+Traceback (most recent call last):
+  File "/Users/pranavsaipalla/travel-os/qa/qa-20260923-repair-cda5ccb/harness/repair_regressions.py", line 254, in <module>
+    st_, h, body_ = hdrs(f"{qa.BASE}/api/v1/trips?limit=1", token=qa.token("alice"))
+                    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/pranavsaipalla/travel-os/qa/qa-20260923-repair-cda5ccb/harness/repair_regressions.py", line 237, in hdrs
+    with urllib.request.urlopen(req, timeout=10) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 187, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 487, in open
+    response = self._open(req, data)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 504, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+                              '_open', req)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 464, in _call_chain
+    result = func(*args)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 1350, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/urllib/request.py", line 1325, in do_open
+    r = h.getresponse()
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 1459, in getresponse
+    response.begin()
+    ~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/http/client.py", line 297, in _read_status
+    line = str(self.fp.readline(_MAXLINE + 1), "iso-8859-1")
+               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/lib/python3.14/socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+TimeoutError: timed out

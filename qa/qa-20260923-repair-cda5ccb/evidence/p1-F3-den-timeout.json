@@ -1,0 +1,278 @@
+{
+ "final": {
+  "tripId": "trip_01M369X9N2XGE6E2Q4CBP68W04",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "DEN",
+   "earliestDeparture": "2026-10-29T05:00:00Z",
+   "arrivalDeadline": "2026-10-29T23:59:00Z",
+   "returnAfter": "2026-10-31T05:00:00Z",
+   "latestReturn": "2026-10-31T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb F3 lost answer after commit (DEN)",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ27",
+      "origin": "BOS",
+      "destination": "DEN",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ28",
+      "origin": "DEN",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-31T05:00:00Z",
+      "arrivalDeadline": "2026-10-31T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M369X9N1S0PXDANFGMNQK44W",
+      "city": "DEN",
+      "checkInDate": "2026-10-29",
+      "checkOutDate": "2026-10-31",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M369XA07885P2JHJAQN5BDJG",
+   "optimizationRunId": "opt_01M369XA07B3EP5P636DQKT438",
+   "policyDecisionId": "pd_01M369XA0R8524BZETGVWWXNV6",
+   "approvalId": null,
+   "orderId": "ord_01M369XAZ0J1407K2GVA79BEJQ"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:55:44.545908Z",
+  "updatedAt": "2026-09-23T04:55:46.376111Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 81262,
+   "display": "USD 812.62"
+  },
+  "explanation": "For the BOS to DEN to BOS we chose DL236 BOS-DEN via sandbox-air; DL780 DEN-BOS via sandbox-air; hotel Front Range Inn in DEN (2 nights, 2026-10-29) at USD 812.62 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v80. It ranked first with a score of 98.8 (cost 97, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ27",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M369X9TZASMZ4PF4A3C1J3JZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M369XAZ740QTTGT4PM8EWSTR",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 22078,
+     "display": "USD 220.78"
+    },
+    "failureCode": null,
+    "summary": "DL236 BOS-DEN 2026-10-29T17:45:00Z",
+    "updatedAt": "2026-09-23T04:55:46.355149Z"
+   },
+   {
+    "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ28",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M369X9VTPP84VMMPS7BZFBEZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M369XAZFEFQ617X98KCZE9CH",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 33384,
+     "display": "USD 333.84"
+    },
+    "failureCode": null,
+    "summary": "DL780 DEN-BOS 2026-10-31T17:45:00Z",
+    "updatedAt": "2026-09-23T04:55:46.355149Z"
+   },
+   {
+    "componentId": "cmp_01M369X9N1S0PXDANFGMNQK44W",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M369X9WCMGJC30Q8SF98G2HH",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M369XAZNSYCXBERQP61N2T07",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 25800,
+     "display": "USD 258.00"
+    },
+    "failureCode": null,
+    "summary": "Front Range Inn DEN 2026-10-29 to 2026-10-31 (2 nights)",
+    "updatedAt": "2026-09-23T04:55:46.355149Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ27",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M369X9TZASMZ4PF4A3C1J3JZ",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M369XAZ740QTTGT4PM8EWSTR",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 22078,
+    "display": "USD 220.78"
+   },
+   "failureCode": null,
+   "summary": "DL236 BOS-DEN 2026-10-29T17:45:00Z",
+   "updatedAt": "2026-09-23T04:55:46.355149Z"
+  },
+  {
+   "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ28",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M369X9VTPP84VMMPS7BZFBEZ",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M369XAZFEFQ617X98KCZE9CH",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 33384,
+    "display": "USD 333.84"
+   },
+   "failureCode": null,
+   "summary": "DL780 DEN-BOS 2026-10-31T17:45:00Z",
+   "updatedAt": "2026-09-23T04:55:46.355149Z"
+  },
+  {
+   "componentId": "cmp_01M369X9N1S0PXDANFGMNQK44W",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M369X9WCMGJC30Q8SF98G2HH",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M369XAZNSYCXBERQP61N2T07",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 25800,
+    "display": "USD 258.00"
+   },
+   "failureCode": null,
+   "summary": "Front Range Inn DEN 2026-10-29 to 2026-10-31 (2 nights)",
+   "updatedAt": "2026-09-23T04:55:46.355149Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M369XAZ0J1407K2GVA79BEJQ",
+   "tripId": "trip_01M369X9N2XGE6E2Q4CBP68W04",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M369XA07885P2JHJAQN5BDJG",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M369XAZ740QTTGT4PM8EWSTR",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 81262,
+    "display": "USD 812.62"
+   },
+   "policyDecisionId": "pd_01M369XA0R8524BZETGVWWXNV6",
+   "optimizationRunId": "opt_01M369XA07B3EP5P636DQKT438",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M369XAYZFF9V1QNSNE22PB9A",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8REVOfDIwMjYtMTAtMjl8LXwyfEVDT05PTVl8MTc5MDEzOTM0NA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M369XAZ740QTTGT4PM8EWSTR",
+     "recordLocator": "LY2C6W",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 22078,
+      "display": "USD 220.78"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL236",
+       "origin": "BOS",
+       "destination": "DEN",
+       "departure": "2026-10-29T17:45:00Z",
+       "arrival": "2026-10-29T20:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ27"
+    },
+    {
+     "itemId": "itm_01M369XAYZFF9V1QNSNE22PB9B",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxERU58Qk9TfDIwMjYtMTAtMzF8LXwyfEVDT05PTVl8MTc5MDEzOTM0NA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M369XAZFEFQ617X98KCZE9CH",
+     "recordLocator": "VKKT6X",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 33384,
+      "display": "USD 333.84"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL780",
+       "origin": "DEN",
+       "destination": "BOS",
+       "departure": "2026-10-31T17:45:00Z",
+       "arrival": "2026-10-31T22:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M369X9N0NBRS7D3TYG2BBQ28"
+    },
+    {
+     "itemId": "itm_01M369XAYZFF9V1QNSNE22PB9C",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxERU58MjAyNi0xMC0yOXwyMDI2LTEwLTMxfFRJTUVPVVR8MTc5MDEzOTM0NA",
+     "status": "CONFIRMED",
+     "externalRef": "SBH-01M369XAZNSYCXBERQP61N2T07",
+     "recordLocator": "KVJGPR",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 25800,
+      "display": "USD 258.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M369X9N1S0PXDANFGMNQK44W",
+     "hotel": {
+      "propertyId": "HTL-DEN-TIMEOUT",
+      "name": "Front Range Inn",
+      "city": "DEN",
+      "checkInDate": "2026-10-29",
+      "checkOutDate": "2026-10-31",
+      "nights": 2,
+      "timeZone": "America/Denver",
+      "refundable": true
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:55:45.887185Z",
+   "updatedAt": "2026-09-23T04:55:46.336523Z"
+  }
+ ],
+ "supplier_side_bookings_for_trip": "n/a"
+}

@@ -1,0 +1,314 @@
+{
+ "cancel": {
+  "tripId": "trip_01M3693SJNM4QWZHPGGCZNNM8M",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-27T05:00:00Z",
+   "arrivalDeadline": "2026-10-27T23:59:00Z",
+   "returnAfter": "2026-10-28T05:00:00Z",
+   "latestReturn": "2026-10-28T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-08 refused release",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M3693SJHFMMSVBVSK61SY4CS",
+      "origin": "BOS",
+      "destination": "LAX",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3F",
+      "origin": "LAX",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-28T05:00:00Z",
+      "arrivalDeadline": "2026-10-28T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3G",
+      "city": "LAX",
+      "checkInDate": "2026-10-27",
+      "checkOutDate": "2026-10-28",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3693T0QRHEZPPD3F3WFX89S",
+   "optimizationRunId": "opt_01M3693T0QJF4ZTXF2VD7V9X10",
+   "policyDecisionId": "pd_01M3693T1FY134B0XYZNXXK4P6",
+   "approvalId": null,
+   "orderId": "ord_01M3693TWGBNVX2YE5QJZCKYR9"
+  },
+  "createdBy": "human/alice",
+  "version": 5,
+  "createdAt": "2026-09-23T04:41:48.885280Z",
+  "updatedAt": "2026-09-23T04:41:51.937318Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 82007,
+   "display": "USD 820.07"
+  },
+  "explanation": "For the BOS to LAX to BOS we chose UA612 BOS-LAX via sandbox-air; UA740 LAX-BOS via sandbox-air; hotel Wilshire Non-Refundable in LAX (1 night, 2026-10-27) at USD 820.07 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v74. It ranked first with a score of 90.3 (cost 79, time 100, risk 90, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "trip": {
+  "tripId": "trip_01M3693SJNM4QWZHPGGCZNNM8M",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-27T05:00:00Z",
+   "arrivalDeadline": "2026-10-27T23:59:00Z",
+   "returnAfter": "2026-10-28T05:00:00Z",
+   "latestReturn": "2026-10-28T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-08 refused release",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M3693SJHFMMSVBVSK61SY4CS",
+      "origin": "BOS",
+      "destination": "LAX",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3F",
+      "origin": "LAX",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-28T05:00:00Z",
+      "arrivalDeadline": "2026-10-28T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3G",
+      "city": "LAX",
+      "checkInDate": "2026-10-27",
+      "checkOutDate": "2026-10-28",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3693T0QRHEZPPD3F3WFX89S",
+   "optimizationRunId": "opt_01M3693T0QJF4ZTXF2VD7V9X10",
+   "policyDecisionId": "pd_01M3693T1FY134B0XYZNXXK4P6",
+   "approvalId": null,
+   "orderId": "ord_01M3693TWGBNVX2YE5QJZCKYR9"
+  },
+  "createdBy": "human/alice",
+  "version": 5,
+  "createdAt": "2026-09-23T04:41:48.885280Z",
+  "updatedAt": "2026-09-23T04:41:51.937318Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 82007,
+   "display": "USD 820.07"
+  },
+  "explanation": "For the BOS to LAX to BOS we chose UA612 BOS-LAX via sandbox-air; UA740 LAX-BOS via sandbox-air; hotel Wilshire Non-Refundable in LAX (1 night, 2026-10-27) at USD 820.07 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v74. It ranked first with a score of 90.3 (cost 79, time 100, risk 90, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M3693SJHFMMSVBVSK61SY4CS",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3693SS88DEA8ABTGRCR00JZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3693TX3X8E60R3ED3ACS0WR",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 32116,
+     "display": "USD 321.16"
+    },
+    "failureCode": null,
+    "summary": "UA612 BOS-LAX 2026-10-27T08:30:00Z",
+    "updatedAt": "2026-09-23T04:41:50.308701Z"
+   },
+   {
+    "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3F",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3693SSZD69V0NC5547SW7D9",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3693TXKDZHSDZ3DAM44791C",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 35991,
+     "display": "USD 359.91"
+    },
+    "failureCode": null,
+    "summary": "UA740 LAX-BOS 2026-10-28T08:30:00Z",
+    "updatedAt": "2026-09-23T04:41:50.308701Z"
+   },
+   {
+    "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3G",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3693STYNAZ5RWGPT3WEPGZ1",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M3693TXXCC4SGMR6REJXJKFM",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 13900,
+     "display": "USD 139.00"
+    },
+    "failureCode": null,
+    "summary": "Wilshire Non-Refundable LAX 2026-10-27 to 2026-10-28 (1 nights)",
+    "updatedAt": "2026-09-23T04:41:50.308701Z"
+   }
+  ]
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M3693TWGBNVX2YE5QJZCKYR9",
+   "tripId": "trip_01M3693SJNM4QWZHPGGCZNNM8M",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M3693T0QRHEZPPD3F3WFX89S",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M3693TX3X8E60R3ED3ACS0WR",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 82007,
+    "display": "USD 820.07"
+   },
+   "policyDecisionId": "pd_01M3693T1FY134B0XYZNXXK4P6",
+   "optimizationRunId": "opt_01M3693T0QJF4ZTXF2VD7V9X10",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M3693TWCAA4TXBS2V95X2RYG",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8TEFYfDIwMjYtMTAtMjd8LXw0fEVDT05PTVl8MTc5MDEzODUwOQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M3693TX3X8E60R3ED3ACS0WR",
+     "recordLocator": "2H57AT",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 32116,
+      "display": "USD 321.16"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA612",
+       "origin": "BOS",
+       "destination": "LAX",
+       "departure": "2026-10-27T08:30:00Z",
+       "arrival": "2026-10-27T15:00:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M3693SJHFMMSVBVSK61SY4CS"
+    },
+    {
+     "itemId": "itm_01M3693TWDJV1ASBJHTVKFZN6V",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxMQVh8Qk9TfDIwMjYtMTAtMjh8LXw0fEVDT05PTVl8MTc5MDEzODUwOQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M3693TXKDZHSDZ3DAM44791C",
+     "recordLocator": "LCN43W",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 35991,
+      "display": "USD 359.91"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA740",
+       "origin": "LAX",
+       "destination": "BOS",
+       "departure": "2026-10-28T08:30:00Z",
+       "arrival": "2026-10-28T16:00:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3F"
+    },
+    {
+     "itemId": "itm_01M3693TWDJV1ASBJHTVKFZN6W",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxMQVh8MjAyNi0xMC0yN3wyMDI2LTEwLTI4fE5PQ0FOQ0VMfDE3OTAxMzg1MDk",
+     "status": "CONFIRMED",
+     "externalRef": "SBH-01M3693TXXCC4SGMR6REJXJKFM",
+     "recordLocator": "YTLG9G",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 13900,
+      "display": "USD 139.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M3693SJKVC12XS0JZFFGCZ3G",
+     "hotel": {
+      "propertyId": "HTL-LAX-NOCANCEL",
+      "name": "Wilshire Non-Refundable",
+      "city": "LAX",
+      "checkInDate": "2026-10-27",
+      "checkOutDate": "2026-10-28",
+      "nights": 1,
+      "timeZone": "America/Los_Angeles",
+      "refundable": false
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:41:50.220263Z",
+   "updatedAt": "2026-09-23T04:41:50.278047Z"
+  }
+ ],
+ "supplier": [
+  [
+   "sandbox-air",
+   "SBX-01M3693TX3X8E60R3ED3ACS0WR",
+   "CONFIRMED"
+  ],
+  [
+   "sandbox-air",
+   "SBX-01M3693TXKDZHSDZ3DAM44791C",
+   "CONFIRMED"
+  ],
+  [
+   "sandbox-hotel",
+   "SBH-01M3693TXXCC4SGMR6REJXJKFM",
+   "CONFIRMED"
+  ]
+ ]
+}

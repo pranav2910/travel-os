@@ -1,0 +1,10 @@
+{
+ "list_status": 502,
+ "list_body": "<html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad",
+ "create_status": 502,
+ "recovered_health": "healthy",
+ "after": {
+  "list": 200,
+  "create": 202
+ }
+}

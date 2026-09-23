@@ -1,0 +1,27 @@
+[PASS   ] P11-API-01: 400  Failed to read request; stack-trace-like text=False
+[PASS   ] P11-API-02: 415  Content-Type 'text/plain' is not supported.; stack-trace-like text=False
+[PASS   ] P11-API-03: 400  Failed to read request; stack-trace-like text=False
+[PASS   ] P11-API-04: 400  Failed to read request; stack-trace-like text=False
+[PASS   ] P11-API-05: 202  ; stack-trace-like text=False
+[PASS   ] P11-API-05b: status=SUBMITTED createdBy=human/alice keys=['createdAt', 'createdBy', 'evidence', 'intent', 'source', 'status
+[PASS   ] P11-API-06: 413  <html>
+<head><title>413 Request Entity Too Large</title></head>
+<body>
+<cente; stack-trace-like text=F
+[PASS   ] P11-API-07: 405  Method 'DELETE' is not supported.; stack-trace-like text=False
+[PASS   ] P11-API-08: 400 IDEMPOTENCY_KEY_REQUIRED the Idempotency-Key header is required on this request; stack-trace-like text=Fal
+[PASS   ] P11-API-09: 400  Failed to read request; stack-trace-like text=False
+[PASS   ] P11-API-10: 400  Failed to read request; stack-trace-like text=False
+[PASS   ] P11-API-11: 422 UNKNOWN_MODE mode must be OFF, SHADOW or ACTIVE; stack-trace-like text=False
+[PASS   ] P11-API-12: 422 POLICY_INVALID policy document is invalid; stack-trace-like text=False
+[PASS   ] P11-API-13: 422 POLICY_INVALID policy document is invalid; stack-trace-like text=False
+[PASS   ] P11-API-14: 400  Failed to read request; stack-trace-like text=False
+[PASS   ] P11-API-15: 404 NOT_FOUND order ord_01ARZ3NDEKTSV4RRFFQ69G5FAV not found; stack-trace-like text=False
+[FAIL   ] P11-AUTHZ-01: {"/api/v1/trips": 401, "/api/v1/policies": 401, "/api/v1/policy-decisions": 401, "/api/v1/orders": 401, "/api/
+[PASS   ] P11-HDR-01: headers={'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; 
+[PASS   ] P11-XSS-01: stored verbatim as text (P3-VAL-06); rendered as text with no image element and no dialog (P10 states.htmlPurp
+[PASS   ] P11-REDIR-01: 400 location=None
+[FAIL   ] P11-SECRETS-01: bundle secret-like files: '/usr/share/nginx/html/assets/main-BF9QjIzc.js
+/usr/share/nginx/html/assets/oidc-cli
+[PASS   ] P11-TOKEN-01: see P2-TOK-01 (tampered/forged/wrong issuer/audience: 401) and P2-TOK-03 (expired: 401 after 900 s)
+{'FAIL': 37, 'PASS': 179, 'NOT_IMPLEMENTED': 10, 'BLOCKED': 1, 'NOT_APPLICABLE': 1}

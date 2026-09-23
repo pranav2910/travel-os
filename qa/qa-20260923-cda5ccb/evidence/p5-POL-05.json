@@ -1,0 +1,152 @@
+{
+ "final": {
+  "tripId": "trip_01M3644N30BN7BQWRAMXVSDGJS",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-21T05:00:00Z",
+   "arrivalDeadline": "2026-11-21T23:59:00Z",
+   "returnAfter": "2026-11-23T10:00:00Z",
+   "latestReturn": "2026-11-23T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb POL zero budget",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T03:14:54.176789Z",
+  "updatedAt": "2026-09-23T03:14:54.508589Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "POLICY",
+  "failureCode": "ALL_CANDIDATES_DENIED"
+ },
+ "decisions": [
+  {
+   "decisionId": "pd_01M3644NCGBTV8HF61JZJRD1Q8",
+   "evaluationId": "dec_01M3644NCFRDH9S5PAWGMKWC79",
+   "tripId": "trip_01M3644N30BN7BQWRAMXVSDGJS",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M3644NBTYJTQX9CYECNPAW16",
+   "action": null,
+   "policyId": "US_STANDARD_TRAVEL",
+   "policyVersion": 67,
+   "outcome": "DENY",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T03:14:54.479805Z",
+   "decision": {
+    "outcome": "DENY",
+    "reasons": [
+     {
+      "code": "TRIP_TOTAL_ABOVE_BUDGET",
+      "ruleId": "TRIP_BUDGET",
+      "message": "the itinerary costs USD 427.68, above the USD 0.00 trip budget"
+     }
+    ],
+    "policyId": "US_STANDARD_TRAVEL",
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD",
+      "amountMinor": "37095"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD",
+      "amountMinor": "52095"
+     },
+     "travelerIncentive": {
+      "currency": "USD"
+     }
+    },
+    "decisionId": "pd_01M3644NCGBTV8HF61JZJRD1Q8",
+    "evaluatedAt": "2026-09-23T03:14:54.479805Z",
+    "policyVersion": 67,
+    "rulesEvaluated": [
+     "CURRENCY",
+     "CABIN_PERMITTED",
+     "MAX_STOPS",
+     "LOWEST_LOGICAL_FARE",
+     "HOTEL_NIGHTLY_LIMIT",
+     "GROUND_TRANSFER_LIMIT",
+     "TRIP_BUDGET",
+     "MANAGER_APPROVAL_THRESHOLD",
+     "INCENTIVE_SHARE"
+    ]
+   }
+  },
+  {
+   "decisionId": "pd_01M3644NCGBTV8HF61JZJRD1QB",
+   "evaluationId": "dec_01M3644NCFRDH9S5PAWGMKWC79",
+   "tripId": "trip_01M3644N30BN7BQWRAMXVSDGJS",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M3644NBTYJTQX9CYECNPAW17",
+   "action": null,
+   "policyId": "US_STANDARD_TRAVEL",
+   "policyVersion": 67,
+   "outcome": "DENY",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T03:14:54.479805Z",
+   "decision": {
+    "outcome": "DENY",
+    "reasons": [
+     {
+      "code": "TRIP_TOTAL_ABOVE_BUDGET",
+      "ruleId": "TRIP_BUDGET",
+      "message": "the itinerary costs USD 487.87, above the USD 0.00 trip budget"
+     }
+    ],
+    "policyId": "US_STANDARD_TRAVEL",
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD",
+      "amountMinor": "37095"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD",
+      "amountMinor": "52095"
+     },
+     "travelerIncentive": {
+      "currency": "USD"
+     }
+    },
+    "decisionId": "pd_01M3644NCGBTV8HF61JZJRD1QB",
+    "evaluatedAt": "2026-09-23T03:14:54.479805Z",
+    "policyVersion": 67,
+    "rulesEvaluated": [
+     "CURRENCY",
+     "CABIN_PERMITTED",
+     "MAX_STOPS",
+     "LOWEST_LOGICAL_FARE",
+     "HOTEL_NIGHTLY_LIMIT",
+     "GROUND_TRANSFER_LIMIT",
+     "TRIP_BUDGET",
+     "MANAGER_APPROVAL_THRESHOLD",
+     "INCENTIVE_SHARE"
+    ]
+   }
+  }
+ ]
+}

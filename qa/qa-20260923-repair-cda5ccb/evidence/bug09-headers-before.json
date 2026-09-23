@@ -1,0 +1,50 @@
+{
+ "/": {
+  "status": 200,
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": null,
+  "X-Frame-Options": null,
+  "Referrer-Policy": null,
+  "Permissions-Policy": null
+ },
+ "/trips/new": {
+  "status": 200,
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": null,
+  "X-Frame-Options": null,
+  "Referrer-Policy": null,
+  "Permissions-Policy": null
+ },
+ "/config.json": {
+  "status": 200,
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": null,
+  "X-Frame-Options": null,
+  "Referrer-Policy": null,
+  "Permissions-Policy": null
+ },
+ "/api/v1/trips?limit=1": {
+  "status": 200,
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": null
+ },
+ "/api/v1/nope": {
+  "status": 404,
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": null
+ },
+ "/assets/": {
+  "status": 404,
+  "Content-Security-Policy": null,
+  "X-Content-Type-Options": null,
+  "X-Frame-Options": null,
+  "Referrer-Policy": null,
+  "Permissions-Policy": null
+ }
+}

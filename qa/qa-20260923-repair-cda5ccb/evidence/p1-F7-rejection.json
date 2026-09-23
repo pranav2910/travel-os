@@ -1,0 +1,93 @@
+{
+ "awaiting": "AWAITING_APPROVAL",
+ "self_approval": {
+  "status": 403,
+  "body": {
+   "detail": "only MANAGER or TRAVEL_ADMIN may decide approvals",
+   "instance": "/api/v1/trips/trip_01M36A1883377N3GCRS6GDNZFB/approval",
+   "status": 403,
+   "title": "NOT_AN_APPROVER",
+   "type": "https://contracts.travelos.io/problems/not-an-approver",
+   "code": "NOT_AN_APPROVER"
+  }
+ },
+ "peer_traveler": {
+  "status": 404,
+  "body": {
+   "detail": "trip trip_01M36A1883377N3GCRS6GDNZFB not found",
+   "instance": "/api/v1/trips/trip_01M36A1883377N3GCRS6GDNZFB/approval",
+   "status": 404,
+   "title": "NOT_FOUND",
+   "type": "https://contracts.travelos.io/problems/not-found",
+   "code": "NOT_FOUND"
+  }
+ },
+ "reject": {
+  "status": 200,
+  "body": {
+   "approvalId": "apr_01M36A18GN8WT0W08C0K04401A",
+   "tripId": "trip_01M36A1883377N3GCRS6GDNZFB",
+   "requiredRole": "MANAGER",
+   "status": "REJECTED",
+   "policyDecisionId": "pd_01M36A18D0FB985BJ107AND7GY",
+   "requestedAt": "2026-09-23T04:57:54.453302Z",
+   "decidedBy": "human/bob",
+   "decidedAt": "2026-09-23T04:57:55.860658Z",
+   "comment": "qa-20260923-repair-cda5ccb rejected"
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A1883377N3GCRS6GDNZFB",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-14T05:00:00Z",
+   "arrivalDeadline": "2026-11-14T23:59:00Z",
+   "returnAfter": "2026-11-16T10:00:00Z",
+   "latestReturn": "2026-11-16T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb F7 rejected by manager",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A18B1XMCQHWGBY5GVANRQ",
+   "optimizationRunId": "opt_01M36A18FJE7FG5NME1B4358FP",
+   "policyDecisionId": "pd_01M36A18D0FB985BJ107AND7GY",
+   "approvalId": "apr_01M36A18GN8WT0W08C0K04401A",
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 3,
+  "createdAt": "2026-09-23T04:57:54.179084Z",
+  "updatedAt": "2026-09-23T04:57:55.936511Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "approval": {
+   "approvalId": "apr_01M36A18GN8WT0W08C0K04401A",
+   "tripId": "trip_01M36A1883377N3GCRS6GDNZFB",
+   "requiredRole": "MANAGER",
+   "status": "REJECTED",
+   "policyDecisionId": "pd_01M36A18D0FB985BJ107AND7GY",
+   "requestedAt": "2026-09-23T04:57:54.453302Z",
+   "decidedBy": "human/bob",
+   "decidedAt": "2026-09-23T04:57:55.860658Z",
+   "comment": "qa-20260923-repair-cda5ccb rejected"
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v83. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 435.07 exceeds the USD 0.01 auto-approve limit. A manager's approval is required before booking."
+ },
+ "orders": []
+}

@@ -15,6 +15,7 @@ import io.temporal.client.WorkflowClient;
 import io.temporal.client.WorkflowOptions;
 import io.temporal.client.WorkflowStub;
 import io.temporal.failure.ApplicationFailure;
+import io.temporal.testing.TestEnvironmentOptions;
 import io.temporal.testing.TestWorkflowEnvironment;
 import io.temporal.worker.Worker;
 import io.travelos.contracts.common.v1.ModelCall;
@@ -103,7 +104,13 @@ class TripWorkflowTest {
 
   @BeforeEach
   void setUp() {
-    env = TestWorkflowEnvironment.newInstance();
+    // the workflow clock starts at a pinned instant so the fixtures' 2026-10 travel dates stay
+    // ahead
+    env =
+        TestWorkflowEnvironment.newInstance(
+            TestEnvironmentOptions.newBuilder()
+                .setInitialTime(java.time.Instant.parse("2026-09-23T10:00:00Z"))
+                .build());
     Worker worker = env.newWorker(TripPlanning.TASK_QUEUE);
     worker.registerWorkflowImplementationTypes(TripWorkflowImpl.class);
     activities = mock(TripActivities.class);
@@ -220,6 +227,80 @@ class TripWorkflowTest {
         .containsExactly(TripStatus.PLANNING, TripStatus.AWAITING_APPROVAL, TripStatus.CANCELLED);
     assertThat(transitions.get(2).getReason()).contains("human/bob");
     verify(activities, never()).createOrder(any());
+  }
+
+  @Test
+  void aTripWithdrawnWhileAwaitingApprovalBooksNothing() {
+    // BUG-08 (race): the requester cancels while a manager has not decided yet
+    TripWorkflow workflow = start();
+    env.sleep(java.time.Duration.ofSeconds(1));
+    workflow.cancelled("plans changed");
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("CANCELLED");
+    assertThat(statuses())
+        .as("Travel Core recorded CANCELLED itself; the workflow only stops")
+        .containsExactly(TripStatus.PLANNING, TripStatus.AWAITING_APPROVAL);
+    verify(activities, never()).createOrder(any());
+  }
+
+  @Test
+  void aTripCancelledJustBeforeBookingBooksNothingAndDoesNotFail() {
+    // the cancellation landed between approval and booking: BOOKING is refused, nothing is booked
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    doAnswer(
+            inv -> {
+              TransitionTripRequest r = inv.getArgument(0);
+              if (r.getTo() == TripStatus.BOOKING) {
+                throw ApplicationFailure.newNonRetryableFailure(
+                    "FAILED_PRECONDITION: trip cannot go from CANCELLED to BOOKING",
+                    "FAILED_PRECONDITION");
+              }
+              transitions.add(r);
+              return trip(r.getTo(), true);
+            })
+        .when(activities)
+        .transition(any());
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(trip(TripStatus.SUBMITTED, true))
+        .thenReturn(trip(TripStatus.CANCELLED, true));
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("CANCELLED");
+    assertThat(statuses()).containsExactly(TripStatus.PLANNING, TripStatus.APPROVED);
+    verify(activities, never()).createOrder(any());
+  }
+
+  @Test
+  void aDepartureThatPassedWhileTheTripWaitedIsNotBooked() {
+    // BUG-03 (stale while waiting): the window closed before booking started
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    Trip stale =
+        trip(TripStatus.SUBMITTED, true).toBuilder()
+            .setIntent(
+                trip(TripStatus.SUBMITTED, true).getIntent().toBuilder()
+                    .setEarliestDeparture(ts(1_758_600_000L)) // 2026-09-23T04:00Z
+                    .setArrivalDeadline(ts(1_758_610_800L))) // 2026-09-23T07:00Z, before 10:00Z
+            .build();
+    when(activities.loadTrip(anyString(), anyString())).thenReturn(stale);
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("FAILED");
+    assertThat(outcome.failureCode()).isEqualTo("DEPARTURE_PASSED");
+    assertThat(outcome.failureStage()).isEqualTo("REVALIDATION");
+    assertThat(statuses())
+        .containsExactly(TripStatus.PLANNING, TripStatus.APPROVED, TripStatus.FAILED);
+    verify(activities, never()).createOrder(any());
+  }
+
+  @Test
+  void anUnclassifiedActivityErrorIsAPlatformErrorNotAClassName() {
+    // BUG-05: the failure code used to be ACTIVITY_<java exception class>
+    when(activities.search(any())).thenThrow(new IllegalStateException("optimizer exploded"));
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("FAILED");
+    assertThat(outcome.failureCode()).isEqualTo("PLATFORM_ERROR");
+    TransitionTripRequest failed = transitions.getLast();
+    assertThat(failed.getTo()).isEqualTo(TripStatus.FAILED);
+    assertThat(failed.getFailureCode()).doesNotContain("Exception").doesNotContain(".");
+    assertThat(failed.getReason()).contains("optimizer exploded");
   }
 
   @Test

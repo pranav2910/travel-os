@@ -1,0 +1,9 @@
+{
+ "edge": "<urlopen error [Errno 61] Connection ref",
+ "core_direct": 200,
+ "recovered_health": "healthy",
+ "after": {
+  "edge": 200,
+  "list": 200
+ }
+}

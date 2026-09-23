@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { TripResponse } from '@/api/types';
-import { STEPS, denyReasons, explainFailure, stepState } from './status';
+import {
+  STEPS,
+  canRequestCancellation,
+  denyReasons,
+  explainCancelling,
+  explainFailure,
+  isTerminal,
+  stepState,
+} from './status';
 
 const base: TripResponse = {
   tripId: 'trip_1',
@@ -27,6 +35,30 @@ describe('trip progress', () => {
     );
     expect(booked[4]).toBe('current');
     expect(stepState({ ...base, status: 'COMPLETED' }, STEPS[4]!)).toBe('current');
+  });
+  it('a cancelling trip is neither over nor cancellable again, and says what is happening', () => {
+    expect(isTerminal('CANCELLING')).toBe(false);
+    expect(canRequestCancellation('BOOKED')).toBe(true);
+    expect(canRequestCancellation('CANCELLING')).toBe(false);
+    expect(canRequestCancellation('CANCELLED')).toBe(false);
+    expect(STEPS.map((s) => stepState({ ...base, status: 'CANCELLING' }, s))).toEqual([
+      'skipped',
+      'skipped',
+      'skipped',
+      'skipped',
+      'skipped',
+    ]);
+    expect(explainCancelling({ ...base, status: 'CANCELLING' })).toMatch(
+      /released at the suppliers/,
+    );
+    expect(
+      explainCancelling({
+        ...base,
+        status: 'CANCELLING',
+        failureStage: 'CANCELLATION',
+        failureCode: 'CANCELLATION_INCOMPLETE',
+      }),
+    ).toMatch(/refused.*not cancelled yet/);
   });
   it('explains a policy denial without inventing detail', () => {
     expect(

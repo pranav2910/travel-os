@@ -9,18 +9,36 @@ server {
     absolute_redirect off;
     server_tokens off;
 
-    add_header X-Content-Type-Options nosniff always;
-    add_header X-Frame-Options SAMEORIGIN always;
-    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    # The security headers live in one snippet included by EVERY location that sets a header of its
+    # own: nginx's add_header is not inherited once a block adds any header (BUG-09).
+    include /tmp/travelos-headers.conf;
 
     # Upstreams are variables: nginx resolves them per request through the container's resolver, so a
     # service that is not up yet delays a request (502) instead of preventing nginx from starting.
     resolver ${RESOLVER} valid=10s ipv6=off;
 
-    location = /healthz { access_log off; return 200 'ok'; add_header Content-Type text/plain; }
+    # A service behind a route being unreachable is a problem document, not nginx's HTML (BUG-14).
+    proxy_intercept_errors on;
+    error_page 502 503 = @unavailable;
+    error_page 504 = @timeout;
+    location @unavailable {
+        include /tmp/travelos-headers.conf;
+        default_type application/problem+json;
+        add_header Retry-After 5 always;
+        add_header Cache-Control 'no-store' always;
+        return 503 '{"type":"about:blank","title":"Service Unavailable","status":503,"code":"UPSTREAM_UNAVAILABLE","detail":"The service behind this route is not reachable right now. Nothing was changed; retry in a few seconds."}';
+    }
+    location @timeout {
+        include /tmp/travelos-headers.conf;
+        default_type application/problem+json;
+        add_header Cache-Control 'no-store' always;
+        return 504 '{"type":"about:blank","title":"Gateway Timeout","status":504,"code":"UPSTREAM_TIMEOUT","detail":"The service behind this route did not answer in time. The request may or may not have been applied: read the resource before retrying a mutation."}';
+    }
+
+    location = /healthz { access_log off; include /tmp/travelos-headers.conf; add_header Content-Type text/plain; return 200 'ok'; }
 
     # Public runtime configuration, written at container start from the environment.
-    location = /config.json { alias /tmp/config.json; add_header Cache-Control 'no-store' always; }
+    location = /config.json { alias /tmp/config.json; include /tmp/travelos-headers.conf; add_header Cache-Control 'no-store' always; }
 
     # The API: only the public application routes, each to its owning service. No other path is proxied.
     location /api/v1/trips            { set $u ${TRAVEL_CORE_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
@@ -32,11 +50,11 @@ server {
     location /api/v1/demand           { set $u ${ENTERPRISE_CONTEXT_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
     location /api/v1/connectors       { set $u ${ENTERPRISE_CONTEXT_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
     location /api/v1/learning         { set $u ${LEARNING_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
-    location /api/ { return 404; }
+    location /api/ { include /tmp/travelos-headers.conf; default_type application/problem+json; return 404 '{"type":"about:blank","title":"Not Found","status":404,"code":"ROUTE_UNKNOWN","detail":"no such API route on this edge"}'; }
 
     # Hashed assets are immutable; the documents are not.
-    location /assets/ { add_header Cache-Control 'public, max-age=31536000, immutable' always; try_files $uri =404; }
-    location = /silent-renew.html { add_header Cache-Control 'no-store' always; try_files $uri =404; }
+    location /assets/ { include /tmp/travelos-headers.conf; add_header Cache-Control 'public, max-age=31536000, immutable' always; try_files $uri =404; }
+    location = /silent-renew.html { include /tmp/travelos-headers.conf; add_header Cache-Control 'no-store' always; try_files $uri =404; }
     # Deep links: every application route serves the shell.
-    location / { add_header Cache-Control 'no-store' always; try_files $uri /index.html; }
+    location / { include /tmp/travelos-headers.conf; add_header Cache-Control 'no-store' always; try_files $uri /index.html; }
 }

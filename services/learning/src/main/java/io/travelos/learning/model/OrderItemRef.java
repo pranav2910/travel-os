@@ -2,6 +2,9 @@ package io.travelos.learning.model;
 
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @param currency the currency the item was booked in, when the order event carried its total
+ */
 public record OrderItemRef(
     String orderId,
     String itemId,
@@ -10,4 +13,5 @@ public record OrderItemRef(
     String type,
     @Nullable String provider,
     @Nullable String supplierKey,
-    String status) {}
+    String status,
+    @Nullable String currency) {}

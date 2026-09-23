@@ -87,21 +87,27 @@ public class TripService {
     String fingerprint = command.fingerprint(travelerId);
     Optional<Trip> existing = trips.findByIdempotencyKey(me.tenant(), idempotencyKey);
     if (existing.isPresent()) {
-      Trip trip = existing.get();
-      if (!trip.requestFingerprint().equals(fingerprint)) {
-        throw new ApiException.Unprocessable(
-            "IDEMPOTENCY_KEY_REUSED", "Idempotency-Key was already used with a different request");
-      }
-      return trip;
+      return replay(existing.get(), fingerprint);
     }
 
     Instant now = clock.instant();
-    // The snapshot is the requester's own claims when they travel themselves; an arranger's trip
-    // for someone else only knows the traveler id until Enterprise Context supplies the profile.
-    TravelerSnapshot traveler =
-        travelerId.equals(me.employeeId())
-            ? TravelerSnapshot.of(travelerId, me)
-            : new TravelerSnapshot(travelerId, "", "", "");
+    if (command.intent() != null) {
+      // Catalog, clock and currency are checked once, here: a stored trip is never re-judged.
+      IntentValidation.check(command.intent(), now);
+    }
+    // The snapshot is the requester's own claims when they travel themselves. A trip arranged for
+    // someone else is booked in that person's name, so the arranger must say who they are.
+    TravelerSnapshot traveler;
+    if (travelerId.equals(me.employeeId())) {
+      traveler = TravelerSnapshot.of(travelerId, me);
+    } else if (command.traveler() != null && command.traveler().complete()) {
+      traveler = command.traveler().snapshot(travelerId);
+    } else {
+      throw new ApiException.Unprocessable(
+          "TRAVELER_IDENTITY_REQUIRED",
+          "a trip for another traveler needs traveler.givenName, traveler.familyName and"
+              + " traveler.email: the reservation is made in their name");
+    }
     Trip trip =
         new Trip(
             Ids.newId(IdPrefix.TRIP),
@@ -124,9 +130,28 @@ public class TripService {
             null,
             null,
             sourceReference);
-    trips.insert(trip);
+    if (trips.insert(trip) == 0) {
+      // Two identical requests raced past the lookup above: the unique key let exactly one in.
+      // The loser answers with the winner's trip, the same way a sequential retry would.
+      return trips
+          .findByIdempotencyKey(me.tenant(), idempotencyKey)
+          .map(winner -> replay(winner, fingerprint))
+          .orElseThrow(
+              () ->
+                  new ApiException.Conflict(
+                      "TRIP_CREATE_RACE", "the request raced a concurrent create; retry"));
+    }
     trips.appendHistory(trip, null, TripStatus.SUBMITTED, null, me.principal(), now);
     outbox.append(TripEvents.created(trip, null, clock));
+    return trip;
+  }
+
+  /** The trip already created with this key, provided the body is the same request. */
+  private static Trip replay(Trip trip, String fingerprint) {
+    if (!trip.requestFingerprint().equals(fingerprint)) {
+      throw new ApiException.Unprocessable(
+          "IDEMPOTENCY_KEY_REUSED", "Idempotency-Key was already used with a different request");
+    }
     return trip;
   }
 
@@ -174,7 +199,15 @@ public class TripService {
     return trips.history(trip.tenantId(), trip.tripId());
   }
 
-  /** Idempotent by state: cancelling a cancelled trip returns it unchanged. */
+  /**
+   * Idempotent by state: cancelling a cancelled (or already cancelling) trip returns it unchanged.
+   *
+   * <p>A trip that holds no reservation is CANCELLED here and now. A BOOKED trip is not: its
+   * reservation is confirmed at the suppliers, so the trip becomes CANCELLING and the Order service
+   * is asked to release it (travel.trip.cancellation-requested). CANCELLED is recorded only once
+   * every component is released, or CANCELLING stays with an exposure for a person when a supplier
+   * refuses: a confirmed reservation is never shown as cancelled before that is established.
+   */
   @Transactional
   public Trip cancel(RequestPrincipal me, String tripId, String reason) {
     Trip trip =
@@ -182,22 +215,35 @@ public class TripService {
             .find(me.tenant(), tripId)
             .filter(t -> TripAccess.canCancel(me, t))
             .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
-    if (trip.status() == TripStatus.CANCELLED) {
+    if (trip.status() == TripStatus.CANCELLED || trip.status() == TripStatus.CANCELLING) {
       return trip;
     }
-    if (!trip.status().canTransitionTo(TripStatus.CANCELLED)) {
+    TripStatus to =
+        trip.status() == TripStatus.BOOKED ? TripStatus.CANCELLING : TripStatus.CANCELLED;
+    if (!trip.status().canTransitionTo(to)) {
       throw new ApiException.Conflict(
           "TRIP_NOT_CANCELLABLE", "trip in status " + trip.status() + " cannot be cancelled here");
     }
+    String orderId = trip.evidence().orderId();
+    if (to == TripStatus.CANCELLING && (orderId == null || orderId.isBlank())) {
+      throw new ApiException.Conflict(
+          "TRIP_ORDER_UNKNOWN",
+          "this booked trip carries no order reference; a travel admin must release it");
+    }
     Instant now = clock.instant();
-    Trip cancelled = trip.withStatus(TripStatus.CANCELLED, now);
-    if (!trips.update(cancelled, trip.version())) {
+    Trip next = trip.withStatus(to, now);
+    if (!trips.update(next, trip.version())) {
       throw new ApiException.Conflict(
           "TRIP_MODIFIED_CONCURRENTLY", "trip changed while cancelling; re-read and retry");
     }
-    trips.appendHistory(trip, trip.status(), TripStatus.CANCELLED, reason, me.principal(), now);
-    outbox.append(TripEvents.cancelled(cancelled, reason, me.principal(), null, clock));
-    return cancelled;
+    trips.appendHistory(trip, trip.status(), to, reason, me.principal(), now);
+    if (to == TripStatus.CANCELLING) {
+      outbox.append(TripEvents.cancellationRequested(next, orderId, reason, me.principal(), clock));
+    } else {
+      outbox.append(TripEvents.cancelled(next, reason, me.principal(), null, clock));
+      signaler.cancelled(trip.tripId());
+    }
+    return next;
   }
 
   /**
@@ -262,6 +308,9 @@ public class TripService {
   public Trip transition(TenantId tenant, Principal actor, Transition t) {
     Trip trip = getInternal(tenant, t.tripId());
     if (trip.status() == t.to()) {
+      if (t.to() == TripStatus.CANCELLING && t.failureCode() != null) {
+        return recordIncompleteCancellation(tenant, actor, trip, t);
+      }
       return trip;
     }
     if (!trip.status().canTransitionTo(t.to())) {
@@ -312,6 +361,9 @@ public class TripService {
     }
     if (t.to() == TripStatus.FAILED) {
       next = next.withFailure(t.failureStage(), t.failureCode());
+    }
+    if (t.to() == TripStatus.CANCELLED && trip.status() == TripStatus.CANCELLING) {
+      next = next.withoutFailure();
     }
     boolean replanned =
         t.to() == TripStatus.AWAITING_APPROVAL && trip.status() == TripStatus.APPROVED;
@@ -385,6 +437,37 @@ public class TripService {
   }
 
   /**
+   * A supplier refused to release part of a cancelling trip's reservation. The trip stays
+   * CANCELLING (never CANCELLED) with the refusal on it, a history row and an event for the people
+   * who resolve exposures. Idempotent per code: the workflow reporting the same refusal again
+   * changes nothing.
+   */
+  private Trip recordIncompleteCancellation(
+      TenantId tenant, Principal actor, Trip trip, Transition t) {
+    if (t.failureCode().equals(trip.failureCode())) {
+      return trip;
+    }
+    Instant now = clock.instant();
+    Trip next =
+        trip.withFailure(
+            t.failureStage() == null ? "CANCELLATION" : t.failureStage(), t.failureCode(), now);
+    if (!trips.update(next, trip.version())) {
+      throw new IllegalStateException("trip " + trip.tripId() + " changed concurrently; retry");
+    }
+    trips.appendHistory(trip, TripStatus.CANCELLING, TripStatus.CANCELLING, t.reason(), actor, now);
+    String orderId = trip.evidence().orderId() == null ? "" : trip.evidence().orderId();
+    outbox.append(
+        TripEvents.cancellationIncomplete(
+            next,
+            orderId,
+            t.failureCode(),
+            t.reason() == null ? "a supplier refused the cancellation" : t.reason(),
+            t.causationId(),
+            clock));
+    return next;
+  }
+
+  /**
    * Records what intent extraction concluded. EXTRACTED freezes the intent on a SUBMITTED trip;
    * every outcome is ledgered with its model-call evidence and published. Idempotent per model
    * call: a retried activity finds its call already ledgered and changes nothing.
@@ -431,9 +514,12 @@ public class TripService {
     TravelIntent understood;
     try {
       understood = x.intent().withExplicitStay();
-    } catch (TravelIntent.HotelRequestException e) {
-      // The model understood a hotel the platform cannot pin to nights: refuse now, before any
-      // planning, with the same actionable code the API returns. The ledger keeps the extraction.
+      // What the model understood must satisfy what the API would have refused up front: an
+      // unknown place, a departure that has passed, a hotel without nights.
+      IntentValidation.check(understood, now);
+    } catch (IntentRejectedException e) {
+      // Refuse now, before any planning, with the same actionable code the API returns. The
+      // ledger keeps the extraction.
       if (trip.status() == TripStatus.SUBMITTED) {
         transition(
             tenant,
@@ -526,6 +612,12 @@ public class TripService {
       throw new ApiException.Forbidden("SELF_APPROVAL", "a traveler cannot approve their own trip");
     }
     Optional<Approval> pending = approvals.pendingForTrip(me.tenant(), tripId);
+    if (pending.isPresent() && trip.status() != TripStatus.AWAITING_APPROVAL) {
+      // the requester withdrew (or the trip failed) after the approval was asked for
+      throw new ApiException.Conflict(
+          "TRIP_NOT_AWAITING_APPROVAL",
+          "trip " + tripId + " is " + trip.status() + "; its approval can no longer be decided");
+    }
     if (pending.isEmpty()) {
       Approval latest =
           approvals
@@ -560,7 +652,16 @@ public class TripService {
       @Nullable String travelerId,
       TripSource source,
       @Nullable String requestText,
-      @Nullable TravelIntent intent) {
+      @Nullable TravelIntent intent,
+      @Nullable TravelerIdentity traveler) {
+
+    public CreateTrip(
+        @Nullable String travelerId,
+        TripSource source,
+        @Nullable String requestText,
+        @Nullable TravelIntent intent) {
+      this(travelerId, source, requestText, intent, null);
+    }
 
     public CreateTrip {
       if ((requestText == null || requestText.isBlank()) && intent == null) {
@@ -576,7 +677,8 @@ public class TripService {
               resolvedTravelerId,
               source.name(),
               requestText == null ? "" : requestText.strip(),
-              intent == null ? "" : intent.canonical());
+              intent == null ? "" : intent.canonical(),
+              traveler == null ? "" : traveler.canonical());
       return Fingerprints.sha256Hex(canonical);
     }
   }

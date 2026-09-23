@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R04",
+   "origin": "BOS",
+   "destination": "JFK",
+   "earliestDeparture": "2026-10-16T05:00:00Z",
+   "arrivalDeadline": "2026-10-16T12:00:00Z",
+   "returnAfter": "2026-10-16T15:00:00Z",
+   "latestReturn": "2026-10-16T23:59:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36BPDRQHDRAVRK9MSJMA2XN",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "JFK",
+    "earliestDeparture": "2026-10-16T05:00:00Z",
+    "arrivalDeadline": "2026-10-16T12:00:00Z",
+    "returnAfter": "2026-10-16T15:00:00Z",
+    "latestReturn": "2026-10-16T23:59:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb R04",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T05:26:56.535551Z",
+   "updatedAt": "2026-09-23T05:26:56.535551Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36BPDRQHDRAVRK9MSJMA2XN",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "JFK",
+   "earliestDeparture": "2026-10-16T05:00:00Z",
+   "arrivalDeadline": "2026-10-16T12:00:00Z",
+   "returnAfter": "2026-10-16T15:00:00Z",
+   "latestReturn": "2026-10-16T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb R04",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36BPE3DYE3RM4VNFAWS4PCE",
+   "optimizationRunId": "opt_01M36BPE5D0S5Y4JQQ5A2VC3CF",
+   "policyDecisionId": "pd_01M36BPE4CG9J9Y87PRPRWSD5C",
+   "approvalId": null,
+   "orderId": "ord_01M36BPE7MW7SF43M5SS37FDZ7"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T05:26:56.535551Z",
+  "updatedAt": "2026-09-23T05:26:57.111840Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 33048,
+   "display": "USD 330.48"
+  },
+  "explanation": "For the BOS to JFK we chose DL428 BOS-JFK / return DL628 JFK-BOS via sandbox-air at USD 330.48. 18 options were searched and 6 were permitted by policy US_STANDARD_TRAVEL v99. It ranked first with a score of 97.5 (cost 100, time 100, risk 100, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

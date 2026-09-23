@@ -1,0 +1,273 @@
+{
+ "create": {
+  "tripId": "trip_01M36A3FZYWR4FDV6BKDYF5EGR",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "DEN",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T05:00:00Z",
+   "latestReturn": "2026-10-25T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb SUP ground timeout DEN (v2)",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FN",
+      "origin": "BOS",
+      "destination": "DEN",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FP",
+      "origin": "DEN",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FQ",
+      "city": "DEN",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "required": true
+     }
+    ],
+    "transfers": [
+     {
+      "componentId": "cmp_01M36A3FZYWR4FDV6BKDYF5EGQ",
+      "kind": "AIRPORT_TO_HOTEL",
+      "city": "DEN",
+      "fromLocation": "DEN airport",
+      "toLocation": "hotel",
+      "pickup": null,
+      "required": true
+     }
+    ],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:59:07.646662Z",
+  "updatedAt": "2026-09-23T04:59:07.646662Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FN",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A3GE0P40Y2X7VR7SQP3MM",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A3HVECA92AQ2KWJBDEAE3",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 22078,
+    "display": "USD 220.78"
+   },
+   "failureCode": null,
+   "summary": "DL236 BOS-DEN 2026-10-23T17:45:00Z",
+   "updatedAt": "2026-09-23T04:59:10.367230Z"
+  },
+  {
+   "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FP",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A3GEDW8JE51TDBA4DRPRM",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A3HVJXKXB96SJ8SNF8G75",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 33384,
+    "display": "USD 333.84"
+   },
+   "failureCode": null,
+   "summary": "DL780 DEN-BOS 2026-10-25T17:45:00Z",
+   "updatedAt": "2026-09-23T04:59:10.367230Z"
+  },
+  {
+   "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FQ",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A3GETAA5RG8421CPCYQ9Q",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36A3HVQY8A6MYP4W94DEKDV",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 25800,
+    "display": "USD 258.00"
+   },
+   "failureCode": null,
+   "summary": "Front Range Inn DEN 2026-10-23 to 2026-10-25 (2 nights)",
+   "updatedAt": "2026-09-23T04:59:10.367230Z"
+  },
+  {
+   "componentId": "cmp_01M36A3FZYWR4FDV6BKDYF5EGQ",
+   "type": "GROUND",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A3GFV6ZRJ8R0QKM8QAH8Q",
+   "provider": "sandbox-ground",
+   "externalRef": "SBG-01M36A3J5JW11Q9KBP5145M266",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 3500,
+    "display": "USD 35.00"
+   },
+   "failureCode": null,
+   "summary": "Rocky Shuttle DEN airport to hotel 2026-10-23T21:30:00Z",
+   "updatedAt": "2026-09-23T04:59:10.367230Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M36A3HV7WJ8J7MVMP0WD04T0",
+   "tripId": "trip_01M36A3FZYWR4FDV6BKDYF5EGR",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A3GP539NWC57SR9JZDGCC",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36A3HVECA92AQ2KWJBDEAE3",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 84762,
+    "display": "USD 847.62"
+   },
+   "policyDecisionId": "pd_01M36A3GRQR32K1YQ4CMV5Z0JA",
+   "optimizationRunId": "opt_01M36A3GP5K7TT51M7Q4A1NE8Y",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36A3HV5Q3RN02E1K4FFQXCM",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8REVOfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDEzOTU0OA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A3HVECA92AQ2KWJBDEAE3",
+     "recordLocator": "3ESBFE",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 22078,
+      "display": "USD 220.78"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL236",
+       "origin": "BOS",
+       "destination": "DEN",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T20:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FN"
+    },
+    {
+     "itemId": "itm_01M36A3HV6TXG8YY1ZRKYJGQCX",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxERU58Qk9TfDIwMjYtMTAtMjV8LXwyfEVDT05PTVl8MTc5MDEzOTU0OA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A3HVJXKXB96SJ8SNF8G75",
+     "recordLocator": "SBDFU4",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 33384,
+      "display": "USD 333.84"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL780",
+       "origin": "DEN",
+       "destination": "BOS",
+       "departure": "2026-10-25T17:45:00Z",
+       "arrival": "2026-10-25T22:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FP"
+    },
+    {
+     "itemId": "itm_01M36A3HV6TXG8YY1ZRKYJGQCY",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxERU58MjAyNi0xMC0yM3wyMDI2LTEwLTI1fFRJTUVPVVR8MTc5MDEzOTU0OA",
+     "status": "CONFIRMED",
+     "externalRef": "SBH-01M36A3HVQY8A6MYP4W94DEKDV",
+     "recordLocator": "KCVQDE",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 25800,
+      "display": "USD 258.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M36A3FZXBY9ZEMRBCZ7T91FQ",
+     "hotel": {
+      "propertyId": "HTL-DEN-TIMEOUT",
+      "name": "Front Range Inn",
+      "city": "DEN",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "nights": 2,
+      "timeZone": "America/Denver",
+      "refundable": true
+     }
+    },
+    {
+     "itemId": "itm_01M36A3HV6TXG8YY1ZRKYJGQCZ",
+     "type": "GROUND",
+     "provider": "sandbox-ground",
+     "providerOfferId": "SBG-MXxERU58QUlSUE9SVF9UT19IT1RFTHxERU4gYWlycG9ydHxob3RlbHwxNzkyNzkxMDAwfFRJTUVPVVR8MTc5MDEzOTU0OA",
+     "status": "CONFIRMED",
+     "externalRef": "SBG-01M36A3J5JW11Q9KBP5145M266",
+     "recordLocator": "WAGKET",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 3500,
+      "display": "USD 35.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M36A3FZYWR4FDV6BKDYF5EGQ",
+     "ground": {
+      "vendorId": "GRD-DEN-TIMEOUT",
+      "vendorName": "Rocky Shuttle",
+      "vehicleClass": "SHUTTLE",
+      "pickupLocation": "DEN airport",
+      "dropoffLocation": "hotel",
+      "pickup": "2026-10-23T21:30:00Z",
+      "dropoff": "2026-10-23T22:05:00Z",
+      "timeZone": "America/Denver"
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:59:09.541760Z",
+   "updatedAt": "2026-09-23T04:59:10.336142Z"
+  }
+ ]
+}

@@ -1,0 +1,23 @@
+{
+ "status": 422,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "policy document is invalid",
+  "instance": "/api/v1/policies",
+  "status": 422,
+  "title": "POLICY_INVALID",
+  "code": "POLICY_INVALID",
+  "problems": [
+   "policyId must match [A-Z][A-Z0-9_]{0,63}",
+   "name is required (max 200 chars)",
+   "currency is required",
+   "flight section is required",
+   "hotel section is required",
+   "approval section is required",
+   "autonomy section is required",
+   "incentives section is required"
+  ]
+ }
+}

@@ -1,0 +1,37 @@
+
+Running 2 tests using 1 worker
+
+  ✘  1 [chromium] › web/e2e/cancellation.spec.ts:22:3 › cancelling a booked trip › a booked round trip is released at the airline before it reads Cancelled (0ms)
+  -  2 [chromium] › web/e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure
+
+
+  1) [chromium] › web/e2e/cancellation.spec.ts:22:3 › cancelling a booked trip › a booked round trip is released at the airline before it reads Cancelled 
+
+    Error: ENOENT: no such file or directory, open '/Users/pranavsaipalla/platform/local/seed/policies/acme-us-standard.json'
+
+       at support.ts:81
+
+      79 |     'acme-us-standard.json',
+      80 |   );
+    > 81 |   const doc = JSON.parse(await fs.readFile(seedPath, 'utf8')) as Record<string, unknown>;
+         |                          ^
+      82 |   mutate?.(doc);
+      83 |   const ctx = await api('carol');
+      84 |   const res = await ctx.post('/api/v1/policies', { data: { document: doc, note: 'web e2e' } });
+        at seedPolicy (/Users/pranavsaipalla/travel-os/web/e2e/support.ts:81:26)
+        at /Users/pranavsaipalla/travel-os/web/e2e/cancellation.spec.ts:19:5
+
+    Error Context: web/test-results/cancellation-cancelling-a--5f29d-e-before-it-reads-Cancelled-chromium/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    web/test-results/cancellation-cancelling-a--5f29d-e-before-it-reads-Cancelled-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace web/test-results/cancellation-cancelling-a--5f29d-e-before-it-reads-Cancelled-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › web/e2e/cancellation.spec.ts:22:3 › cancelling a booked trip › a booked round trip is released at the airline before it reads Cancelled 
+  1 did not run
+EXIT=1

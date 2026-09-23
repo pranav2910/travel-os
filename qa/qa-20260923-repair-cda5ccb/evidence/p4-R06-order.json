@@ -1,0 +1,59 @@
+{
+ "orderId": "ord_01M36A1VQDJGAPK0YWESDV1FNZ",
+ "tripId": "trip_01M36A1V7DJ8T5V94Z2457KWWX",
+ "travelerId": "emp_1001",
+ "bundleId": "bdl_01M36A1VF01XVCAZBPS8XGNVWH",
+ "supplier": "sandbox-air",
+ "externalOrderId": "SBX-01M36A1VQRC95S0QV6ZG7CZ6EY",
+ "status": "CONFIRMED",
+ "total": {
+  "currency": "USD",
+  "amountMinor": 43178,
+  "display": "USD 431.78"
+ },
+ "policyDecisionId": "pd_01M36A1VFTH3SYPT0WE9Z2S97M",
+ "optimizationRunId": "opt_01M36A1VH9CE7E2NJ56Z1CD9DH",
+ "compensated": false,
+ "items": [
+  {
+   "itemId": "itm_01M36A1VJR2FJGKCKVGXVMECKK",
+   "type": "AIR",
+   "provider": "sandbox-air",
+   "providerOfferId": "SBX-MXxMQVh8TlJUfDIwMjYtMTAtMjN8MjAyNi0xMS0wMnw1fEVDT05PTVl8MTc5MDEzOTQ5Mw",
+   "status": "CONFIRMED",
+   "externalRef": "SBX-01M36A1VQRC95S0QV6ZG7CZ6EY",
+   "recordLocator": "4JUSNM",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43178,
+    "display": "USD 431.78"
+   },
+   "flights": [
+    {
+     "direction": "OUTBOUND",
+     "carrier": "DL",
+     "flightNumber": "DL366",
+     "origin": "LAX",
+     "destination": "NRT",
+     "departure": "2026-10-23T17:45:00Z",
+     "arrival": "2026-10-23T21:45:00Z",
+     "cabin": "ECONOMY"
+    },
+    {
+     "direction": "INBOUND",
+     "carrier": "DL",
+     "flightNumber": "DL566",
+     "origin": "NRT",
+     "destination": "LAX",
+     "departure": "2026-11-02T17:45:00Z",
+     "arrival": "2026-11-02T21:45:00Z",
+     "cabin": "ECONOMY"
+    }
+   ]
+  }
+ ],
+ "changes": [],
+ "version": 1,
+ "createdAt": "2026-09-23T04:58:13.976742Z",
+ "updatedAt": "2026-09-23T04:58:14.140532Z"
+}

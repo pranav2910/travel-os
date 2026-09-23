@@ -1,0 +1,288 @@
+{
+ "1": {
+  "text": "Plan a four-day Bangor to Boston trip next month under $700.",
+  "create": 202,
+  "trip": "trip_01M364563TC9290VA4JMTVS695",
+  "final": "FAILED",
+  "failure": "INTENT/NEEDS_CLARIFICATION",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NEEDS_CLARIFICATION",
+    0.6
+   ]
+  ]
+ },
+ "2": {
+  "text": "Find New York to London for 2026-11-01 to 2026-11-08 under $1,000.",
+  "create": 202,
+  "trip": "trip_01M36457KTYRV13GQJE4DXYMND",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ },
+ "3": {
+  "text": "Find and book the cheapest nonstop Boston to Chicago round trip for 2026-10-22 to 2026-10-25, total under $450.",
+  "create": 202,
+  "trip": "trip_01M3645945N47FVEZ627TA1QFV",
+  "final": "FAILED",
+  "failure": "INTENT/NEEDS_CLARIFICATION",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NEEDS_CLARIFICATION",
+    0.6
+   ]
+  ]
+ },
+ "4": {
+  "text": "Book Portland to San Jose Friday.",
+  "create": 202,
+  "trip": "trip_01M3645AMFQE5Q9JSTC1QBPX7C",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ },
+ "6": {
+  "text": "Boston to San Francisco next week under $500. Prefer nonstop; one stop is okay.",
+  "create": 202,
+  "trip": "trip_01M3645C4DNWQFRP9B9Z165T0Q",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ },
+ "8": {
+  "text": "First class under $100 from Boston to Seattle next month.",
+  "create": 202,
+  "trip": "trip_01M3645DM3S3JS985YZYJNMWRY",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ },
+ "11": {
+  "text": "New York to Boston next Friday, JFK only, not Newark.",
+  "create": 202,
+  "trip": "trip_01M3645F473HJG6X3PTA04ZV9Q",
+  "final": "FAILED",
+  "failure": "INTENT/NEEDS_CLARIFICATION",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NEEDS_CLARIFICATION",
+    0.6
+   ]
+  ]
+ },
+ "13": {
+  "text": "Delta only, Boston to Chicago, leave after 6 PM, arrive before 9 AM, next Tuesday.",
+  "create": 202,
+  "trip": "trip_01M3645GMQHSRD0GM43XZJ5WYT",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ },
+ "14": {
+  "text": "Four adults and two children Boston to Orlando next month under $2,000 total.",
+  "create": 202,
+  "trip": "trip_01M3645J54N3DZ57QY72TEEZKW",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ },
+ "16": {
+  "text": "Get me to Chicago tomorrow morning.",
+  "create": 202,
+  "trip": "trip_01M3645KN60NHDCZVZ19WACH1G",
+  "final": "FAILED",
+  "failure": "INTENT/NEEDS_CLARIFICATION",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NEEDS_CLARIFICATION",
+    0.6
+   ]
+  ]
+ },
+ "17": {
+  "text": "Book NYC to London to Paris to NYC next month.",
+  "create": 202,
+  "trip": "trip_01M3645N5BBHTGDQFNEETKTDCT",
+  "final": "FAILED",
+  "failure": "INTENT/NEEDS_CLARIFICATION",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NEEDS_CLARIFICATION",
+    0.6
+   ]
+  ]
+ },
+ "18": {
+  "text": "Book flight and hotel for Boston next week from Seattle.",
+  "create": 202,
+  "trip": "trip_01M3645PN3FY6GVBSV7YJJNXR9",
+  "final": "FAILED",
+  "failure": "INTENT/NEEDS_CLARIFICATION",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NEEDS_CLARIFICATION",
+    0.6
+   ]
+  ]
+ },
+ "19": {
+  "text": "Just handle everything within $800.",
+  "create": 202,
+  "trip": "trip_01M3645R4X4ARFQC7YN04SR3X0",
+  "final": "FAILED",
+  "failure": "INTENT/NOT_A_TRAVEL_REQUEST",
+  "extracted": {
+   "origin": null,
+   "destination": null,
+   "earliestDeparture": null,
+   "latestReturn": null,
+   "purpose": null,
+   "hotelRequired": null
+  },
+  "agent_decisions": [
+   [
+    "INTENT_EXTRACTION",
+    "NOT_A_TRAVEL_REQUEST",
+    0.9
+   ]
+  ]
+ }
+}

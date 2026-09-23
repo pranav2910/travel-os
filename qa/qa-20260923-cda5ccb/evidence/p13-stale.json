@@ -1,0 +1,187 @@
+{
+ "orders": [
+  [
+   {
+    "orderId": "ord_01M365CTTNBM5CXK11D4R3D3TD",
+    "tripId": "trip_01M365CTAGJAEJ4W70SPRB4N95",
+    "travelerId": "emp_1001",
+    "bundleId": "bdl_01M365CTPAQX5FC384TCN90TGH",
+    "supplier": "sandbox-air",
+    "externalOrderId": "SBX-01M365CTTTPQDS0T9AJSZ2Y28Z",
+    "status": "CONFIRMED",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 59816,
+     "display": "USD 598.16"
+    },
+    "policyDecisionId": "pd_01M365CTQ62J1YARMAY6Q67ZBA",
+    "optimizationRunId": "opt_01M365CTSA8SRPEQM79S4KYVJ1",
+    "compensated": false,
+    "items": [
+     {
+      "itemId": "itm_01M365CTTNBM5CXK11D4R3D3TC",
+      "type": "AIR",
+      "provider": "sandbox-air",
+      "providerOfferId": "SBX-MXxCR1J8Qk9TfDIwMjYtMTEtMjF8MjAyNi0xMS0yM3w1fEVDT05PTVl8MTc5MDEzNDYxMA",
+      "status": "CONFIRMED",
+      "externalRef": "SBX-01M365CTTTPQDS0T9AJSZ2Y28Z",
+      "recordLocator": "VVEWHT",
+      "total": {
+       "currency": "USD",
+       "amountMinor": 59816,
+       "display": "USD 598.16"
+      },
+      "flights": [
+       {
+        "direction": "OUTBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL302",
+        "origin": "BGR",
+        "destination": "BOS",
+        "departure": "2026-11-21T17:45:00Z",
+        "arrival": "2026-11-21T21:45:00Z",
+        "cabin": "ECONOMY"
+       },
+       {
+        "direction": "INBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL502",
+        "origin": "BOS",
+        "destination": "BGR",
+        "departure": "2026-11-23T17:45:00Z",
+        "arrival": "2026-11-23T21:45:00Z",
+        "cabin": "ECONOMY"
+       }
+      ]
+     }
+    ],
+    "changes": [],
+    "version": 1,
+    "createdAt": "2026-09-23T03:36:50.773533Z",
+    "updatedAt": "2026-09-23T03:36:50.780200Z"
+   }
+  ],
+  [
+   {
+    "orderId": "ord_01M365CV6D5AF5AHNBR6GFZ20D",
+    "tripId": "trip_01M365CTAPF8VTA8Y43TMQ14QK",
+    "travelerId": "emp_1001",
+    "bundleId": "bdl_01M365CTPMPNXKR6AAJSV3B65A",
+    "supplier": "sandbox-air",
+    "externalOrderId": "SBX-01M365CV6JT6CDM4BZH5AF7TF5",
+    "status": "CONFIRMED",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 59576,
+     "display": "USD 595.76"
+    },
+    "policyDecisionId": "pd_01M365CTQE12DBCQV8HTFC10N3",
+    "optimizationRunId": "opt_01M365CTSYFGG6N65SJE4E3DNA",
+    "compensated": false,
+    "items": [
+     {
+      "itemId": "itm_01M365CV6D5AF5AHNBR6GFZ20C",
+      "type": "AIR",
+      "provider": "sandbox-air",
+      "providerOfferId": "SBX-MXxCR1J8SkZLfDIwMjYtMTEtMjF8MjAyNi0xMS0yM3w1fEVDT05PTVl8MTc5MDEzNDYxMA",
+      "status": "CONFIRMED",
+      "externalRef": "SBX-01M365CV6JT6CDM4BZH5AF7TF5",
+      "recordLocator": "TU34BV",
+      "total": {
+       "currency": "USD",
+       "amountMinor": 59576,
+       "display": "USD 595.76"
+      },
+      "flights": [
+       {
+        "direction": "OUTBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL503",
+        "origin": "BGR",
+        "destination": "JFK",
+        "departure": "2026-11-21T17:45:00Z",
+        "arrival": "2026-11-21T23:15:00Z",
+        "cabin": "ECONOMY"
+       },
+       {
+        "direction": "INBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL703",
+        "origin": "JFK",
+        "destination": "BGR",
+        "departure": "2026-11-23T17:45:00Z",
+        "arrival": "2026-11-23T23:15:00Z",
+        "cabin": "ECONOMY"
+       }
+      ]
+     }
+    ],
+    "changes": [],
+    "version": 1,
+    "createdAt": "2026-09-23T03:36:51.149648Z",
+    "updatedAt": "2026-09-23T03:36:51.155711Z"
+   }
+  ],
+  [
+   {
+    "orderId": "ord_01M365CV6CMMW3G23BT0D2EB0M",
+    "tripId": "trip_01M365CTAVZAMKQMXGHPQ3WRA3",
+    "travelerId": "emp_1001",
+    "bundleId": "bdl_01M365CTPS0M0Y97MKP7AX9A7V",
+    "supplier": "sandbox-air",
+    "externalOrderId": "SBX-01M365CV6HSPZWW3GBF1PEGJPQ",
+    "status": "CONFIRMED",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 55806,
+     "display": "USD 558.06"
+    },
+    "policyDecisionId": "pd_01M365CTQMFDY0SDFBY3H1T1ZZ",
+    "optimizationRunId": "opt_01M365CTSXG06ZFMMWCWXB2R6B",
+    "compensated": false,
+    "items": [
+     {
+      "itemId": "itm_01M365CV6CMMW3G23BT0D2EB0K",
+      "type": "AIR",
+      "provider": "sandbox-air",
+      "providerOfferId": "SBX-MXxCT1N8TlJUfDIwMjYtMTItMjZ8MjAyNi0xMi0zMXw1fEVDT05PTVl8MTc5MDEzNDYxMA",
+      "status": "CONFIRMED",
+      "externalRef": "SBX-01M365CV6HSPZWW3GBF1PEGJPQ",
+      "recordLocator": "EKP6YH",
+      "total": {
+       "currency": "USD",
+       "amountMinor": 55806,
+       "display": "USD 558.06"
+      },
+      "flights": [
+       {
+        "direction": "OUTBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL657",
+        "origin": "BOS",
+        "destination": "NRT",
+        "departure": "2026-12-26T17:45:00Z",
+        "arrival": "2026-12-26T23:15:00Z",
+        "cabin": "ECONOMY"
+       },
+       {
+        "direction": "INBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL857",
+        "origin": "NRT",
+        "destination": "BOS",
+        "departure": "2026-12-31T17:45:00Z",
+        "arrival": "2026-12-31T23:15:00Z",
+        "cabin": "ECONOMY"
+       }
+      ]
+     }
+    ],
+    "changes": [],
+    "version": 1,
+    "createdAt": "2026-09-23T03:36:51.148194Z",
+    "updatedAt": "2026-09-23T03:36:51.155418Z"
+   }
+  ]
+ ]
+}

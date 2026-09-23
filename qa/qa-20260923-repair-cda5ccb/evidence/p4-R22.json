@@ -1,0 +1,27 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R22",
+   "origin": "NYC",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-13T05:00:00Z",
+   "arrivalDeadline": "2026-10-13T23:59:00Z",
+   "returnAfter": "2026-10-17T10:00:00Z",
+   "latestReturn": "2026-10-17T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 422,
+  "body": {
+   "detail": "NYC is a city, not an airport: use one of JFK, EWR, LGA (the platform searches one airport per leg)",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "UNKNOWN_LOCATION",
+   "type": "https://contracts.travelos.io/problems/unknown-location",
+   "code": "UNKNOWN_LOCATION"
+  }
+ },
+ "final": null,
+ "components": []
+}

@@ -1,0 +1,35 @@
+{
+ "request": {
+  "tripId": "trip_01M3644R4WFA86B7BAQJ7VP82M",
+  "orderId": "ord_01M3644SZSAGBZFJ8MS39E9FXM",
+  "amountMinor": 100,
+  "currency": "EUR",
+  "reference": "qa-20260923-cda5ccb-wrong currency EUR on a USD order"
+ },
+ "status": 200,
+ "body": {
+  "outcomeId": "out_01M3644V7ZY5W0XRYT2FJ6WMH8",
+  "logicalKey": "refund:ord_01M3644SZSAGBZFJ8MS39E9FXM:order",
+  "revision": 4,
+  "kind": "REFUND_SETTLED",
+  "quality": "NEUTRAL",
+  "supplierKey": null,
+  "provider": null,
+  "evidenceClass": "SANDBOX",
+  "tripId": "trip_01M3644R4WFA86B7BAQJ7VP82M",
+  "orderId": "ord_01M3644SZSAGBZFJ8MS39E9FXM",
+  "itemId": null,
+  "componentId": null,
+  "disruptionId": null,
+  "observedAt": "2026-09-23T03:15:00.479183Z",
+  "recordedAt": "2026-09-23T03:15:00.479183Z",
+  "source": "API",
+  "sourceRef": "human/carol",
+  "provenance": {
+   "amountMinor": 100,
+   "currency": "EUR",
+   "reference": "qa-20260923-cda5ccb-wrong currency EUR on a USD order",
+   "recordedBy": "human/carol"
+  }
+ }
+}

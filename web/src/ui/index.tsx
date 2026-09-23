@@ -99,6 +99,7 @@ const TRIP_TONE: Record<string, [Tone, string]> = {
   BOOKING: ['progress', 'Booking'],
   BOOKED: ['ok', 'Booked'],
   COMPLETED: ['ok', 'Completed'],
+  CANCELLING: ['warn', 'Cancelling'],
   CANCELLED: ['neutral', 'Cancelled'],
   FAILED: ['danger', 'Failed'],
   PLANNED: ['neutral', 'Planned'],

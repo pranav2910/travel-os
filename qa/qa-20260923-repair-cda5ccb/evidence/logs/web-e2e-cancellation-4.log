@@ -1,0 +1,8 @@
+
+Running 2 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/cancellation.spec.ts:22:3 › cancelling a booked trip › a booked round trip is released at the airline before it reads Cancelled (5.9s)
+  ✓  2 [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure (39.0s)
+
+  2 passed (45.5s)
+EXIT=0

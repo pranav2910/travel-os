@@ -1,0 +1,85 @@
+{
+ "first": {
+  "tripId": "trip_01M36A1KEG27ZY6MMRVAWTMHH0",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-27T05:00:00Z",
+   "arrivalDeadline": "2026-10-27T23:59:00Z",
+   "returnAfter": "2026-10-29T10:00:00Z",
+   "latestReturn": "2026-10-29T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb idempotent create",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:58:05.648306Z",
+  "updatedAt": "2026-09-23T04:58:05.648306Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "second": {
+  "tripId": "trip_01M36A1KEG27ZY6MMRVAWTMHH0",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-27T05:00:00Z",
+   "arrivalDeadline": "2026-10-27T23:59:00Z",
+   "returnAfter": "2026-10-29T10:00:00Z",
+   "latestReturn": "2026-10-29T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb idempotent create",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:58:05.648306Z",
+  "updatedAt": "2026-09-23T04:58:05.648306Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "changed": {
+  "status": 422,
+  "body": {
+   "detail": "Idempotency-Key was already used with a different request",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "IDEMPOTENCY_KEY_REUSED",
+   "type": "https://contracts.travelos.io/problems/idempotency-key-reused",
+   "code": "IDEMPOTENCY_KEY_REUSED"
+  }
+ }
+}

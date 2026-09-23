@@ -72,7 +72,8 @@ message Exposure {
   string provider = 4;
   string external_ref = 5;
   travelos.common.v1.Money amount = 6;
-  // COMPENSATION_FAILED | NON_REFUNDABLE
+  // COMPENSATION_FAILED | NON_REFUNDABLE | CANCELLATION_REFUSED (a person asked to cancel; the
+  // supplier refused to release the component)
   string reason = 7;
   string detail = 8;
   // OPEN | RESOLVED

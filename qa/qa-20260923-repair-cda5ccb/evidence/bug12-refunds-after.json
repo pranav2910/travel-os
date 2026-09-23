@@ -1,0 +1,83 @@
+{
+ "zero": {
+  "status": 200,
+  "body": {
+   "outcomeId": "out_01M369RDHE5Z21SCSRSPDE1N33",
+   "logicalKey": "refund:ord_01M369RCY9VCKPGACK30Q3C7GE:order",
+   "revision": 1,
+   "kind": "REFUND_SETTLED",
+   "quality": "NEUTRAL",
+   "supplierKey": null,
+   "provider": null,
+   "evidenceClass": "SANDBOX",
+   "tripId": "trip_01M369RBY9QW1MKPT16ZH2FPG2",
+   "orderId": "ord_01M369RCY9VCKPGACK30Q3C7GE",
+   "itemId": null,
+   "componentId": null,
+   "disruptionId": null,
+   "observedAt": "2026-09-23T04:53:04.686036Z",
+   "recordedAt": "2026-09-23T04:53:04.686036Z",
+   "source": "API",
+   "sourceRef": "human/carol",
+   "provenance": {
+    "amountMinor": 0,
+    "currency": "USD",
+    "reference": "qa-20260923-repair-cda5ccb after-zero-14de22",
+    "recordedBy": "human/carol"
+   }
+  }
+ },
+ "one-cent": {
+  "status": 200,
+  "body": {
+   "outcomeId": "out_01M369RDHS5V56MTKRPN6J5TQ6",
+   "logicalKey": "refund:ord_01M369RCY9VCKPGACK30Q3C7GE:order",
+   "revision": 2,
+   "kind": "REFUND_SETTLED",
+   "quality": "NEUTRAL",
+   "supplierKey": null,
+   "provider": null,
+   "evidenceClass": "SANDBOX",
+   "tripId": "trip_01M369RBY9QW1MKPT16ZH2FPG2",
+   "orderId": "ord_01M369RCY9VCKPGACK30Q3C7GE",
+   "itemId": null,
+   "componentId": null,
+   "disruptionId": null,
+   "observedAt": "2026-09-23T04:53:04.697645Z",
+   "recordedAt": "2026-09-23T04:53:04.697645Z",
+   "source": "API",
+   "sourceRef": "human/carol",
+   "provenance": {
+    "amountMinor": 1,
+    "currency": "USD",
+    "reference": "qa-20260923-repair-cda5ccb after-one-cent-f70bf8",
+    "recordedBy": "human/carol"
+   }
+  }
+ },
+ "negative": {
+  "status": 400,
+  "body": {
+   "detail": "request validation failed",
+   "instance": "/api/v1/learning/outcomes/refunds",
+   "status": 400,
+   "title": "VALIDATION_FAILED",
+   "type": "https://contracts.travelos.io/problems/validation-failed",
+   "code": "VALIDATION_FAILED",
+   "fields": {
+    "amountMinor": "must be greater than or equal to 0"
+   }
+  }
+ },
+ "eur-on-usd": {
+  "status": 422,
+  "body": {
+   "detail": "order ord_01M369RCY9VCKPGACK30Q3C7GE is priced in USD; a refund in EUR cannot be settled against it (the platform does not convert currencies)",
+   "instance": "/api/v1/learning/outcomes/refunds",
+   "status": 422,
+   "title": "CURRENCY_MISMATCH",
+   "type": "https://contracts.travelos.io/problems/currency-mismatch",
+   "code": "CURRENCY_MISMATCH"
+  }
+ }
+}

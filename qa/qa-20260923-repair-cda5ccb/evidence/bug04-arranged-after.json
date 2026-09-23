@@ -1,0 +1,85 @@
+{
+ "anonymous": {
+  "status": 422,
+  "body": {
+   "detail": "a trip for another traveler needs traveler.givenName, traveler.familyName and traveler.email: the reservation is made in their name",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "TRAVELER_IDENTITY_REQUIRED",
+   "type": "https://contracts.travelos.io/problems/traveler-identity-required",
+   "code": "TRAVELER_IDENTITY_REQUIRED"
+  }
+ },
+ "named": {
+  "tripId": "trip_01M369RBX6DSY1XG25DZVTJ3H5",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-18T05:00:00Z",
+   "arrivalDeadline": "2026-11-18T23:59:00Z",
+   "returnAfter": "2026-11-20T10:00:00Z",
+   "latestReturn": "2026-11-20T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-04 carol arranges for alice",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/carol",
+  "version": 0,
+  "createdAt": "2026-09-23T04:53:03.014577Z",
+  "updatedAt": "2026-09-23T04:53:03.014577Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "trip": {
+  "tripId": "trip_01M369RBX6DSY1XG25DZVTJ3H5",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-18T05:00:00Z",
+   "arrivalDeadline": "2026-11-18T23:59:00Z",
+   "returnAfter": "2026-11-20T10:00:00Z",
+   "latestReturn": "2026-11-20T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-04 carol arranges for alice",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/carol",
+  "version": 0,
+  "createdAt": "2026-09-23T04:53:03.014577Z",
+  "updatedAt": "2026-09-23T04:53:03.014577Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ }
+}

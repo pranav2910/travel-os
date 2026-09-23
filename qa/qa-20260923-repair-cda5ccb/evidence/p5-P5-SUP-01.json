@@ -1,0 +1,65 @@
+{
+ "final": {
+  "tripId": "trip_01M36A2MG61V2S7YQXHDA9EKBJ",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "ZZZ",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb SUP zero offers",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T04:58:39.494799Z",
+  "updatedAt": "2026-09-23T04:58:40.090482Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "SEARCH",
+  "failureCode": "NO_OFFERS"
+ },
+ "components": [],
+ "orders": [],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:58:39.494799Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:40.059313Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "FAILED",
+   "reason": "sandbox-air: UNAVAILABLE",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:40.090482Z"
+  }
+ ]
+}

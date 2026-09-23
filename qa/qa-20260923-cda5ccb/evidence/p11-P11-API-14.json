@@ -1,0 +1,12 @@
+{
+ "status": 400,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "Failed to read request",
+  "instance": "/api/v1/connectors",
+  "status": 400,
+  "title": "Bad Request"
+ }
+}

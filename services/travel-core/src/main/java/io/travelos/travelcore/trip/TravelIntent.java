@@ -94,15 +94,11 @@ public record TravelIntent(
    * A legacy request that asked for a hotel but did not say which nights. Actionable: the message
    * says what to send instead. Raised before any planning, never after a booking started.
    */
-  public static final class HotelRequestException extends IllegalArgumentException {
+  public static final class HotelRequestException extends IntentRejectedException {
     public static final String CODE = "HOTEL_DETAILS_INSUFFICIENT";
 
     public HotelRequestException(String message) {
-      super(message);
-    }
-
-    public String code() {
-      return CODE;
+      super(CODE, message);
     }
   }
 
@@ -130,10 +126,8 @@ public record TravelIntent(
     }
     Optional<ZoneId> zone = Locations.zoneOf(destination);
     if (zone.isEmpty()) {
-      throw new HotelRequestException(
-          "the platform does not know the local clock of "
-              + destination
-              + "; send intent.itinerary with an explicit stay (check-in and check-out dates)");
+      // not a hotel problem: the place itself is outside the catalog
+      throw new IntentRejectedException("UNKNOWN_LOCATION", Locations.explainUnknown(destination));
     }
     if (Duration.between(earliestDeparture, arrivalDeadline).compareTo(UNAMBIGUOUS_WINDOW) > 0) {
       throw new HotelRequestException(

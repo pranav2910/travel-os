@@ -1,0 +1,314 @@
+{
+ "final": {
+  "tripId": "trip_01M36A2S0FBV7SHJF2S25AZRVG",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "ORD",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T05:00:00Z",
+   "latestReturn": "2026-10-25T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb SUP short quote ORD",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVD",
+      "origin": "BOS",
+      "destination": "ORD",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVE",
+      "origin": "ORD",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVF",
+      "city": "ORD",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A2SMNXKNCXV70T5DESCGH",
+   "optimizationRunId": "opt_01M36A2SMNHVN1ZPGQ9H7GTXXF",
+   "policyDecisionId": "pd_01M36A2SP20K6109VDK1K5GEXP",
+   "approvalId": null,
+   "orderId": "ord_01M36A2TNA5WB0FCQ0HRG3BCKF"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:44.111895Z",
+  "updatedAt": "2026-09-23T04:58:46.002406Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 70329,
+   "display": "USD 703.29"
+  },
+  "explanation": "For the BOS to ORD to BOS we chose DL800 BOS-ORD via sandbox-air; DL832 ORD-BOS via sandbox-air; hotel River North Flash Sale in ORD (2 nights, 2026-10-23) at USD 703.29 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 98.8 (cost 97, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVD",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2SHJYF0Q9TR89SP4PYH4",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A2TNGFX60TT71ERBYHAB5",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 23496,
+     "display": "USD 234.96"
+    },
+    "failureCode": null,
+    "summary": "DL800 BOS-ORD 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:45.900996Z"
+   },
+   {
+    "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVE",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2SHY06EF99PFJWQ978S0",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A2TNN9QXG95YJRRH7Y6TK",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 19033,
+     "display": "USD 190.33"
+    },
+    "failureCode": null,
+    "summary": "DL832 ORD-BOS 2026-10-25T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:45.900996Z"
+   },
+   {
+    "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVF",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2SJ99G70DZY5JPVPGWP4",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M36A2TNSH5HK89GVYNMPENQ6",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 27800,
+     "display": "USD 278.00"
+    },
+    "failureCode": null,
+    "summary": "River North Flash Sale ORD 2026-10-23 to 2026-10-25 (2 nights)",
+    "updatedAt": "2026-09-23T04:58:45.900996Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVD",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2SHJYF0Q9TR89SP4PYH4",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A2TNGFX60TT71ERBYHAB5",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 23496,
+    "display": "USD 234.96"
+   },
+   "failureCode": null,
+   "summary": "DL800 BOS-ORD 2026-10-23T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:45.900996Z"
+  },
+  {
+   "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVE",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2SHY06EF99PFJWQ978S0",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A2TNN9QXG95YJRRH7Y6TK",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 19033,
+    "display": "USD 190.33"
+   },
+   "failureCode": null,
+   "summary": "DL832 ORD-BOS 2026-10-25T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:45.900996Z"
+  },
+  {
+   "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVF",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2SJ99G70DZY5JPVPGWP4",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36A2TNSH5HK89GVYNMPENQ6",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 27800,
+    "display": "USD 278.00"
+   },
+   "failureCode": null,
+   "summary": "River North Flash Sale ORD 2026-10-23 to 2026-10-25 (2 nights)",
+   "updatedAt": "2026-09-23T04:58:45.900996Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M36A2TNA5WB0FCQ0HRG3BCKF",
+   "tripId": "trip_01M36A2S0FBV7SHJF2S25AZRVG",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A2SMNXKNCXV70T5DESCGH",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36A2TNGFX60TT71ERBYHAB5",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 70329,
+    "display": "USD 703.29"
+   },
+   "policyDecisionId": "pd_01M36A2SP20K6109VDK1K5GEXP",
+   "optimizationRunId": "opt_01M36A2SMNHVN1ZPGQ9H7GTXXF",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36A2TN94XF5KF89Z6E4MN1N",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8T1JEfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDEzOTUyNA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A2TNGFX60TT71ERBYHAB5",
+     "recordLocator": "HDN2BN",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 23496,
+      "display": "USD 234.96"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL800",
+       "origin": "BOS",
+       "destination": "ORD",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T21:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVD"
+    },
+    {
+     "itemId": "itm_01M36A2TNA5WB0FCQ0HRG3BCKD",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxPUkR8Qk9TfDIwMjYtMTAtMjV8LXwyfEVDT05PTVl8MTc5MDEzOTUyNA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A2TNN9QXG95YJRRH7Y6TK",
+     "recordLocator": "RJCWG4",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 19033,
+      "display": "USD 190.33"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL832",
+       "origin": "ORD",
+       "destination": "BOS",
+       "departure": "2026-10-25T17:45:00Z",
+       "arrival": "2026-10-25T21:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVE"
+    },
+    {
+     "itemId": "itm_01M36A2TNA5WB0FCQ0HRG3BCKE",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxPUkR8MjAyNi0xMC0yM3wyMDI2LTEwLTI1fFNIT1JUUVVPVEV8MTc5MDEzOTUyNA",
+     "status": "CONFIRMED",
+     "externalRef": "SBH-01M36A2TNSH5HK89GVYNMPENQ6",
+     "recordLocator": "2YKLVU",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 27800,
+      "display": "USD 278.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M36A2S0FBV7SHJF2S25AZRVF",
+     "hotel": {
+      "propertyId": "HTL-ORD-SHORTQUOTE",
+      "name": "River North Flash Sale",
+      "city": "ORD",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "nights": 2,
+      "timeZone": "America/Chicago",
+      "refundable": true
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:58:45.801923Z",
+   "updatedAt": "2026-09-23T04:58:45.820653Z"
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:58:44.111895Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:44.634778Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:45.104175Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:45.604384Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:46.002406Z"
+  }
+ ]
+}

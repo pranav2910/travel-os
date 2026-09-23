@@ -44,6 +44,9 @@ export function NewTripPage() {
   const [purpose, setPurpose] = useState('');
   const [text, setText] = useState('');
   const [travelerId, setTravelerId] = useState('');
+  const [travelerGiven, setTravelerGiven] = useState('');
+  const [travelerFamily, setTravelerFamily] = useState('');
+  const [travelerEmail, setTravelerEmail] = useState('');
   const [origin, setOrigin] = useState('BOS');
   const [destination, setDestination] = useState('SEA');
   const [outDate, setOutDate] = useState('');
@@ -68,7 +71,23 @@ export function NewTripPage() {
   function validate(): CreateTripRequest | null {
     const e: Record<string, string> = {};
     const body: CreateTripRequest = { source: 'WEB' };
-    if (travelerId.trim()) body.travelerId = travelerId.trim();
+    if (travelerId.trim()) {
+      body.travelerId = travelerId.trim();
+      // the reservation is made in the traveler's name: an arranger must say whose
+      if (
+        !travelerGiven.trim() ||
+        !travelerFamily.trim() ||
+        !/^[^@\s]+@[^@\s]+$/.test(travelerEmail.trim())
+      )
+        e['traveler'] =
+          'Give the traveler’s first name, last name and email: the booking is made in their name.';
+      else
+        body.traveler = {
+          givenName: travelerGiven.trim(),
+          familyName: travelerFamily.trim(),
+          email: travelerEmail.trim(),
+        };
+    }
     if (mode === 'text') {
       if (text.trim().length < 10) e['text'] = 'Describe the trip in a sentence or two.';
       body.request = text.trim();
@@ -626,6 +645,46 @@ export function NewTripPage() {
                 />
               )}
             </Field>
+            {travelerId.trim() && (
+              <fieldset className="stack" style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend className="muted" style={{ marginBottom: 6 }}>
+                  Who travels: the reservation is made in their name.
+                </legend>
+                <div className="row">
+                  <Field label="Traveler first name" error={errors['traveler']}>
+                    {(p) => (
+                      <input
+                        {...p}
+                        value={travelerGiven}
+                        onChange={(e) => setTravelerGiven(e.target.value)}
+                        autoComplete="off"
+                      />
+                    )}
+                  </Field>
+                  <Field label="Traveler last name">
+                    {(p) => (
+                      <input
+                        {...p}
+                        value={travelerFamily}
+                        onChange={(e) => setTravelerFamily(e.target.value)}
+                        autoComplete="off"
+                      />
+                    )}
+                  </Field>
+                  <Field label="Traveler email">
+                    {(p) => (
+                      <input
+                        {...p}
+                        type="email"
+                        value={travelerEmail}
+                        onChange={(e) => setTravelerEmail(e.target.value)}
+                        autoComplete="off"
+                      />
+                    )}
+                  </Field>
+                </div>
+              </fieldset>
+            )}
           </Card>
         )}
         <Alert tone="warn" role="status">

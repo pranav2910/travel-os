@@ -1,0 +1,14 @@
+{
+ "dan": {
+  "status": 422,
+  "body": {
+   "detail": "Idempotency-Key was already used with a different request",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "IDEMPOTENCY_KEY_REUSED",
+   "type": "https://contracts.travelos.io/problems/idempotency-key-reused",
+   "code": "IDEMPOTENCY_KEY_REUSED"
+  }
+ },
+ "alice_trip": "trip_01M36461GCZ6X7P2GJCFZ38FMX"
+}

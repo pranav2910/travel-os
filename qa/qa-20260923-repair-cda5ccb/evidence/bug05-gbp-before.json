@@ -1,0 +1,59 @@
+{
+ "status": 202,
+ "body": {
+  "tripId": "trip_01M36946XAA4E3V0974A3NP0BB",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-26T05:00:00Z",
+   "latestReturn": "2026-10-26T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-05 currency GBP",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36946X94A58GD4CWEJXDD2P",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36946X94A58GD4CWEJXDD2Q",
+      "origin": "LHR",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-26T05:00:00Z",
+      "arrivalDeadline": "2026-10-26T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "GBP"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:42:02.538140Z",
+  "updatedAt": "2026-09-23T04:42:02.538140Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ }
+}

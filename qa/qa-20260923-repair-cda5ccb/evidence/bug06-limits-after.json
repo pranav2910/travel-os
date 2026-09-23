@@ -1,0 +1,43 @@
+{
+ "0": {
+  "status": 422,
+  "body": {
+   "detail": "limit must be between 1 and 200, got 0",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "LIMIT_OUT_OF_RANGE",
+   "type": "https://contracts.travelos.io/problems/limit-out-of-range",
+   "code": "LIMIT_OUT_OF_RANGE"
+  }
+ },
+ "-1": {
+  "status": 422,
+  "body": {
+   "detail": "limit must be between 1 and 200, got -1",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "LIMIT_OUT_OF_RANGE",
+   "type": "https://contracts.travelos.io/problems/limit-out-of-range",
+   "code": "LIMIT_OUT_OF_RANGE"
+  }
+ },
+ "201": {
+  "status": 422,
+  "body": {
+   "detail": "limit must be between 1 and 200, got 201",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "LIMIT_OUT_OF_RANGE",
+   "type": "https://contracts.travelos.io/problems/limit-out-of-range",
+   "code": "LIMIT_OUT_OF_RANGE"
+  }
+ },
+ "200": {
+  "status": 200,
+  "body": "200 items"
+ },
+ "1": {
+  "status": 200,
+  "body": "1 items"
+ }
+}

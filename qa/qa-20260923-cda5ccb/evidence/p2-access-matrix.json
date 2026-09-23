@@ -1,0 +1,122 @@
+{
+ "alice->alice_trip": {
+  "read": 200,
+  "history": 200,
+  "components": 200,
+  "orders": 200,
+  "audit": 200,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 403,
+  "complete": 409,
+  "feedback": 201
+ },
+ "alice->zoe_trip": {
+  "read": 404,
+  "history": 404,
+  "components": 404,
+  "orders": 200,
+  "audit": 404,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 404,
+  "complete": 404,
+  "feedback": 404
+ },
+ "bob->alice_trip": {
+  "read": 200,
+  "history": 200,
+  "components": 200,
+  "orders": 200,
+  "audit": 200,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 409,
+  "complete": 403,
+  "feedback": 403
+ },
+ "bob->zoe_trip": {
+  "read": 404,
+  "history": 404,
+  "components": 404,
+  "orders": 200,
+  "audit": 404,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 404,
+  "complete": 404,
+  "feedback": 404
+ },
+ "carol->alice_trip": {
+  "read": 200,
+  "history": 200,
+  "components": 200,
+  "orders": 200,
+  "audit": 200,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 409,
+  "complete": 200,
+  "feedback": 403
+ },
+ "carol->zoe_trip": {
+  "read": 404,
+  "history": 404,
+  "components": 404,
+  "orders": 200,
+  "audit": 404,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 404,
+  "complete": 404,
+  "feedback": 404
+ },
+ "dan->alice_trip": {
+  "read": 404,
+  "history": 404,
+  "components": 404,
+  "orders": 200,
+  "audit": 404,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 404,
+  "complete": 404,
+  "feedback": 403
+ },
+ "dan->zoe_trip": {
+  "read": 404,
+  "history": 404,
+  "components": 404,
+  "orders": 200,
+  "audit": 404,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 404,
+  "complete": 404,
+  "feedback": 404
+ },
+ "zoe->alice_trip": {
+  "read": 404,
+  "history": 404,
+  "components": 404,
+  "orders": 200,
+  "audit": 404,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 404,
+  "complete": 404,
+  "feedback": 404
+ },
+ "zoe->zoe_trip": {
+  "read": 200,
+  "history": 200,
+  "components": 200,
+  "orders": 200,
+  "audit": 200,
+  "disruptions": 404,
+  "decisions": 200,
+  "approve": 403,
+  "complete": 409,
+  "feedback": 422
+ }
+}

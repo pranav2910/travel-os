@@ -1,0 +1,14 @@
+{
+ "status": 404,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "order ord_01ARZ3NDEKTSV4RRFFQ69G5FAV not found",
+  "instance": "/api/v1/orders/ord_01ARZ3NDEKTSV4RRFFQ69G5FAV/exposures/exp_01ARZ3NDEKTSV4RRFFQ69G5FAV/resolution",
+  "status": 404,
+  "title": "NOT_FOUND",
+  "type": "https://contracts.travelos.io/problems/not-found",
+  "code": "NOT_FOUND"
+ }
+}

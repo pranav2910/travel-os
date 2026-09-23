@@ -234,6 +234,11 @@ public class LearningController {
       @Nullable List<@NotBlank String> tags,
       @Nullable @Size(max = 2000) String comment) {}
 
+  /**
+   * @param amountMinor what settled, in the order's currency; zero is legitimate (a non-refundable
+   *     rate settled at nothing) and is recorded as such, a negative amount is refused
+   * @param currency must be the currency the order was booked in ({@code CURRENCY_MISMATCH})
+   */
   public record RefundRequest(
       @NotBlank String tripId,
       @NotBlank String orderId,

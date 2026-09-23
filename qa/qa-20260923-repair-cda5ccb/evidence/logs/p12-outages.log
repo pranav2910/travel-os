@@ -1,0 +1,12 @@
+[PASS   ] P12-OUT-01: {"edge": "<urlopen error [Errno 61] Connection ref", "core_direct": 200, "recovered_health": "healthy", "after
+[PASS   ] P12-OUT-02: {"list_status": 503, "list_body": "{\"type\":\"about:blank\",\"title\":\"Service Unavailable\",\"status\":503,
+[PASS   ] P12-OUT-03: {"existing_token_api": 200, "new_login": "<urlopen error [Errno 61] Connection refused>", "recovered_health": 
+[PASS   ] P12-OUT-04: {"create": 202, "trip": "trip_01M36AC7WGSBD473GRX7E2XFKQ", "status_during": "SUBMITTED", "recovered_health": "
+[PASS   ] P12-OUT-04b: final=BOOKED; orders=1
+[PASS   ] P12-OUT-05: {"list": 500, "edge": 200, "recovered_health": "healthy", "after": {"list": 200, "create_and_book": "BOOKED"}}
+[PASS   ] P12-OUT-06: {"trip": "trip_01M36AF4F7B6T6KZMSNZ9BE4DE", "status_during": "PLANNING", "recovered_health": "no healthcheck",
+[PASS   ] P12-OUT-06b: final=BOOKED
+[PASS   ] P12-RESTART-01: stack-up rc=0; trips before=125 after=125 missing=0; travel.* topics=13
+[BLOCKED] P12-FRESH-01: not run here: a disposable second stack does not fit the 8 GB VM beside the running one and `make stack-nuke` 
+[PASS   ] P12-OBS-01: BOOKED; trail events=120 types=['travel.trip.created', 'travel.policy.evaluated', 'travel.policy.evaluated', '
+{'FAIL': 37, 'PASS': 189, 'NOT_IMPLEMENTED': 10, 'BLOCKED': 2, 'NOT_APPLICABLE': 1}

@@ -1,0 +1,103 @@
+{
+ "counts": {
+  "PASS": 174,
+  "FAIL": 17,
+  "NOT_APPLICABLE": 2,
+  "NOT_IMPLEMENTED": 14,
+  "BLOCKED": 4
+ },
+ "effective": 211,
+ "superseded": [
+  "P1-FAIL-01",
+  "P1-FAIL-01b",
+  "P1-FAIL-06",
+  "P1-PERSONA-01",
+  "P11-API-05",
+  "P11-AUTHZ-01",
+  "P11-SECRETS-01",
+  "P12-OUT-04",
+  "P12-OUT-06",
+  "P2-TOK-03",
+  "P3-ITN-01",
+  "P3-ITN-03",
+  "P3-LIFE-01",
+  "P3-LIST-02",
+  "P3-MUT-02",
+  "P3-VAL-03",
+  "P3-VAL-08",
+  "P3-VAL-09",
+  "P3-VAL-10",
+  "P3-VAL-11",
+  "P3-VAL-14",
+  "P4-R03",
+  "P4-R09",
+  "P5-MONEY-WRONG",
+  "P5-MONEY-ZERO",
+  "P5-POL-02",
+  "P5-SUP-04",
+  "P5-SUP-05",
+  "P6-ML-01",
+  "P6-ML-03",
+  "P6-ML-04",
+  "P6-S12",
+  "P6-S13",
+  "P6-S15"
+ ],
+ "bugs": {
+  "BUG-01": [
+   "P1-INV-02",
+   "P4-R20",
+   "P4-R21",
+   "P4-R22"
+  ],
+  "BUG-04": [
+   "P1-PERSONA-01b"
+  ],
+  "RISK-01": [
+   "P2-SES-05"
+  ],
+  "BUG-03": [
+   "P3-VAL-14b",
+   "P4-R26"
+  ],
+  "BUG-05": [
+   "P3-ITN-03b"
+  ],
+  "BUG-07": [
+   "P3-MUT-02b"
+  ],
+  "BUG-06": [
+   "P3-LIST-02b"
+  ],
+  "BUG-08": [
+   "P3-LIFE-01b",
+   "P9-RACE-02"
+  ],
+  "RISK-02": [
+   "P7-FT-01"
+  ],
+  "RISK-03": [
+   "P7-FT-03"
+  ],
+  "BUG-09": [
+   "P11-HDR-01"
+  ],
+  "BUG-10": [
+   "P4-R03b",
+   "P6-S13b"
+  ],
+  "BUG-11": [
+   "P5-MONEY-ZERO-b"
+  ],
+  "BUG-12": [
+   "P5-MONEY-WRONG-b"
+  ],
+  "BUG-13": [
+   "P10-A11Y-01",
+   "P10-A11Y-02"
+  ],
+  "BUG-14": [
+   "P12-EDGE-01"
+  ]
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R03",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "SJC",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-14T05:00:00Z",
+      "arrivalDeadline": "2026-10-14T23:59:00Z"
+     },
+     {
+      "origin": "SEA",
+      "destination": "SJC",
+      "earliestDeparture": "2026-10-15T05:00:00Z",
+      "arrivalDeadline": "2026-10-15T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "city": "SEA",
+      "checkInDate": "2026-10-14",
+      "checkOutDate": "2026-10-15",
+      "required": true
+     }
+    ],
+    "transfers": []
+   }
+  }
+ },
+ "create": {
+  "status": 422,
+  "body": {
+   "detail": "unknown location SJC: the platform does not know its clock",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "INTENT_INVALID",
+   "type": "https://contracts.travelos.io/problems/intent-invalid",
+   "code": "INTENT_INVALID"
+  }
+ },
+ "final": null,
+ "components": []
+}

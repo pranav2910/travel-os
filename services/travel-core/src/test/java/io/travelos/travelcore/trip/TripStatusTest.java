@@ -58,6 +58,28 @@ class TripStatusTest {
   }
 
   @Test
+  void aBookedTripIsReleasedAtTheSuppliersBeforeItIsCancelled() {
+    assertThat(TripStatus.BOOKED.canTransitionTo(TripStatus.CANCELLED))
+        .as("a confirmed reservation is never shown as cancelled before it is released")
+        .isFalse();
+    assertThat(TripStatus.BOOKED.canTransitionTo(TripStatus.CANCELLING)).isTrue();
+    assertThat(TripStatus.CANCELLING.canTransitionTo(TripStatus.CANCELLED)).isTrue();
+    for (TripStatus status : TripStatus.values()) {
+      if (status != TripStatus.CANCELLED) {
+        assertThat(TripStatus.CANCELLING.canTransitionTo(status))
+            .as("CANCELLING only ever ends in CANCELLED, not " + status)
+            .isFalse();
+      }
+      if (status != TripStatus.BOOKED) {
+        assertThat(status.canTransitionTo(TripStatus.CANCELLING))
+            .as("only a booked trip has something to release: " + status)
+            .isFalse();
+      }
+    }
+    assertThat(TripStatus.CANCELLING.isTerminal()).isFalse();
+  }
+
+  @Test
   void noShortcuts() {
     assertThat(TripStatus.SUBMITTED.canTransitionTo(TripStatus.BOOKED)).isFalse();
     assertThat(TripStatus.BOOKED.canTransitionTo(TripStatus.PLANNING)).isFalse();

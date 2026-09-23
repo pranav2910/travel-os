@@ -1,0 +1,31 @@
+{
+ "ghost": {
+  "alice": 404,
+  "bob": 404,
+  "carol": 404,
+  "dan": 404,
+  "zoe": 404
+ },
+ "foreign": {
+  "status": 404,
+  "body": {
+   "detail": "trip trip_01M363PSX1F00BRNPJA8Y97SBT not found",
+   "instance": "/api/v1/trips/trip_01M363PSX1F00BRNPJA8Y97SBT",
+   "status": 404,
+   "title": "NOT_FOUND",
+   "type": "https://contracts.travelos.io/problems/not-found",
+   "code": "NOT_FOUND"
+  }
+ },
+ "nonexistent": {
+  "status": 404,
+  "body": {
+   "detail": "trip trip_01ARZ3NDEKTSV4RRFFQ69G5FAV not found",
+   "instance": "/api/v1/trips/trip_01ARZ3NDEKTSV4RRFFQ69G5FAV",
+   "status": 404,
+   "title": "NOT_FOUND",
+   "type": "https://contracts.travelos.io/problems/not-found",
+   "code": "NOT_FOUND"
+  }
+ }
+}

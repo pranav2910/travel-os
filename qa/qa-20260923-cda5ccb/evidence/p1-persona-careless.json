@@ -1,0 +1,35 @@
+[
+ {
+  "status": 422,
+  "body": {
+   "detail": "returnAfter must not be before arrivalDeadline",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "INTENT_INVALID",
+   "type": "https://contracts.travelos.io/problems/intent-invalid",
+   "code": "INTENT_INVALID"
+  }
+ },
+ {
+  "status": 422,
+  "body": {
+   "detail": "origin, destination, earliestDeparture and arrivalDeadline are required (or an itinerary)",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "INTENT_INVALID",
+   "type": "https://contracts.travelos.io/problems/intent-invalid",
+   "code": "INTENT_INVALID"
+  }
+ },
+ {
+  "status": 422,
+  "body": {
+   "detail": "origin, destination, earliestDeparture and arrivalDeadline are required (or an itinerary)",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "INTENT_INVALID",
+   "type": "https://contracts.travelos.io/problems/intent-invalid",
+   "code": "INTENT_INVALID"
+  }
+ }
+]

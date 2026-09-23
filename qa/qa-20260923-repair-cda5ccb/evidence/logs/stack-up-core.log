@@ -1,0 +1,180 @@
+docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml up -d --wait
+ Container travelos-kafka-1 Running 
+ Container travelos-tempo-1 Running 
+ Container travelos-postgres-1 Running 
+ Container travelos-keycloak-1 Running 
+ Container travelos-grafana-1 Running 
+ Container travelos-llm-gateway-1 Running 
+ Container travelos-redis-1 Running 
+ Container travelos-otel-collector-1 Running 
+ Container travelos-policy-1 Running 
+ Container travelos-temporal-1 Running 
+ Container travelos-supplier-gateway-1 Running 
+ Container travelos-optimization-1 Running 
+ Container travelos-learning-1 Running 
+ Container travelos-audit-1 Running 
+ Container travelos-temporal-ui-1 Running 
+ Container travelos-order-1 Running 
+ Container travelos-disruption-1 Running 
+ Container travelos-travel-core-1 Recreate 
+ Container travelos-travel-core-1 Recreated 
+ Container travelos-web-1 Running 
+ Container travelos-trip-planning-1 Running 
+ Container travelos-enterprise-context-1 Running 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-temporal-1 Waiting 
+ Container travelos-temporal-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-supplier-gateway-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-temporal-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-temporal-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-travel-core-1 Starting 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-supplier-gateway-1 Healthy 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-order-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-travel-core-1 Started 
+ Container travelos-travel-core-1 Waiting 
+ Container travelos-policy-1 Waiting 
+ Container travelos-travel-core-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-learning-1 Waiting 
+ Container travelos-travel-core-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-order-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-temporal-1 Waiting 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-order-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-order-1 Healthy 
+ Container travelos-learning-1 Healthy 
+ Container travelos-policy-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-temporal-1 Healthy 
+ Container travelos-travel-core-1 Healthy 
+ Container travelos-travel-core-1 Healthy 
+ Container travelos-travel-core-1 Healthy 
+ Container travelos-enterprise-context-1 Waiting 
+ Container travelos-temporal-1 Waiting 
+ Container travelos-trip-planning-1 Waiting 
+ Container travelos-disruption-1 Waiting 
+ Container travelos-travel-core-1 Waiting 
+ Container travelos-keycloak-1 Waiting 
+ Container travelos-temporal-ui-1 Waiting 
+ Container travelos-llm-gateway-1 Waiting 
+ Container travelos-otel-collector-1 Waiting 
+ Container travelos-learning-1 Waiting 
+ Container travelos-grafana-1 Waiting 
+ Container travelos-policy-1 Waiting 
+ Container travelos-tempo-1 Waiting 
+ Container travelos-supplier-gateway-1 Waiting 
+ Container travelos-web-1 Waiting 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-redis-1 Waiting 
+ Container travelos-postgres-1 Waiting 
+ Container travelos-order-1 Waiting 
+ Container travelos-optimization-1 Waiting 
+ Container travelos-audit-1 Waiting 
+ Container travelos-enterprise-context-1 Healthy 
+ Container travelos-redis-1 Healthy 
+ Container travelos-postgres-1 Healthy 
+ Container travelos-optimization-1 Healthy 
+ Container travelos-temporal-ui-1 Healthy 
+ Container travelos-otel-collector-1 Healthy 
+ Container travelos-learning-1 Healthy 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-keycloak-1 Healthy 
+ Container travelos-tempo-1 Healthy 
+ Container travelos-travel-core-1 Healthy 
+ Container travelos-temporal-1 Healthy 
+ Container travelos-supplier-gateway-1 Healthy 
+ Container travelos-web-1 Healthy 
+ Container travelos-llm-gateway-1 Healthy 
+ Container travelos-policy-1 Healthy 
+ Container travelos-grafana-1 Healthy 
+ Container travelos-trip-planning-1 Healthy 
+ Container travelos-audit-1 Healthy 
+ Container travelos-order-1 Healthy 
+ Container travelos-disruption-1 Healthy 
+docker compose -f platform/local/docker-compose.yml run --rm kafka-init
+time="2026-09-23T01:37:09-04:00" level=warning msg="Found orphan containers ([travelos-travel-core-1 travelos-audit-1 travelos-web-1 travelos-enterprise-context-1 travelos-trip-planning-1 travelos-disruption-1 travelos-order-1 travelos-supplier-gateway-1 travelos-learning-1 travelos-policy-1 travelos-llm-gateway-1 travelos-optimization-1]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container travelos-kafka-1 Running 
+ Container travelos-kafka-1 Waiting 
+ Container travelos-kafka-1 Healthy 
+ Container travelos-kafka-init-run-5cc28444eaf7 Creating 
+ Container travelos-kafka-init-run-5cc28444eaf7 Created 
+topic ready: travel.intent
+topic ready: travel.trip
+topic ready: travel.search
+topic ready: travel.policy
+topic ready: travel.optimization
+topic ready: travel.approval
+topic ready: travel.order
+topic ready: travel.disruption
+topic ready: travel.expense
+topic ready: travel.demand
+topic ready: travel.learning
+topic ready: travel.agent
+topic ready: travel.audit
+--- topics on kafka:29092 ---
+__consumer_offsets
+travel.agent
+travel.approval
+travel.audit
+travel.demand
+travel.disruption
+travel.expense
+travel.intent
+travel.learning
+travel.optimization
+travel.order
+travel.policy
+travel.search
+travel.trip

@@ -3,6 +3,7 @@ package io.travelos.workflows.trip;
 import com.google.protobuf.Timestamp;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
+import io.temporal.workflow.Workflow;
 import io.travelos.contracts.common.v1.Cabin;
 import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.RequestContext;
@@ -76,8 +77,12 @@ final class ItineraryFlow {
     Trip transition(
         String tenant, String tripId, TripStatus to, Consumer<TransitionTripRequest.Builder> b);
 
-    /** APPROVED | REJECTED, or null when nobody decided in time. */
+    /** APPROVED | REJECTED | CANCELLED (withdrawn meanwhile), or null when nobody decided. */
     @Nullable String awaitDecision(String tenant, String tripId);
+
+    /** Moves the trip to BOOKING, or null when it was cancelled while it waited. */
+    @Nullable Trip beginBooking(
+        String tenant, String tripId, Consumer<TransitionTripRequest.Builder> b);
 
     TripPlanning.@Nullable ApprovalDecision decision();
 
@@ -344,6 +349,9 @@ final class ItineraryFlow {
       if (verdict == null) {
         return host.fail(tenant, tripId, "APPROVAL", "APPROVAL_TIMED_OUT", "no decision in time");
       }
+      if ("CANCELLED".equals(verdict)) {
+        return withdrawn(tripId);
+      }
       if (!"APPROVED".equals(verdict)) {
         return rejected(tenant, tripId);
       }
@@ -489,6 +497,9 @@ final class ItineraryFlow {
               "APPROVAL_TIMED_OUT",
               "no decision on the re-quoted plan");
         }
+        if ("CANCELLED".equals(verdict)) {
+          return withdrawn(tripId);
+        }
         if (!"APPROVED".equals(verdict)) {
           return rejected(tenant, tripId);
         }
@@ -506,18 +517,33 @@ final class ItineraryFlow {
           changedComponents);
     }
 
-    // ---- book: one command, one order, N components in dependency order
+    // ---- book: one command, one order, N components in dependency order; only while the first
+    // departure is still ahead and nobody withdrew the trip while it waited
     host.stage(TripPlanning.Stage.BOOKING);
+    Instant firstDeadline = instant(itinerary.getLegs(0).getArrivalDeadline());
+    if (!firstDeadline.isAfter(Instant.ofEpochMilli(Workflow.currentTimeMillis()))) {
+      return host.fail(
+          tenant,
+          tripId,
+          "REVALIDATION",
+          "DEPARTURE_PASSED",
+          "the first leg's window closed at "
+              + firstDeadline
+              + " while the trip waited; nothing was booked");
+    }
     PolicyDecision finalDecision = bookingDecision;
-    host.transition(
-        tenant,
-        tripId,
-        TripStatus.BOOKING,
-        b ->
-            b.setReason("booking")
-                .setSelectedBundleId(plan.getBundleId())
-                .setPolicyDecisionId(finalDecision.getDecisionId())
-                .setTotal(plan.getTotal()));
+    Trip bookable =
+        host.beginBooking(
+            tenant,
+            tripId,
+            b ->
+                b.setReason("booking")
+                    .setSelectedBundleId(plan.getBundleId())
+                    .setPolicyDecisionId(finalDecision.getDecisionId())
+                    .setTotal(plan.getTotal()));
+    if (bookable == null) {
+      return withdrawn(tripId);
+    }
     Map<String, Offer> booked = byComponent(plan);
     report(
         tenant,
@@ -687,6 +713,12 @@ final class ItineraryFlow {
     return verdict.getCandidatesCount() == 0
         ? PolicyDecision.newBuilder().setOutcome(Outcome.DENY).build()
         : verdict.getCandidates(0).getDecision();
+  }
+
+  /** The requester withdrew the trip while it waited; Travel Core already recorded CANCELLED. */
+  private TripWorkflow.Outcome withdrawn(String tripId) {
+    host.stage(TripPlanning.Stage.CANCELLED);
+    return new TripWorkflow.Outcome(tripId, "CANCELLED", null, null, null);
   }
 
   private TripWorkflow.Outcome rejected(String tenant, String tripId) {

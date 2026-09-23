@@ -9,7 +9,9 @@ import io.travelos.contracts.optimization.v1.OptimizeItineraryRequest;
 import io.travelos.contracts.optimization.v1.OptimizeItineraryResponse;
 import io.travelos.contracts.optimization.v1.OptimizeTripRequest;
 import io.travelos.contracts.optimization.v1.OptimizeTripResponse;
+import io.travelos.contracts.order.v1.CancelOrderCommand;
 import io.travelos.contracts.order.v1.CreateOrderCommand;
+import io.travelos.contracts.order.v1.GetOrderRequest;
 import io.travelos.contracts.order.v1.Order;
 import io.travelos.contracts.policy.v1.EvaluateTripRequest;
 import io.travelos.contracts.policy.v1.EvaluateTripResponse;
@@ -69,4 +71,14 @@ public interface TripActivities {
 
   /** Report component states to Travel Core. Idempotent. */
   Trip updateComponents(UpdateComponentsRequest request);
+
+  // ---------------------------------------------------------------- cancellation
+
+  /**
+   * Order: release a confirmed order at its suppliers. Idempotent by state and resumable: a retry
+   * after a lost answer continues from the items already released.
+   */
+  Order cancelOrder(CancelOrderCommand command);
+
+  Order getOrder(GetOrderRequest request);
 }

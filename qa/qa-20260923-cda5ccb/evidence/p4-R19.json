@@ -1,0 +1,31 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R19",
+   "origin": "\u6771\u4eac",
+   "destination": "\u6771\u4eac",
+   "earliestDeparture": "2026-10-12T05:00:00Z",
+   "arrivalDeadline": "2026-10-12T23:59:00Z",
+   "returnAfter": "2026-10-14T10:00:00Z",
+   "latestReturn": "2026-10-14T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 400,
+  "body": {
+   "detail": "request validation failed",
+   "instance": "/api/v1/trips",
+   "status": 400,
+   "title": "VALIDATION_FAILED",
+   "type": "https://contracts.travelos.io/problems/validation-failed",
+   "code": "VALIDATION_FAILED",
+   "fields": {
+    "intent.destination": "must be an IATA airport code",
+    "intent.origin": "must be an IATA airport code"
+   }
+  }
+ },
+ "final": null,
+ "components": []
+}

@@ -1,0 +1,365 @@
+cd web && E2E_BASE_URL=http://localhost:8080 E2E_KEYCLOAK_URL=http://localhost:8180 E2E_SUPPLIER_URL=http://localhost:8084 npx playwright test
+
+Running 20 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/approvals.spec.ts:14:3 › manager approvals › a trip needing approval waits; the traveler cannot self-approve; the manager approves; a stale decision conflicts (39.5s)
+  ✓   2 [chromium] › e2e/approvals.spec.ts:61:3 › manager approvals › a rejected trip ends honestly (38.3s)
+  ✘   3 [chromium] › e2e/auth.spec.ts:5:3 › sign-in and session › signs in through Keycloak with PKCE, restores after reload, signs out, and isolates caches between users (30.9s)
+  ✘   4 [chromium] › e2e/auth.spec.ts:28:3 › sign-in and session › protected routes ask to sign in and role-gated areas are refused to a traveler (36.3s)
+  ✘   5 [chromium] › e2e/auth.spec.ts:39:3 › sign-in and session › an expired token sends the user back to sign in (30.9s)
+  ✘   6 [chromium] › e2e/booking.spec.ts:17:3 › traveler booking › a round trip is booked with the sandbox airline, survives a reload, and explains itself (34.1s)
+  ✓   7 [chromium] › e2e/booking.spec.ts:48:3 › traveler booking › a multi-city itinerary with a hotel and a transfer books every component (17.1s)
+  ✓   8 [chromium] › e2e/booking.spec.ts:88:3 › traveler booking › a double submit and a lost answer create one trip (11.0s)
+  ✓   9 [chromium] › e2e/booking.spec.ts:120:3 › traveler booking › a budget denial is explained and nothing is booked (14.0s)
+  ✓  10 [chromium] › e2e/cancellation.spec.ts:22:3 › cancelling a booked trip › a booked round trip is released at the airline before it reads Cancelled (16.2s)
+  ✘  11 [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure (19.1s)
+  ✘  12 [chromium] › e2e/demand.spec.ts:58:3 › demand and connectors › detected demand converts into exactly one trip, however many times it is asked (28.7s)
+  ✓  13 [chromium] › e2e/demand.spec.ts:135:3 › demand and connectors › connectors are labelled simulated and a travel admin can sync them (10.8s)
+  ✓  14 [chromium] › e2e/isolation.spec.ts:14:3 › tenant and traveler isolation › a deep link to another tenant's trip is not found; a peer traveler is not found; direct mutations are refused (35.3s)
+  ✓  15 [chromium] › e2e/learning.spec.ts:5:3 › learning administration › shows the real mode and evidence, refuses a stale activation with a 409, and rolls back to the baseline (16.0s)
+  ✘  16 [chromium] › e2e/operations.spec.ts:54:3 › disruptions and exposures › a cancelled flight needing a person is decided by a manager, not the traveler; states stay honest (2.7m)
+  ✓  17 [chromium] › e2e/operations.spec.ts:107:3 › disruptions and exposures › Finance sees open exposures; a traveler is refused the exposure list and refund recording (38.7s)
+  ✘  18 [chromium] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan (26.2s)
+  ✓  19 [mobile] › e2e/mobile.spec.ts:5:3 › narrow screens › the primary journeys are usable at phone width without horizontal scrolling (12.4s)
+  ✘  20 [webkit-smoke] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan (27.1s)
+
+
+  1) [chromium] › e2e/auth.spec.ts:5:3 › sign-in and session › signs in through Keycloak with PKCE, restores after reload, signs out, and isolates caches between users 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('banner')
+    Expected substring: "Alice"
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" getByRole('banner') with timeout 20000ms
+      - waiting for getByRole('banner')
+
+
+      15 |     // a reload restores the session silently through Keycloak's SSO cookie
+      16 |     await page.reload();
+    > 17 |     await expect(page.getByRole('banner')).toContainText('Alice', { timeout: 20_000 });
+         |                                            ^
+      18 |     await expect(page.getByRole('navigation', { name: 'Main' })).not.toContainText('Approvals');
+      19 |     await signOut(page);
+      20 |     // bob sees his own workspace, never alice's cached data
+        at /Users/pranavsaipalla/travel-os/web/e2e/auth.spec.ts:17:44
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-sign-in-and-session-s-f10de-olates-caches-between-users-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-sign-in-and-session-s-f10de-olates-caches-between-users-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-sign-in-and-session-s-f10de-olates-caches-between-users-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/auth-sign-in-and-session-s-f10de-olates-caches-between-users-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) [chromium] › e2e/auth.spec.ts:28:3 › sign-in and session › protected routes ask to sign in and role-gated areas are refused to a traveler 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'Not available for your role' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'Not available for your role' }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'Not available for your role' })
+
+
+      34 |     await expect(page.getByRole('heading', { name: 'Not available for your role' })).toBeVisible();
+      35 |     await page.goto('/connectors');
+    > 36 |     await expect(page.getByRole('heading', { name: 'Not available for your role' })).toBeVisible();
+         |                                                                                      ^
+      37 |   });
+      38 |
+      39 |   test('an expired token sends the user back to sign in', async ({ page }) => {
+        at /Users/pranavsaipalla/travel-os/web/e2e/auth.spec.ts:36:86
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-sign-in-and-session-p-ae2ea-s-are-refused-to-a-traveler-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-sign-in-and-session-p-ae2ea-s-are-refused-to-a-traveler-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-sign-in-and-session-p-ae2ea-s-are-refused-to-a-traveler-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/auth-sign-in-and-session-p-ae2ea-s-are-refused-to-a-traveler-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) [chromium] › e2e/auth.spec.ts:39:3 › sign-in and session › an expired token sends the user back to sign in 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('Your session ended.')
+    Expected: visible
+    Timeout: 20000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('Your session ended.') with timeout 20000ms
+      - waiting for getByText('Your session ended.')
+
+
+      48 |     );
+      49 |     await page.goto('/trips');
+    > 50 |     await expect(page.getByText('Your session ended.')).toBeVisible({ timeout: 20_000 });
+         |                                                         ^
+      51 |     await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+      52 |   });
+      53 | });
+        at /Users/pranavsaipalla/travel-os/web/e2e/auth.spec.ts:50:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/auth-sign-in-and-session-a-28a7a-ds-the-user-back-to-sign-in-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/auth-sign-in-and-session-a-28a7a-ds-the-user-back-to-sign-in-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/auth-sign-in-and-session-a-28a7a-ds-the-user-back-to-sign-in-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/auth-sign-in-and-session-a-28a7a-ds-the-user-back-to-sign-in-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) [chromium] › e2e/booking.spec.ts:17:3 › traveler booking › a round trip is booked with the sandbox airline, survives a reload, and explains itself 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('heading', { level: 1 })
+    Expected substring: "Booked"
+    Received string:    "travel-os"
+    Timeout: 20000ms
+
+    Call log:
+      - Expect "toContainText" getByRole('heading', { level: 1 }) with timeout 20000ms
+      - waiting for getByRole('heading', { level: 1 })
+        20 × locator resolved to <h1>travel-os</h1>
+           - unexpected value "travel-os"
+
+
+      30 |     // reload recovers the same trip and state
+      31 |     await page.reload();
+    > 32 |     await expect(page.getByRole('heading', { level: 1 })).toContainText('Booked', {
+         |                                                           ^
+      33 |       timeout: 20_000,
+      34 |     });
+      35 |     expect(page.url()).toContain(tripId);
+        at /Users/pranavsaipalla/travel-os/web/e2e/booking.spec.ts:32:59
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/booking-traveler-booking-a-92359--reload-and-explains-itself-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/booking-traveler-booking-a-92359--reload-and-explains-itself-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/booking-traveler-booking-a-92359--reload-and-explains-itself-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/booking-traveler-booking-a-92359--reload-and-explains-itself-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/refused to release/)
+    Expected: visible
+    Error: strict mode violation: getByText(/refused to release/) resolved to 3 elements:
+        1) <div>…</div> aka getByText('Cancellation incomplete. A')
+        2) <li>The trip failed at null: CANCELLATION_INCOMPLETE …</li> aka getByText('The trip failed at null:')
+        3) <span>…</span> aka getByText('!Cancelling the supplier')
+
+    Call log:
+      - Expect "toBeVisible" getByText(/refused to release/) with timeout 15000ms
+      - waiting for getByText(/refused to release/)
+
+
+      108 |     // the refusal is on screen, the trip is NOT cancelled, and the order says the same
+      109 |     await expect(page.getByText('Cancellation incomplete.')).toBeVisible({ timeout: 90_000 });
+    > 110 |     await expect(page.getByText(/refused to release/)).toBeVisible();
+          |                                                        ^
+      111 |     await expect(page.getByRole('heading', { level: 1 })).toContainText('Cancelling');
+      112 |     const alice = await api('alice');
+      113 |     const pending = (await (await alice.get(`/api/v1/orders?tripId=${tripId}`)).json()) as {
+        at /Users/pranavsaipalla/travel-os/web/e2e/cancellation.spec.ts:110:56
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/cancellation-cancelling-a--68177-nance-resolves-the-exposure-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) [chromium] › e2e/demand.spec.ts:58:3 › demand and connectors › detected demand converts into exactly one trip, however many times it is asked 
+
+    TimeoutError: locator.selectOption: Timeout 15000ms exceeded.
+    Call log:
+      - waiting for getByLabel('Show')
+
+
+      116 |     // the candidate now links to that trip and offers no second conversion
+      117 |     await page.goto('/demand');
+    > 118 |     await page.getByLabel('Show').selectOption('CONVERTED');
+          |                                   ^
+      119 |     await page.getByRole('row').filter({ hasText: title }).getByRole('link').click();
+      120 |     await expect(page.getByText('Converted.')).toBeVisible();
+      121 |     await expect(page.getByRole('link', { name: `trip ${tripId}` })).toBeVisible();
+        at /Users/pranavsaipalla/travel-os/web/e2e/demand.spec.ts:118:35
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/demand-demand-and-connecto-26b33-ever-many-times-it-is-asked-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/demand-demand-and-connecto-26b33-ever-many-times-it-is-asked-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/demand-demand-and-connecto-26b33-ever-many-times-it-is-asked-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/demand-demand-and-connecto-26b33-ever-many-times-it-is-asked-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) [chromium] › e2e/operations.spec.ts:54:3 › disruptions and exposures › a cancelled flight needing a person is decided by a manager, not the traveler; states stay honest 
+
+    Error: expect(received).toMatch(expected)
+
+    Expected pattern: /Needs a person|Resolved|Manual intervention|No alternative/
+    Received string:  "travel-os"
+
+    Call Log:
+    - Timeout 150000ms exceeded while waiting on the predicate
+
+      75 |         intervals: [2000],
+      76 |       })
+    > 77 |       .toMatch(/Needs a person|Resolved|Manual intervention|No alternative/);
+         |        ^
+      78 |     await expect(page.getByRole('heading', { level: 1 })).toContainText('Needs a person');
+      79 |     await expect(
+      80 |       page.getByText('This is your own trip: you cannot approve its recovery.'),
+        at /Users/pranavsaipalla/travel-os/web/e2e/operations.spec.ts:77:8
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/operations-disruptions-and-e1131-traveler-states-stay-honest-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/operations-disruptions-and-e1131-traveler-states-stay-honest-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/operations-disruptions-and-e1131-traveler-states-stay-honest-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/operations-disruptions-and-e1131-traveler-states-stay-honest-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) [chromium] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'New trip' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'New trip' }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'New trip' })
+
+
+      16 |     });
+      17 |     await page.goto('/trips/new');
+    > 18 |     await expect(page.getByRole('heading', { name: 'New trip' })).toBeVisible();
+         |                                                                   ^
+      19 |     const form = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      20 |     expect(form.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      21 |     // keyboard: the first field is reachable and focus is visible
+        at /Users/pranavsaipalla/travel-os/web/e2e/smoke.spec.ts:18:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-chromium/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-chromium/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) [webkit-smoke] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: 'New trip' })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: 'New trip' }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: 'New trip' })
+
+
+      16 |     });
+      17 |     await page.goto('/trips/new');
+    > 18 |     await expect(page.getByRole('heading', { name: 'New trip' })).toBeVisible();
+         |                                                                   ^
+      19 |     const form = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+      20 |     expect(form.violations.map((v) => `${v.id}: ${v.nodes.length}`)).toEqual([]);
+      21 |     // keyboard: the first field is reachable and focus is visible
+        at /Users/pranavsaipalla/travel-os/web/e2e/smoke.spec.ts:18:67
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-webkit-smoke/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-webkit-smoke/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-webkit-smoke/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/smoke-smoke-every-browser--5d425-asses-an-accessibility-scan-webkit-smoke/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9 failed
+    [chromium] › e2e/auth.spec.ts:5:3 › sign-in and session › signs in through Keycloak with PKCE, restores after reload, signs out, and isolates caches between users 
+    [chromium] › e2e/auth.spec.ts:28:3 › sign-in and session › protected routes ask to sign in and role-gated areas are refused to a traveler 
+    [chromium] › e2e/auth.spec.ts:39:3 › sign-in and session › an expired token sends the user back to sign in 
+    [chromium] › e2e/booking.spec.ts:17:3 › traveler booking › a round trip is booked with the sandbox airline, survives a reload, and explains itself 
+    [chromium] › e2e/cancellation.spec.ts:74:3 › cancelling a booked trip › a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure 
+    [chromium] › e2e/demand.spec.ts:58:3 › demand and connectors › detected demand converts into exactly one trip, however many times it is asked 
+    [chromium] › e2e/operations.spec.ts:54:3 › disruptions and exposures › a cancelled flight needing a person is decided by a manager, not the traveler; states stay honest 
+    [chromium] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan 
+    [webkit-smoke] › e2e/smoke.spec.ts:6:3 › smoke (every browser project) › signs in, opens the overview and the new-trip form, and passes an accessibility scan 
+  11 passed (10.9m)
+make: *** [web-e2e] Error 1
+WEB_E2E_EXIT=2

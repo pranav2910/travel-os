@@ -1,0 +1,11 @@
+{
+ "status": 422,
+ "body": {
+  "detail": "limit must be between 1 and 200, got 100000",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "LIMIT_OUT_OF_RANGE",
+  "type": "https://contracts.travelos.io/problems/limit-out-of-range",
+  "code": "LIMIT_OUT_OF_RANGE"
+ }
+}

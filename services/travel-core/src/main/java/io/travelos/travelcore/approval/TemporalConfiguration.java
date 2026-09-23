@@ -61,17 +61,34 @@ class TemporalConfiguration {
       havingValue = "true",
       matchIfMissing = true)
   ApprovalSignaler temporalApprovalSignaler(WorkflowClient client) {
-    return (tripId, decision) -> {
-      try {
-        client
-            .newUntypedWorkflowStub(TripPlanning.workflowId(tripId))
-            .signal(TripPlanning.SIGNAL_APPROVAL_DECIDED, decision);
-      } catch (WorkflowNotFoundException e) {
-        // The decision is durable; a workflow that starts later reads it instead of waiting.
-        log.warn(
-            "no running workflow for {}; approval {} recorded without signal",
-            tripId,
-            decision.approvalId());
+    return new ApprovalSignaler() {
+      @Override
+      public void approvalDecided(String tripId, TripPlanning.ApprovalDecision decision) {
+        try {
+          client
+              .newUntypedWorkflowStub(TripPlanning.workflowId(tripId))
+              .signal(TripPlanning.SIGNAL_APPROVAL_DECIDED, decision);
+        } catch (WorkflowNotFoundException e) {
+          // The decision is durable; a workflow that starts later reads it instead of waiting.
+          log.warn(
+              "no running workflow for {}; approval {} recorded without signal",
+              tripId,
+              decision.approvalId());
+        }
+      }
+
+      @Override
+      public void cancelled(String tripId) {
+        try {
+          client
+              .newUntypedWorkflowStub(TripPlanning.workflowId(tripId))
+              .signal(TripPlanning.SIGNAL_CANCELLED, "cancelled by the requester");
+        } catch (WorkflowNotFoundException e) {
+          log.info("no running workflow for {}; cancellation recorded without signal", tripId);
+        } catch (RuntimeException e) {
+          // CANCELLED is durable and the workflow re-reads the trip; the signal is a courtesy.
+          log.warn("could not signal the workflow of {}: {}", tripId, e.getMessage());
+        }
       }
     };
   }

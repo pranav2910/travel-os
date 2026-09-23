@@ -1,0 +1,107 @@
+{
+ "orders": [
+  {
+   "orderId": "ord_01M363QZEJBFD9C97P482ZJNJJ",
+   "tripId": "trip_01M363QZ626GWEVCVFVZZQBHJ0",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M363QZ8NNRMJZZF5EYCR07DD",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M363QZEWRT1GGS5QKZ2Y7711",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "policyDecisionId": "pd_01M363QZAEEGBSHPRREEFMEFRM",
+   "optimizationRunId": "opt_01M363QZCFW0AC7J8G2XEXHY45",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M363QZEH7PQ47HYK3CHHMCGR",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTAtMjJ8MjAyNi0xMC0yNHw3fEVDT05PTVl8MTc5MDEzMjg3OA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M363QZEWRT1GGS5QKZ2Y7711",
+     "recordLocator": "39NB86",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 43507,
+      "display": "USD 435.07"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA243",
+       "origin": "BOS",
+       "destination": "SEA",
+       "departure": "2026-10-22T08:30:00Z",
+       "arrival": "2026-10-22T15:00:00Z",
+       "cabin": "ECONOMY"
+      },
+      {
+       "direction": "INBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA343",
+       "origin": "SEA",
+       "destination": "BOS",
+       "departure": "2026-10-24T11:15:00Z",
+       "arrival": "2026-10-24T17:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ]
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T03:07:58.801630Z",
+   "updatedAt": "2026-09-23T03:07:58.815341Z"
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T03:07:58.530920Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:07:58.595825Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:07:58.770488Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:07:58.784235Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:07:58.834215Z"
+  },
+  {
+   "from": "BOOKED",
+   "to": "CANCELLED",
+   "reason": "qa-20260923-cda5ccb cancel booked",
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T03:08:00.177462Z"
+  }
+ ]
+}

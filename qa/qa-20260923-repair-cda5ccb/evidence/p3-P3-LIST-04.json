@@ -1,0 +1,9 @@
+{
+ "status": 400,
+ "body": {
+  "detail": "Failed to convert 'limit' with value: 'abc'",
+  "instance": "/api/v1/trips",
+  "status": 400,
+  "title": "Bad Request"
+ }
+}

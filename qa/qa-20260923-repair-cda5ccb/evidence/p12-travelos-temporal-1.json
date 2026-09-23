@@ -1,0 +1,9 @@
+{
+ "create": 202,
+ "trip": "trip_01M36AC7WGSBD473GRX7E2XFKQ",
+ "status_during": "SUBMITTED",
+ "recovered_health": "healthy",
+ "after": {
+  "final": null
+ }
+}

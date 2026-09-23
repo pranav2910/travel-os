@@ -138,6 +138,9 @@ public class TripWorkflowImpl implements TripWorkflow {
   private TripPlanning.Stage stage = TripPlanning.Stage.LOADING;
   private @Nullable ApprovalDecision decision;
 
+  /** Set by the cancelled signal: the requester withdrew the trip while it was being planned. */
+  private boolean withdrawn;
+
   @Override
   public Outcome run(TripPlanning.Input input) {
     String tenant = input.tenantId();
@@ -354,6 +357,11 @@ public class TripWorkflowImpl implements TripWorkflow {
               "APPROVAL_TIMED_OUT",
               "no decision within " + APPROVAL_TIMEOUT);
         }
+        if ("CANCELLED".equals(verdict)) {
+          // the requester withdrew the trip while it waited; Travel Core already recorded it
+          stage = TripPlanning.Stage.CANCELLED;
+          return new Outcome(tripId, "CANCELLED", null, null, null);
+        }
         if (!"APPROVED".equals(verdict)) {
           String by = decision == null ? "a manager" : decision.decidedBy();
           transition(tenant, tripId, TripStatus.CANCELLED, b -> b.setReason("rejected by " + by));
@@ -384,9 +392,22 @@ public class TripWorkflowImpl implements TripWorkflow {
             });
       }
 
-      // ---- booking
+      // ---- booking: only while the departure is still ahead and nobody withdrew the trip
       stage = TripPlanning.Stage.BOOKING;
-      transition(tenant, tripId, TripStatus.BOOKING, b -> b.setReason("booking"));
+      if (departurePassed(intent.getArrivalDeadline())) {
+        return fail(
+            tenant,
+            tripId,
+            "REVALIDATION",
+            "DEPARTURE_PASSED",
+            "the outbound window closed at "
+                + ItineraryFlow.instant(intent.getArrivalDeadline())
+                + " while the trip waited; nothing was booked");
+      }
+      if (beginBooking(tenant, tripId, b -> b.setReason("booking")) == null) {
+        stage = TripPlanning.Stage.CANCELLED;
+        return new Outcome(tripId, "CANCELLED", null, null, null);
+      }
       CreateOrderCommand.Builder command =
           CreateOrderCommand.newBuilder()
               .setCtx(ctx(tenant, tripId, tripId + ":CREATE-ORDER:1"))
@@ -429,20 +450,68 @@ public class TripWorkflowImpl implements TripWorkflow {
       stage = TripPlanning.Stage.BOOKED;
       return new Outcome(tripId, "BOOKED", order.getOrderId(), null, null);
     } catch (ActivityFailure e) {
+      Outcome cancelled = cancelledMeanwhile(tenant, tripId, e);
+      if (cancelled != null) {
+        return cancelled;
+      }
       String code = failureCode(e);
       log.error("trip {} failed at {}: {}", tripId, stage, code);
-      return fail(
-          tenant,
-          tripId,
-          stageName(stage),
-          code,
-          e.getCause() == null ? e.getMessage() : e.getCause().getMessage());
+      return fail(tenant, tripId, stageName(stage), code, FailureCodes.message(e));
     }
   }
 
   @Override
   public void approvalDecided(TripPlanning.ApprovalDecision decision) {
     this.decision = decision;
+  }
+
+  @Override
+  public void cancelled(String reason) {
+    this.withdrawn = true;
+  }
+
+  /**
+   * A lifecycle move Travel Core refused because the requester cancelled the trip meanwhile is not
+   * a failure: the trip is CANCELLED, nothing was booked, and the workflow simply ends.
+   */
+  private @Nullable Outcome cancelledMeanwhile(String tenant, String tripId, ActivityFailure e) {
+    boolean refused =
+        e.getCause() instanceof ApplicationFailure af && "FAILED_PRECONDITION".equals(af.getType());
+    if (!refused && !withdrawn) {
+      return null;
+    }
+    try {
+      Trip current = activities.loadTrip(tenant, tripId);
+      if (current.getStatus() == TripStatus.CANCELLED) {
+        log.info("trip {} was cancelled while it was being planned; nothing booked", tripId);
+        stage = TripPlanning.Stage.CANCELLED;
+        return new Outcome(tripId, "CANCELLED", null, null, null);
+      }
+    } catch (ActivityFailure reload) {
+      log.warn("trip {}: could not re-read after a refused transition", tripId);
+    }
+    return null;
+  }
+
+  /** Moves the trip to BOOKING, or returns null when it was cancelled while it waited. */
+  private @Nullable Trip beginBooking(
+      String tenant,
+      String tripId,
+      java.util.function.Consumer<TransitionTripRequest.Builder> customize) {
+    try {
+      return transition(tenant, tripId, TripStatus.BOOKING, customize);
+    } catch (ActivityFailure e) {
+      if (cancelledMeanwhile(tenant, tripId, e) != null) {
+        return null;
+      }
+      throw e;
+    }
+  }
+
+  /** The window is closed once its deadline is not ahead of the workflow's clock. */
+  private static boolean departurePassed(Timestamp deadline) {
+    java.time.Instant now = java.time.Instant.ofEpochMilli(Workflow.currentTimeMillis());
+    return !ItineraryFlow.instant(deadline).isAfter(now);
   }
 
   @Override
@@ -459,6 +528,14 @@ public class TripWorkflowImpl implements TripWorkflow {
         TripStatus to,
         java.util.function.Consumer<TransitionTripRequest.Builder> customize) {
       return TripWorkflowImpl.this.transition(tenant, tripId, to, customize);
+    }
+
+    @Override
+    public @Nullable Trip beginBooking(
+        String tenant,
+        String tripId,
+        java.util.function.Consumer<TransitionTripRequest.Builder> customize) {
+      return TripWorkflowImpl.this.beginBooking(tenant, tripId, customize);
     }
 
     @Override
@@ -602,12 +679,18 @@ public class TripWorkflowImpl implements TripWorkflow {
           APPROVAL_POLL.compareTo(APPROVAL_TIMEOUT.minus(waited)) < 0
               ? APPROVAL_POLL
               : APPROVAL_TIMEOUT.minus(waited);
-      Workflow.await(slice, () -> decision != null);
+      Workflow.await(slice, () -> decision != null || withdrawn);
+      if (withdrawn) {
+        return "CANCELLED";
+      }
       if (decision != null) {
         return decision.decision();
       }
       waited = waited.plus(slice);
       Trip current = activities.loadTrip(tenant, tripId);
+      if (current.getStatus() == TripStatus.CANCELLED) {
+        return "CANCELLED";
+      }
       if ("APPROVED".equals(current.getApprovalStatus())
           || "REJECTED".equals(current.getApprovalStatus())) {
         decision =
@@ -718,12 +801,7 @@ public class TripWorkflowImpl implements TripWorkflow {
   }
 
   private static String failureCode(ActivityFailure e) {
-    if (e.getCause() instanceof ApplicationFailure af
-        && af.getType() != null
-        && !af.getType().isBlank()) {
-      return "ACTIVITY_" + af.getType();
-    }
-    return "ACTIVITY_FAILED";
+    return FailureCodes.of(e);
   }
 
   private static String stageName(TripPlanning.Stage stage) {

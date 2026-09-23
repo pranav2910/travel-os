@@ -1,0 +1,208 @@
+{
+ "create": {
+  "tripId": "trip_01M36C9HDPGF6J7T935QN8J10D",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-11-02T05:00:00Z",
+   "arrivalDeadline": "2026-11-02T23:59:00Z",
+   "returnAfter": "2026-11-04T05:00:00Z",
+   "latestReturn": "2026-11-04T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-05 USD trip with a GBP hotel",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CWZ",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CX0",
+      "origin": "LHR",
+      "destination": "BOS",
+      "earliestDeparture": "2026-11-04T05:00:00Z",
+      "arrivalDeadline": "2026-11-04T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36C9HDNX23QM5Z204BQ04Y7",
+      "city": "LHR",
+      "checkInDate": "2026-11-02",
+      "checkOutDate": "2026-11-04",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T05:37:22.870588Z",
+  "updatedAt": "2026-09-23T05:37:22.870588Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36C9HDPGF6J7T935QN8J10D",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-11-02T05:00:00Z",
+   "arrivalDeadline": "2026-11-02T23:59:00Z",
+   "returnAfter": "2026-11-04T05:00:00Z",
+   "latestReturn": "2026-11-04T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-05 USD trip with a GBP hotel",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CWZ",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CX0",
+      "origin": "LHR",
+      "destination": "BOS",
+      "earliestDeparture": "2026-11-04T05:00:00Z",
+      "arrivalDeadline": "2026-11-04T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36C9HDNX23QM5Z204BQ04Y7",
+      "city": "LHR",
+      "checkInDate": "2026-11-02",
+      "checkOutDate": "2026-11-04",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T05:37:22.870588Z",
+  "updatedAt": "2026-09-23T05:37:23.852862Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "POLICY",
+  "failureCode": "ALL_CANDIDATES_DENIED",
+  "components": [
+   {
+    "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CWZ",
+    "type": "AIR",
+    "status": "PLANNED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": null,
+    "summary": "leg BOS-LHR",
+    "updatedAt": "2026-09-23T05:37:23.592444Z"
+   },
+   {
+    "componentId": "cmp_01M36C9HDNX23QM5Z204BQ04Y7",
+    "type": "HOTEL",
+    "status": "FAILED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": "ALL_CANDIDATES_DENIED",
+    "summary": "stay in LHR 2026-11-02 to 2026-11-04",
+    "updatedAt": "2026-09-23T05:37:23.830592Z"
+   },
+   {
+    "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CX0",
+    "type": "AIR",
+    "status": "PLANNED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": null,
+    "summary": "leg LHR-BOS",
+    "updatedAt": "2026-09-23T05:37:23.592444Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CWZ",
+   "type": "AIR",
+   "status": "PLANNED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": null,
+   "summary": "leg BOS-LHR",
+   "updatedAt": "2026-09-23T05:37:23.592444Z"
+  },
+  {
+   "componentId": "cmp_01M36C9HDNX23QM5Z204BQ04Y7",
+   "type": "HOTEL",
+   "status": "FAILED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": "ALL_CANDIDATES_DENIED",
+   "summary": "stay in LHR 2026-11-02 to 2026-11-04",
+   "updatedAt": "2026-09-23T05:37:23.830592Z"
+  },
+  {
+   "componentId": "cmp_01M36C9HDM6DHM01RMWSNB8CX0",
+   "type": "AIR",
+   "status": "PLANNED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": null,
+   "summary": "leg LHR-BOS",
+   "updatedAt": "2026-09-23T05:37:23.592444Z"
+  }
+ ]
+}

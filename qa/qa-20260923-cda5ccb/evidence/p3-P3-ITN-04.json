@@ -1,0 +1,13 @@
+{
+ "status": 422,
+ "response": {
+  "detail": "leg 2 must come after leg 1",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "INTENT_INVALID",
+  "type": "https://contracts.travelos.io/problems/intent-invalid",
+  "code": "INTENT_INVALID"
+ },
+ "final": null,
+ "components": null
+}

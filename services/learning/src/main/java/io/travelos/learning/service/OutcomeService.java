@@ -83,6 +83,25 @@ public class OutcomeService {
       throw new ApiException.Unprocessable(
           "UNKNOWN_ITEM", "item " + itemId + " is not part of order " + orderId);
     }
+    // The platform never converts: a refund is settled in the currency the order was booked in.
+    // Zero is a legitimate settlement (a non-refundable rate that returned nothing); a negative
+    // amount is refused by the request contract.
+    Optional<String> orderCurrency =
+        trips.items(tenant, tripId).stream()
+            .filter(i -> i.orderId().equals(orderId) && i.currency() != null)
+            .map(OrderItemRef::currency)
+            .findFirst();
+    if (orderCurrency.isPresent() && !orderCurrency.get().equalsIgnoreCase(currency)) {
+      throw new ApiException.Unprocessable(
+          "CURRENCY_MISMATCH",
+          "order "
+              + orderId
+              + " is priced in "
+              + orderCurrency.get()
+              + "; a refund in "
+              + currency
+              + " cannot be settled against it (the platform does not convert currencies)");
+    }
     String key = "refund:" + orderId + ":" + (itemId == null ? "order" : itemId);
     Optional<Outcome> current = outcomes.current(tenant, key);
     Map<String, Object> provenance = new LinkedHashMap<>();

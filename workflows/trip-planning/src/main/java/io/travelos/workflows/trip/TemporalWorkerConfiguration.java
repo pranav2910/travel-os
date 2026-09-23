@@ -89,7 +89,8 @@ class TemporalWorkerConfiguration {
                 .setWorkerInterceptors(new OpenTracingWorkerInterceptor(tracing))
                 .build());
     Worker worker = factory.newWorker(TripPlanning.TASK_QUEUE);
-    worker.registerWorkflowImplementationTypes(TripWorkflowImpl.class);
+    worker.registerWorkflowImplementationTypes(
+        TripWorkflowImpl.class, TripCancellationWorkflowImpl.class);
     // Slice 5: planning resolves its learning inputs through one pinned activity.
     worker.registerActivitiesImplementations(activities, learningActivities);
     // Slice 2: disruption recovery runs on its own task queue so its load never starves planning.

@@ -1,0 +1,35 @@
+{
+ "request": {
+  "tripId": "trip_01M3644R4WFA86B7BAQJ7VP82M",
+  "orderId": "ord_01M3644SZSAGBZFJ8MS39E9FXM",
+  "amountMinor": 1000000000000000,
+  "currency": "USD",
+  "reference": "qa-20260923-cda5ccb-huge"
+ },
+ "status": 200,
+ "body": {
+  "outcomeId": "out_01M3644V7SZNV3V2QA1WYT71SV",
+  "logicalKey": "refund:ord_01M3644SZSAGBZFJ8MS39E9FXM:order",
+  "revision": 3,
+  "kind": "REFUND_SETTLED",
+  "quality": "NEUTRAL",
+  "supplierKey": null,
+  "provider": null,
+  "evidenceClass": "SANDBOX",
+  "tripId": "trip_01M3644R4WFA86B7BAQJ7VP82M",
+  "orderId": "ord_01M3644SZSAGBZFJ8MS39E9FXM",
+  "itemId": null,
+  "componentId": null,
+  "disruptionId": null,
+  "observedAt": "2026-09-23T03:15:00.473871Z",
+  "recordedAt": "2026-09-23T03:15:00.473871Z",
+  "source": "API",
+  "sourceRef": "human/carol",
+  "provenance": {
+   "amountMinor": 1000000000000000,
+   "currency": "USD",
+   "reference": "qa-20260923-cda5ccb-huge",
+   "recordedBy": "human/carol"
+  }
+ }
+}

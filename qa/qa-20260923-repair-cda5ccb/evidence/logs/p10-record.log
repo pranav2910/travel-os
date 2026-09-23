@@ -1,0 +1,9 @@
+[PASS   ] P10-A11Y-01: routes scanned=10; violations=none
+[PASS   ] P10-STATE-01: text='Trips\n\nEverything you requested, newest first.\n\nNew trip\nTrips could not be loaded. simulated outag
+[PASS   ] P10-NET-01: stillOnForm=True phantomSuccess=False; retry={'url': '/trips/trip_01M36C48AEE40EMN0PWSCEJ8HE', 'inputRetained'
+[PASS   ] P10-LOAD-01: slowLoading={'loadingVisible': True}; rapidConfirm={'tripUrl': '/trips/trip_01M36C59GYZE9QR7K0P8HV47NQ'}
+Traceback (most recent call last):
+  File "/Users/pranavsaipalla/travel-os/qa/qa-20260923-repair-cda5ccb/harness/p10_record.py", line 25, in <module>
+    overflow = {w: [p for p, v in pages.items() if v.get("overflow")] for w, pages in resp.items() if isinstance(pages, dict)}
+                                                   ^^^^^
+AttributeError: 'bool' object has no attribute 'get'

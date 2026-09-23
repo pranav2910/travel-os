@@ -1,0 +1,2128 @@
+{
+ "issued": "2026-09-23T03:02:48+00:00",
+ "control": 200,
+ "later": {
+  "status": 200,
+  "body": [
+   {
+    "tripId": "trip_01M364AJKF0ZV4KN9HEAT2780R",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-25T05:00:00Z",
+     "latestReturn": "2026-10-25T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb S15 flight hotel ground (v2)",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M364AJKEVA3GFHTBE0D3NXWN",
+        "origin": "BOS",
+        "destination": "SEA",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M364AJKEVA3GFHTBE0D3NXWP",
+        "origin": "SEA",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-25T05:00:00Z",
+        "arrivalDeadline": "2026-10-25T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M364AJKEVA3GFHTBE0D3NXWQ",
+        "city": "SEA",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-25",
+        "required": true
+       }
+      ],
+      "transfers": [
+       {
+        "componentId": "cmp_01M364AJKEVA3GFHTBE0D3NXWR",
+        "kind": "AIRPORT_TO_HOTEL",
+        "city": "SEA",
+        "fromLocation": "SEA airport",
+        "toLocation": "hotel",
+        "pickup": null,
+        "required": true
+       }
+      ],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M364AK5GE60DSE3BAMMQT00A",
+     "optimizationRunId": "opt_01M364AK5GNV93Z83AT1CZH9Z4",
+     "policyDecisionId": "pd_01M364AK7M34YX177C3XET4H7Q",
+     "approvalId": null,
+     "orderId": "ord_01M364AMA4KYNHTADYS7G9EJA7"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:18:08.239749Z",
+    "updatedAt": "2026-09-23T03:18:10.182932Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 96045,
+     "display": "USD 960.45"
+    },
+    "explanation": "For the BOS to SEA to BOS we chose UA240 BOS-SEA via sandbox-air; DL332 SEA-BOS via sandbox-air; hotel Budget Inn in SEA (3 nights, 2026-10-22); shuttle transfer SEA airport to hotel by CityShuttle at USD 960.45 (2 legs, 1 stays, 1 transfers). 245 options were searched and 177 were permitted by policy US_STANDARD_TRAVEL v71. It ranked first with a score of 95.2 (cost 94, time 100, risk 92, preference 100, experience 88). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M364AFJ0VVZHAX4CZCZ0TB5H",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "LAX",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T05:00:00Z",
+     "latestReturn": "2026-10-24T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP LAX refused ground + exposure",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5D",
+        "origin": "BOS",
+        "destination": "LAX",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5E",
+        "origin": "LAX",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+        "city": "LAX",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-24",
+        "required": true
+       }
+      ],
+      "transfers": [
+       {
+        "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5G",
+        "kind": "AIRPORT_TO_HOTEL",
+        "city": "LAX",
+        "fromLocation": "LAX airport",
+        "toLocation": "hotel",
+        "pickup": null,
+        "required": true
+       }
+      ],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M364AG60P249AFJK53HG3M08",
+     "optimizationRunId": "opt_01M364AG60WSK95STRY238Z290",
+     "policyDecisionId": "pd_01M364AG8Q5M57RAD0QT1EFVG8",
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:18:05.120653Z",
+    "updatedAt": "2026-09-23T03:18:07.148218Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 99407,
+     "display": "USD 994.07"
+    },
+    "failureStage": "COMPENSATION",
+    "failureCode": "COMPENSATION_INCOMPLETE",
+    "explanation": "For the BOS to LAX to BOS we chose UA612 BOS-LAX via sandbox-air; UA740 LAX-BOS via sandbox-air; hotel Wilshire Non-Refundable in LAX (2 nights, 2026-10-22); shuttle transfer LAX airport to hotel by Coastal Rides at USD 994.07 (2 legs, 1 stays, 1 transfers). 242 options were searched and 174 were permitted by policy US_STANDARD_TRAVEL v71. It ranked first with a score of 92.7 (cost 85, time 100, risk 92, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M364AB3D7JANNYSA6DFMQN90",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "DEN",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T05:00:00Z",
+     "latestReturn": "2026-10-24T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP ground timeout DEN (v2)",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M364AB37GHANZEBZ5T8XJY5R",
+        "origin": "BOS",
+        "destination": "DEN",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M364AB3863DGWBA94DK32DCW",
+        "origin": "DEN",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M364AB3863DGWBA94DK32DCX",
+        "city": "DEN",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-24",
+        "required": true
+       }
+      ],
+      "transfers": [
+       {
+        "componentId": "cmp_01M364AB3A6W9TAT6AR8G54T0Z",
+        "kind": "AIRPORT_TO_HOTEL",
+        "city": "DEN",
+        "fromLocation": "DEN airport",
+        "toLocation": "hotel",
+        "pickup": null,
+        "required": true
+       }
+      ],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M364ABXAWDHTJW5AYW253XA4",
+     "optimizationRunId": "opt_01M364ABXA7CTD52GM0JQCC9Q8",
+     "policyDecisionId": "pd_01M364ABXVE7AHVEB9YWRV6KSF",
+     "approvalId": null,
+     "orderId": "ord_01M364ACYD6WWYE3003D0ASRHY"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:18:00.557213Z",
+    "updatedAt": "2026-09-23T03:18:03.647333Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 84762,
+     "display": "USD 847.62"
+    },
+    "explanation": "For the BOS to DEN to BOS we chose DL236 BOS-DEN via sandbox-air; DL780 DEN-BOS via sandbox-air; hotel Front Range Inn in DEN (2 nights, 2026-10-22); shuttle transfer DEN airport to hotel by Rocky Shuttle at USD 847.62 (2 legs, 1 stays, 1 transfers). 242 options were searched and 174 were permitted by policy US_STANDARD_TRAVEL v71. It ranked first with a score of 99.1 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3647B9F7XV0VWA2ZX1D3H5Q",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T10:00:00Z",
+     "latestReturn": "2026-10-24T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb extra",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3647BY35EJ2RK2Y6CT3RV87",
+     "optimizationRunId": "opt_01M3647C2F9N29PC7NM6G5TTPR",
+     "policyDecisionId": "pd_01M3647C07KCGZCPR8MBYJG20W",
+     "approvalId": null,
+     "orderId": "ord_01M3647C54ZKCJKBR14NG4W703"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:16:22.447277Z",
+    "updatedAt": "2026-09-23T03:16:23.380862Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v71. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M36464R9V9BCRA2G5A0RMCVW",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "CANCELLED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-03T05:00:00Z",
+     "arrivalDeadline": "2026-11-03T23:59:00Z",
+     "returnAfter": "2026-11-05T10:00:00Z",
+     "latestReturn": "2026-11-05T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb cancel vs booking race",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36464Z193VEVDJ3GD69658M",
+     "optimizationRunId": "opt_01M364651SQ86AA54RBCNXNBD9",
+     "policyDecisionId": "pd_01M3646505TGA53BXG9BMQEYFW",
+     "approvalId": null,
+     "orderId": "ord_01M364653FVBR0VK78VWJMQW0X"
+    },
+    "createdBy": "human/alice",
+    "version": 5,
+    "createdAt": "2026-09-23T03:15:42.985765Z",
+    "updatedAt": "2026-09-23T03:15:43.412302Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v71. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M36461NZ0M2RZMJRXNFQJZHW",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "CANCELLED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-30T05:00:00Z",
+     "arrivalDeadline": "2026-10-30T23:59:00Z",
+     "returnAfter": "2026-11-01T10:00:00Z",
+     "latestReturn": "2026-11-01T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb approval race",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M364620DNRDTACM942PKKKBH",
+     "optimizationRunId": "opt_01M364624ZWQH0DM3EC7VARWPQ",
+     "policyDecisionId": "pd_01M36462255HV9JCVRS0MQMB1J",
+     "approvalId": "apr_01M36462B9YVJJH9H4F0RA2772",
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 3,
+    "createdAt": "2026-09-23T03:15:39.839589Z",
+    "updatedAt": "2026-09-23T03:15:41.447482Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v70. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 435.07 exceeds the USD 0.01 auto-approve limit. A manager's approval is required before booking."
+   },
+   {
+    "tripId": "trip_01M36461GCZ6X7P2GJCFZ38FMX",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "AWAITING_APPROVAL",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-26T05:00:00Z",
+     "arrivalDeadline": "2026-10-26T23:59:00Z",
+     "returnAfter": "2026-10-28T10:00:00Z",
+     "latestReturn": "2026-10-28T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb key across tenants (alice)",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3646206N3DER3V5XPV140R2",
+     "optimizationRunId": "opt_01M364624F38T9W312ANNX19CJ",
+     "policyDecisionId": "pd_01M3646222CCHD6SQHDBE02JEH",
+     "approvalId": "apr_01M364629ZGZVG2X87BAKRYC86",
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 2,
+    "createdAt": "2026-09-23T03:15:39.660951Z",
+    "updatedAt": "2026-09-23T03:15:40.478862Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v70. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 435.07 exceeds the USD 0.01 auto-approve limit. A manager's approval is required before booking."
+   },
+   {
+    "tripId": "trip_01M3645ZX7JCQF41ZGPPMPHBDC",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "CANCELLED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T10:00:00Z",
+     "latestReturn": "2026-10-24T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb WF discovery",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36460K28SVN7ERGPT3KMZ90",
+     "optimizationRunId": "opt_01M36460RS9MQE8A12AKPNCK6B",
+     "policyDecisionId": "pd_01M36460P2841SXXEZE3HWD830",
+     "approvalId": null,
+     "orderId": "ord_01M36460VPQBV5EE8SRHGMJJCE"
+    },
+    "createdBy": "human/alice",
+    "version": 5,
+    "createdAt": "2026-09-23T03:15:38.023855Z",
+    "updatedAt": "2026-09-23T03:15:39.761771Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3645Y3WV1DWPF21DTASFB3G",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Book me a train from Boston to New York next week and arrange a visa for me. [qa-20260923-cda5ccb FAB]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:36.188492Z",
+    "updatedAt": "2026-09-23T03:15:36.419476Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645WM0R7XK0NHSH03N7M0T",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Get me to Chicago tomorrow morning. [qa-20260923-cda5ccb rep2]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:34.656058Z",
+    "updatedAt": "2026-09-23T03:15:34.863446Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645V4NTXT98R0613M9B0NY",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Get me to Chicago tomorrow morning. [qa-20260923-cda5ccb rep1]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:33.141571Z",
+    "updatedAt": "2026-09-23T03:15:33.346457Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645SMWZKJCPAMZKM4C2DQK",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Get me to Chicago tomorrow morning. [qa-20260923-cda5ccb rep0]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:31.612948Z",
+    "updatedAt": "2026-09-23T03:15:31.787182Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645R4X4ARFQC7YN04SR3X0",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Just handle everything within $800. [qa-20260923-cda5ccb S19]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:30.077493Z",
+    "updatedAt": "2026-09-23T03:15:30.266200Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M3645PN3FY6GVBSV7YJJNXR9",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Book flight and hotel for Boston next week from Seattle. [qa-20260923-cda5ccb S18]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:28.547635Z",
+    "updatedAt": "2026-09-23T03:15:28.717087Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645N5BBHTGDQFNEETKTDCT",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Book NYC to London to Paris to NYC next month. [qa-20260923-cda5ccb S17]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:27.019246Z",
+    "updatedAt": "2026-09-23T03:15:27.192293Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645KN60NHDCZVZ19WACH1G",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Get me to Chicago tomorrow morning. [qa-20260923-cda5ccb S16]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:25.478513Z",
+    "updatedAt": "2026-09-23T03:15:25.670812Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645J54N3DZ57QY72TEEZKW",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Four adults and two children Boston to Orlando next month under $2,000 total. [qa-20260923-cda5ccb S14]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:23.940850Z",
+    "updatedAt": "2026-09-23T03:15:24.107781Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M3645GMQHSRD0GM43XZJ5WYT",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Delta only, Boston to Chicago, leave after 6 PM, arrive before 9 AM, next Tuesday. [qa-20260923-cda5ccb S13]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:22.391316Z",
+    "updatedAt": "2026-09-23T03:15:22.573505Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M3645F473HJG6X3PTA04ZV9Q",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "New York to Boston next Friday, JFK only, not Newark. [qa-20260923-cda5ccb S11]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:20.839419Z",
+    "updatedAt": "2026-09-23T03:15:21.054419Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M3645DM3S3JS985YZYJNMWRY",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "First class under $100 from Boston to Seattle next month. [qa-20260923-cda5ccb S8]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:19.299692Z",
+    "updatedAt": "2026-09-23T03:15:19.505544Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M3645C4DNWQFRP9B9Z165T0Q",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Boston to San Francisco next week under $500. Prefer nonstop; one stop is okay. [qa-20260923-cda5ccb S6]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:17.773565Z",
+    "updatedAt": "2026-09-23T03:15:17.974591Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M3645AMFQE5Q9JSTC1QBPX7C",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Book Portland to San Jose Friday. [qa-20260923-cda5ccb S4]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:16.239038Z",
+    "updatedAt": "2026-09-23T03:15:16.443005Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M3645945N47FVEZ627TA1QFV",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Find and book the cheapest nonstop Boston to Chicago round trip for 2026-10-22 to 2026-10-25, total under $450. [qa-20260923-cda5ccb S3]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:14.693167Z",
+    "updatedAt": "2026-09-23T03:15:14.888882Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M36457KTYRV13GQJE4DXYMND",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Find New York to London for 2026-11-01 to 2026-11-08 under $1,000. [qa-20260923-cda5ccb S2]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:13.146693Z",
+    "updatedAt": "2026-09-23T03:15:13.365873Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NOT_A_TRAVEL_REQUEST"
+   },
+   {
+    "tripId": "trip_01M364563TC9290VA4JMTVS695",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "request": "Plan a four-day Bangor to Boston trip next month under $700. [qa-20260923-cda5ccb S1]",
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 1,
+    "createdAt": "2026-09-23T03:15:11.610198Z",
+    "updatedAt": "2026-09-23T03:15:11.866067Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "INTENT",
+    "failureCode": "NEEDS_CLARIFICATION"
+   },
+   {
+    "tripId": "trip_01M36452ZX0MMS4HZ8B8EG5SSV",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "JFK",
+     "destination": "ORD",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-28T05:00:00Z",
+     "latestReturn": "2026-10-28T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb ML2",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M36452ZX0MMS4HZ8B8EG5SSQ",
+        "origin": "JFK",
+        "destination": "ORD",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M36452ZX0MMS4HZ8B8EG5SSR",
+        "origin": "ORD",
+        "destination": "DEN",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M36452ZX0MMS4HZ8B8EG5SSS",
+        "origin": "DEN",
+        "destination": "SFO",
+        "earliestDeparture": "2026-10-26T05:00:00Z",
+        "arrivalDeadline": "2026-10-26T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M36452ZX0MMS4HZ8B8EG5SST",
+        "origin": "SFO",
+        "destination": "JFK",
+        "earliestDeparture": "2026-10-28T05:00:00Z",
+        "arrivalDeadline": "2026-10-28T23:59:00Z"
+       }
+      ],
+      "stays": [],
+      "transfers": [],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36453KNGBTPJY2972WKAD41",
+     "optimizationRunId": "opt_01M36453KKJ73B3FGDRJ24KD6X",
+     "policyDecisionId": "pd_01M36453PK2NEVT1S3FJJXENPW",
+     "approvalId": null,
+     "orderId": "ord_01M36454S3H6FMJ5Q2F233DXK7"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:15:08.413575Z",
+    "updatedAt": "2026-09-23T03:15:10.435658Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 107764,
+     "display": "USD 1077.64"
+    },
+    "explanation": "For the JFK to ORD to DEN to SFO to JFK we chose DL329 JFK-ORD via sandbox-air; DL839 ORD-DEN via sandbox-air; DL834 DEN-SFO via sandbox-air; DL578 SFO-JFK via sandbox-air at USD 1077.64 (4 legs). 204 options were searched and 68 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 96.4 (cost 94, time 100, risk 100, preference 100, experience 88). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M36451E5BDQVEC0XKCZRH9Z8",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-25T10:00:00Z",
+     "latestReturn": "2026-10-25T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb S11 round trip",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36451V4CNR0TY4EK4EFMZBJ",
+     "optimizationRunId": "opt_01M36451XERZH1XJT7EEW6FPQ5",
+     "policyDecisionId": "pd_01M36451VVV01BF60HS465E3A6",
+     "approvalId": null,
+     "orderId": "ord_01M36451Z20T9YZ7G98R2RP8D0"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:15:06.821858Z",
+    "updatedAt": "2026-09-23T03:15:07.416879Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644ZXR0MXXK0T2ZG671NQJ",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": null,
+     "latestReturn": null,
+     "purpose": "qa-20260923-cda5ccb S10 one way",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36450B65EKF2DTM4K4GTQSG",
+     "optimizationRunId": "opt_01M36450D0946NY6F3HBHDDBD9",
+     "policyDecisionId": "pd_01M36450BW44BR7AWPFRWY4Z96",
+     "approvalId": null,
+     "orderId": "ord_01M36450E6WG76W860AQFYHXYC"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:15:05.272712Z",
+    "updatedAt": "2026-09-23T03:15:05.815908Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 24499,
+     "display": "USD 244.99"
+    },
+    "explanation": "For the BOS to SEA we chose UA240 BOS-SEA via sandbox-air at USD 244.99. 51 options were searched and 17 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 94.4 (cost 86, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644YE0CXQN75J2EFR65H20",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T00:00:00Z",
+     "arrivalDeadline": "2026-10-22T09:00:00Z",
+     "returnAfter": null,
+     "latestReturn": null,
+     "purpose": "qa-20260923-cda5ccb S06 arrive before 09:00",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 2,
+    "createdAt": "2026-09-23T03:15:03.744375Z",
+    "updatedAt": "2026-09-23T03:15:04.204054Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "OPTIMIZATION",
+    "failureCode": "NO_FEASIBLE_CANDIDATE"
+   },
+   {
+    "tripId": "trip_01M3644WXK4SWB5Z02ACV5A5P5",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-10-22T18:00:00Z",
+     "arrivalDeadline": "2026-10-23T06:00:00Z",
+     "returnAfter": null,
+     "latestReturn": null,
+     "purpose": "qa-20260923-cda5ccb S05 after 18:00",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644XBE14X17K1A8CQ3EDAD",
+     "optimizationRunId": "opt_01M3644XCW1A0VRE2WTABW4GWN",
+     "policyDecisionId": "pd_01M3644XBZZK7YFRFJVNFX76G5",
+     "approvalId": null,
+     "orderId": "ord_01M3644XE9M9ED9HPAV7SC9PMC"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:15:02.195033Z",
+    "updatedAt": "2026-09-23T03:15:02.749316Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 23740,
+     "display": "USD 237.40"
+    },
+    "explanation": "For the BOS to SEA we chose UA242 BOS-SEA via sandbox-air at USD 237.40. 18 options were searched and 6 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 95.0 (cost 100, time 100, risk 100, preference 100, experience 50). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644V854A7CX3B0MWZGF0XK",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-12-01T05:00:00Z",
+     "arrivalDeadline": "2026-12-01T23:59:00Z",
+     "returnAfter": "2026-12-03T10:00:00Z",
+     "latestReturn": "2026-12-03T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb OPT oracle",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644VB4AMK6MM4JGD975GG9",
+     "optimizationRunId": "opt_01M3644VD8DZW3E12CREPTB4PT",
+     "policyDecisionId": "pd_01M3644VBWJAJ907VQBSDHF3TF",
+     "approvalId": null,
+     "orderId": "ord_01M3644VEPHY6X43BAA6D82S93"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:15:00.485022Z",
+    "updatedAt": "2026-09-23T03:15:00.726531Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644R4WFA86B7BAQJ7VP82M",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-25T05:00:00Z",
+     "arrivalDeadline": "2026-11-25T23:59:00Z",
+     "returnAfter": "2026-11-28T05:00:00Z",
+     "latestReturn": "2026-11-28T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb MONEY line items",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M3644R4WFA86B7BAQJ7VP82H",
+        "origin": "BOS",
+        "destination": "SEA",
+        "earliestDeparture": "2026-11-25T05:00:00Z",
+        "arrivalDeadline": "2026-11-25T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M3644R4WFA86B7BAQJ7VP82J",
+        "origin": "SEA",
+        "destination": "BOS",
+        "earliestDeparture": "2026-11-28T05:00:00Z",
+        "arrivalDeadline": "2026-11-28T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M3644R4WFA86B7BAQJ7VP82K",
+        "city": "SEA",
+        "checkInDate": "2026-11-25",
+        "checkOutDate": "2026-11-28",
+        "required": true
+       }
+      ],
+      "transfers": [],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644RXGZQPY3QSBBE83VK3K",
+     "optimizationRunId": "opt_01M3644RXGHRBPZTQM8WMW6QMJ",
+     "policyDecisionId": "pd_01M3644S0KN6HX1PXT5N15JX80",
+     "approvalId": null,
+     "orderId": "ord_01M3644SZSAGBZFJ8MS39E9FXM"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:57.308670Z",
+    "updatedAt": "2026-09-23T03:14:59.394097Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 92145,
+     "display": "USD 921.45"
+    },
+    "explanation": "For the BOS to SEA to BOS we chose UA240 BOS-SEA via sandbox-air; DL332 SEA-BOS via sandbox-air; hotel Budget Inn in SEA (3 nights, 2026-11-25) at USD 921.45 (2 legs, 1 stays). 107 options were searched and 39 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 95.1 (cost 92, time 100, risk 100, preference 100, experience 83). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644R4NC95KJQDGCR6Q1A8Z",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL client fields",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644RC3JMJ0WFEQDS0CPE1W",
+     "optimizationRunId": "opt_01M3644RGZ50N3GK4Z00DNWVPR",
+     "policyDecisionId": "pd_01M3644RDATXKRSB1NT2DY42QQ",
+     "approvalId": null,
+     "orderId": "ord_01M3644RXFX4ACXF5Q2A8E5X9T"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:57.301885Z",
+    "updatedAt": "2026-09-23T03:14:58.192212Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644PKJKAYMFZ5G3NM0Q1YK",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL huge budget",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644PW5JNTMPY023S3NHTZE",
+     "optimizationRunId": "opt_01M3644Q05T267ATD6NFGEF78X",
+     "policyDecisionId": "pd_01M3644PXTA2KM835DH4GS8YT0",
+     "approvalId": null,
+     "orderId": "ord_01M3644Q1MNC1B8EQCD0VN38QW"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:55.730159Z",
+    "updatedAt": "2026-09-23T03:14:56.203016Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v68. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644N30BN7BQWRAMXVSDGJS",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL zero budget",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 2,
+    "createdAt": "2026-09-23T03:14:54.176789Z",
+    "updatedAt": "2026-09-23T03:14:54.508589Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "POLICY",
+    "failureCode": "ALL_CANDIDATES_DENIED"
+   },
+   {
+    "tripId": "trip_01M3644KJQP09J69P1VQPP3R32",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "AWAITING_APPROVAL",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL maxTotal one cent below (REQUIRE_APPROVAL)",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644KVH91MSAC8A2SK3A8GT",
+     "optimizationRunId": "opt_01M3644KY9FNGWSGKGK4NRW98H",
+     "policyDecisionId": "pd_01M3644KWGNYA9VT6ZRSN1YRZC",
+     "approvalId": "apr_01M3644KYYY1CTZDVECTJ9R9DY",
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 2,
+    "createdAt": "2026-09-23T03:14:52.631088Z",
+    "updatedAt": "2026-09-23T03:14:53.022094Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v66. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TRIP_TOTAL_ABOVE_BUDGET: the itinerary costs USD 435.07, above the USD 435.06 trip budget. A manager's approval is required before booking."
+   },
+   {
+    "tripId": "trip_01M3644J293G2KRRJ16XWFH8BX",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL maxTotal one cent above the fare",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644JBM24N3RAPHC7BVYKY6",
+     "optimizationRunId": "opt_01M3644JDZSD2QTHAGQP123XMC",
+     "policyDecisionId": "pd_01M3644JCP3WDG0518BQT6WJBF",
+     "approvalId": null,
+     "orderId": "ord_01M3644JF8JYY9CDMQNH5N7EMQ"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:51.081507Z",
+    "updatedAt": "2026-09-23T03:14:51.537086Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 37095,
+     "display": "USD 370.95"
+    },
+    "explanation": "For the BOS to SEA we chose DL962 BOS-ORD, DL1062 ORD-SEA / return DL902 SEA-ORD, DL1002 ORD-BOS via sandbox-air at USD 370.95. 69 options were searched and 7 were permitted by policy US_STANDARD_TRAVEL v65. It ranked first with a score of 68.8 (cost 100, time 0, risk 75, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644GHEPNA5ZPDXKTKS1ACM",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL maxTotal one cent below the fare (DENY)",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644GWEBMYKBQG6AM3YV7AS",
+     "optimizationRunId": "opt_01M3644GYVYA9G3HXPPX0Z8Q23",
+     "policyDecisionId": "pd_01M3644GXEPM6EYFSF2DV8C9DG",
+     "approvalId": null,
+     "orderId": "ord_01M3644H05WSJ4F54BGB0PAKWV"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:49.518973Z",
+    "updatedAt": "2026-09-23T03:14:50.008475Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 37095,
+     "display": "USD 370.95"
+    },
+    "explanation": "For the BOS to SEA we chose DL962 BOS-ORD, DL1062 ORD-SEA / return DL902 SEA-ORD, DL1002 ORD-BOS via sandbox-air at USD 370.95. 69 options were searched and 6 were permitted by policy US_STANDARD_TRAVEL v64. It ranked first with a score of 68.8 (cost 100, time 0, risk 75, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644F0TCKB1YMJVS8P4C6BA",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL maxTotal exactly the fare",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644FBTPW3Z1NRGK1P8TJZY",
+     "optimizationRunId": "opt_01M3644FDTBR1B2X6EME9QJBVY",
+     "policyDecisionId": "pd_01M3644FCJXJSRRA5DAY9M47PW",
+     "approvalId": null,
+     "orderId": "ord_01M3644FFNGGTX00RWKBZXVSZJ"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:47.962820Z",
+    "updatedAt": "2026-09-23T03:14:48.463959Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 37095,
+     "display": "USD 370.95"
+    },
+    "explanation": "For the BOS to SEA we chose DL962 BOS-ORD, DL1062 ORD-SEA / return DL902 SEA-ORD, DL1002 ORD-BOS via sandbox-air at USD 370.95. 69 options were searched and 7 were permitted by policy US_STANDARD_TRAVEL v63. It ranked first with a score of 68.8 (cost 100, time 0, risk 75, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644DEP6S4AC9ZC9CX07YH6",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-21T05:00:00Z",
+     "arrivalDeadline": "2026-11-21T23:59:00Z",
+     "returnAfter": "2026-11-23T10:00:00Z",
+     "latestReturn": "2026-11-23T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb POL reference fare",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3644DWXQM06VKJBNKAD7BMA",
+     "optimizationRunId": "opt_01M3644DZ3E9YB6VAB8Z7F9A4J",
+     "policyDecisionId": "pd_01M3644DXR24EVCVYSDHFJJ5NF",
+     "approvalId": null,
+     "orderId": "ord_01M3644E0DGJ9XSDW6K02GX1GA"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:46.358084Z",
+    "updatedAt": "2026-09-23T03:14:46.944673Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3644BYPYCHXHHQ7V4AM9QM8",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "LHR",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T05:00:00Z",
+     "latestReturn": "2026-10-24T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP GBP LHR",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD501",
+        "origin": "BOS",
+        "destination": "LHR",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD502",
+        "origin": "LHR",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M3644BYNEBGD6ZEQAXRBD503",
+        "city": "LHR",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-24",
+        "required": true
+       }
+      ],
+      "transfers": [],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 2,
+    "createdAt": "2026-09-23T03:14:44.822307Z",
+    "updatedAt": "2026-09-23T03:14:45.395159Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "POLICY",
+    "failureCode": "ALL_CANDIDATES_DENIED"
+   },
+   {
+    "tripId": "trip_01M36448YH7YPGDM1KQWWZAZ35",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "MIA",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T05:00:00Z",
+     "latestReturn": "2026-10-24T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP inject MIA",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M36448YG0WGTX2TZZ4KTCRSS",
+        "origin": "BOS",
+        "destination": "MIA",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M36448YG0WGTX2TZZ4KTCRST",
+        "origin": "MIA",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M36448YG0WGTX2TZZ4KTCRSV",
+        "city": "MIA",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-24",
+        "required": true
+       }
+      ],
+      "transfers": [],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36449J4XG7W2DGFYGBMPST1",
+     "optimizationRunId": "opt_01M36449J3XXZ13WPDCGGW4QZG",
+     "policyDecisionId": "pd_01M36449JK12PRN10Z5M31ZAES",
+     "approvalId": null,
+     "orderId": "ord_01M3644AHXTZYWZ903D5KQC3RN"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:41.745165Z",
+    "updatedAt": "2026-09-23T03:14:43.587941Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 75490,
+     "display": "USD 754.90"
+    },
+    "explanation": "For the BOS to MIA to BOS we chose DL196 BOS-MIA via sandbox-air; DL644 MIA-BOS via sandbox-air; hotel Bayside Bargain in MIA (2 nights, 2026-10-22) at USD 754.90 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 96.1 (cost 90, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M36445YYD0M6QRHJ6782B8W1",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "ORD",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T05:00:00Z",
+     "latestReturn": "2026-10-24T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP short quote ORD",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M36445YXRKPTCC616GCXNEG8",
+        "origin": "BOS",
+        "destination": "ORD",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M36445YXRKPTCC616GCXNEG9",
+        "origin": "ORD",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M36445YXRKPTCC616GCXNEGA",
+        "city": "ORD",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-24",
+        "required": true
+       }
+      ],
+      "transfers": [],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36446M3P9FHPQV9NDNZEFWK",
+     "optimizationRunId": "opt_01M36446M39BSQNDQQ26FDE3RC",
+     "policyDecisionId": "pd_01M36446MKVAT517FKK5Y6MT4A",
+     "approvalId": null,
+     "orderId": "ord_01M36447K14J0V5EJ96VMVC8YA"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:38.686141Z",
+    "updatedAt": "2026-09-23T03:14:40.548730Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 70329,
+     "display": "USD 703.29"
+    },
+    "explanation": "For the BOS to ORD to BOS we chose DL800 BOS-ORD via sandbox-air; DL832 ORD-BOS via sandbox-air; hotel River North Flash Sale in ORD (2 nights, 2026-10-22) at USD 703.29 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 98.8 (cost 97, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M36442ZJ9QXV9NTQ6BZ9PGVC",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SFO",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T05:00:00Z",
+     "latestReturn": "2026-10-24T23:59:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP reprice SFO",
+     "hotelRequired": true,
+     "travelers": 1,
+     "itinerary": {
+      "legs": [
+       {
+        "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGV9",
+        "origin": "BOS",
+        "destination": "SFO",
+        "earliestDeparture": "2026-10-22T05:00:00Z",
+        "arrivalDeadline": "2026-10-22T23:59:00Z"
+       },
+       {
+        "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVA",
+        "origin": "SFO",
+        "destination": "BOS",
+        "earliestDeparture": "2026-10-24T05:00:00Z",
+        "arrivalDeadline": "2026-10-24T23:59:00Z"
+       }
+      ],
+      "stays": [
+       {
+        "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVB",
+        "city": "SFO",
+        "checkInDate": "2026-10-22",
+        "checkOutDate": "2026-10-24",
+        "required": true
+       }
+      ],
+      "transfers": [],
+      "currency": "USD"
+     }
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M36443MKHGDJTAYJ2FBFSP4N",
+     "optimizationRunId": "opt_01M36443MKK0GZW1SDNXXNZFJR",
+     "policyDecisionId": "pd_01M36444DKNCD4E5YPHN2B9N2Z",
+     "approvalId": null,
+     "orderId": "ord_01M36444TJ6M5P69ASC9E5H11W"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:35.634949Z",
+    "updatedAt": "2026-09-23T03:14:37.704421Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 100643,
+     "display": "USD 1006.43"
+    },
+    "explanation": "For the BOS to SFO to BOS we chose UA285 BOS-SFO via sandbox-air; DL377 SFO-BOS via sandbox-air; hotel Union Square Saver in SFO (2 nights, 2026-10-22) at USD 926.43 (2 legs, 1 stays). 105 options were searched and 37 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 92.8 (cost 86, time 100, risk 100, preference 100, experience 83). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M36441FEZVBKB9M4KF0WM5CA",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "FAILED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "ZZZ",
+     "earliestDeparture": "2026-10-22T05:00:00Z",
+     "arrivalDeadline": "2026-10-22T23:59:00Z",
+     "returnAfter": "2026-10-24T10:00:00Z",
+     "latestReturn": "2026-10-24T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb SUP zero offers",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": null,
+     "optimizationRunId": null,
+     "policyDecisionId": null,
+     "approvalId": null,
+     "orderId": null
+    },
+    "createdBy": "human/alice",
+    "version": 2,
+    "createdAt": "2026-09-23T03:14:34.094204Z",
+    "updatedAt": "2026-09-23T03:14:34.663240Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "failureStage": "SEARCH",
+    "failureCode": "NO_OFFERS"
+   },
+   {
+    "tripId": "trip_01M3643T6CM3H7QQ81N49EXGKC",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2031-09-22T05:00:00Z",
+     "arrivalDeadline": "2031-09-22T23:59:00Z",
+     "returnAfter": "2031-09-26T10:00:00Z",
+     "latestReturn": "2031-09-26T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb D07",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3643TJTA4D39DWC3NDHZ06D",
+     "optimizationRunId": "opt_01M3643TNXVT742S8KKB704K5F",
+     "policyDecisionId": "pd_01M3643TKGVXNTTFHWRSVRKFRR",
+     "approvalId": null,
+     "orderId": "ord_01M3643V2EMVNJS0TPA1AWXDVS"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:26.636958Z",
+    "updatedAt": "2026-09-23T03:14:27.638496Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3643T274P0RRPBWHC5K677N",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-01T05:00:00Z",
+     "arrivalDeadline": "2026-11-01T23:59:00Z",
+     "returnAfter": "2027-01-30T10:00:00Z",
+     "latestReturn": "2027-01-30T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb D05",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3643TJPCD3E2FYR06XA434R",
+     "optimizationRunId": "opt_01M3643TNYHDD6Z8K58R46KC93",
+     "policyDecisionId": "pd_01M3643TKCX1PDAZKXTANT6XHW",
+     "approvalId": null,
+     "orderId": "ord_01M3643V2F7JRDM4SKFHH84T49"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:26.503099Z",
+    "updatedAt": "2026-09-23T03:14:27.632719Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3643S4HZRR552JFNE299E05",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-11-01T05:00:00Z",
+     "arrivalDeadline": "2026-11-01T23:59:00Z",
+     "returnAfter": "2026-12-01T10:00:00Z",
+     "latestReturn": "2026-12-01T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb D04",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3643SH7E4VPFANJ4DBF5V8R",
+     "optimizationRunId": "opt_01M3643SK9JPFRZCF1TRP3HQ04",
+     "policyDecisionId": "pd_01M3643SHWGK8SYG3J5KKQV0SX",
+     "approvalId": null,
+     "orderId": "ord_01M3643SMPKJV6R3ZF230F5XBS"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:25.553818Z",
+    "updatedAt": "2026-09-23T03:14:26.094425Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3643RP6MJYPM99JCCTFM4R2",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-09-30T05:00:00Z",
+     "arrivalDeadline": "2026-09-30T23:59:00Z",
+     "returnAfter": "2026-10-01T10:00:00Z",
+     "latestReturn": "2026-10-01T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb D03",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3643S1DG2071NBMF9V1WQ3T",
+     "optimizationRunId": "opt_01M3643S3RM2V180EWY6HFXFBH",
+     "policyDecisionId": "pd_01M3643S2B1B2XD6D1HBXAE4XV",
+     "approvalId": null,
+     "orderId": "ord_01M3643S5BAMN2GAB4MW6TS253"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:25.094317Z",
+    "updatedAt": "2026-09-23T03:14:25.646992Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   },
+   {
+    "tripId": "trip_01M3643RJBC3D8NQ7K7W7TWQ03",
+    "tenantId": "acme",
+    "travelerId": "emp_1001",
+    "status": "BOOKED",
+    "source": "API",
+    "intent": {
+     "origin": "BOS",
+     "destination": "SEA",
+     "earliestDeparture": "2026-09-25T05:00:00Z",
+     "arrivalDeadline": "2026-09-25T23:59:00Z",
+     "returnAfter": "2026-09-27T10:00:00Z",
+     "latestReturn": "2026-09-27T23:00:00Z",
+     "purpose": "qa-20260923-cda5ccb D02",
+     "hotelRequired": false,
+     "travelers": 1,
+     "itinerary": null
+    },
+    "evidence": {
+     "selectedBundleId": "bdl_01M3643S1A51K6YV204Q3AE96J",
+     "optimizationRunId": "opt_01M3643S3QEHK92K6DW1X78MBK",
+     "policyDecisionId": "pd_01M3643S254K5M3ZQFYM742E87",
+     "approvalId": null,
+     "orderId": "ord_01M3643S5BAMN2GAB4MW6TS254"
+    },
+    "createdBy": "human/alice",
+    "version": 4,
+    "createdAt": "2026-09-23T03:14:24.971062Z",
+    "updatedAt": "2026-09-23T03:14:25.602611Z",
+    "traveler": {
+     "travelerId": "emp_1001",
+     "givenName": "Alice",
+     "familyName": "Nguyen",
+     "email": "alice@acme.example"
+    },
+    "total": {
+     "currency": "USD",
+     "amountMinor": 43507,
+     "display": "USD 435.07"
+    },
+    "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+   }
+  ]
+ }
+}

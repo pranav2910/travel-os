@@ -1,0 +1,9 @@
+{
+ "list": 500,
+ "edge": 200,
+ "recovered_health": "healthy",
+ "after": {
+  "list": 200,
+  "create_and_book": "BOOKED"
+ }
+}

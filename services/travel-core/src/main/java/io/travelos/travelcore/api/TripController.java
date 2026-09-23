@@ -5,6 +5,7 @@ import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
 import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
 import io.travelos.travelcore.trip.AgentDecision;
+import io.travelos.travelcore.trip.IntentRejectedException;
 import io.travelos.travelcore.trip.TravelIntent;
 import io.travelos.travelcore.trip.Trip;
 import io.travelos.travelcore.trip.TripRepository;
@@ -29,6 +30,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(path = "/api/v1/trips", produces = "application/json")
 public class TripController {
 
+  /** Lists are bounded; a larger page is a refused request, not a silently shorter one. */
+  static final int MAX_LIMIT = 200;
+
   private final TripService trips;
 
   public TripController(TripService trips) {
@@ -51,13 +55,21 @@ public class TripController {
               request.travelerId(),
               request.source() == null ? TripSource.API : request.source(),
               request.request(),
-              intent);
+              intent,
+              request.traveler() == null ? null : request.traveler().toDomain());
     } catch (TravelIntent.HotelRequestException e) {
+      throw new ApiException.Unprocessable(e.code(), e.getMessage());
+    } catch (IntentRejectedException e) {
       throw new ApiException.Unprocessable(e.code(), e.getMessage());
     } catch (IllegalArgumentException e) {
       throw new ApiException.Unprocessable("INTENT_INVALID", e.getMessage());
     }
-    Trip trip = trips.create(me, command, idempotencyKey);
+    Trip trip;
+    try {
+      trip = trips.create(me, command, idempotencyKey);
+    } catch (IntentRejectedException e) {
+      throw new ApiException.Unprocessable(e.code(), e.getMessage());
+    }
     Span.current().setAttribute("trip.id", trip.tripId());
     Span.current().setAttribute("tenant.id", trip.tenantId().value());
     return ResponseEntity.accepted()
@@ -101,7 +113,11 @@ public class TripController {
         throw new ApiException.Unprocessable("STATUS_UNKNOWN", "unknown status " + status);
       }
     }
-    int n = Math.clamp(limit, 1, 200);
+    if (limit < 1 || limit > MAX_LIMIT) {
+      throw new ApiException.Unprocessable(
+          "LIMIT_OUT_OF_RANGE", "limit must be between 1 and " + MAX_LIMIT + ", got " + limit);
+    }
+    int n = limit;
     List<Trip> found =
         switch (scope) {
           case "mine" -> trips.listMine(me, n);

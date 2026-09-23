@@ -1,0 +1,277 @@
+{
+ "final": {
+  "tripId": "trip_01M36A488DWXHSFTE7KZA6HR23",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "SFO",
+   "destination": "NRT",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-11-01T05:00:00Z",
+   "latestReturn": "2026-11-01T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb ML3",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A488C14G1MSZESZWM6WAM",
+      "origin": "SFO",
+      "destination": "NRT",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A488C14G1MSZESZWM6WAN",
+      "origin": "NRT",
+      "destination": "ICN",
+      "earliestDeparture": "2026-10-26T05:00:00Z",
+      "arrivalDeadline": "2026-10-26T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A488C14G1MSZESZWM6WAP",
+      "origin": "ICN",
+      "destination": "SIN",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A488C14G1MSZESZWM6WAQ",
+      "origin": "SIN",
+      "destination": "SFO",
+      "earliestDeparture": "2026-11-01T05:00:00Z",
+      "arrivalDeadline": "2026-11-01T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A48YPNGECM5K0GR492FHH",
+   "optimizationRunId": "opt_01M36A48YP3C3TGSJ8VMMMHXWD",
+   "policyDecisionId": "pd_01M36A491N6RT43D11YSP1BQ1G",
+   "approvalId": null,
+   "orderId": "ord_01M36A4A4183W4PPX3J9Z298D9"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:59:32.493227Z",
+  "updatedAt": "2026-09-23T04:59:34.600392Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 104585,
+   "display": "USD 1045.85"
+  },
+  "explanation": "For the SFO to NRT to ICN to SIN to SFO we chose DL805 SFO-NRT via sandbox-air; DL637 NRT-ICN via sandbox-air; DL133 ICN-SIN via sandbox-air; DL365 SIN-SFO via sandbox-air at USD 1045.85 (4 legs). 204 options were searched and 136 were permitted by policy US_STANDARD_TRAVEL v91. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A488C14G1MSZESZWM6WAM",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A48PH8TM5PG0Q9P4V5D24",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A4A47CHFFWJQWSQFV1ET3",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 26808,
+     "display": "USD 268.08"
+    },
+    "failureCode": null,
+    "summary": "DL805 SFO-NRT 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:34.499809Z"
+   },
+   {
+    "componentId": "cmp_01M36A488C14G1MSZESZWM6WAN",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A48PXWHQJYEZJG0QRWTYJ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A4A4BCXG653PDQ85QR43T",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 22390,
+     "display": "USD 223.90"
+    },
+    "failureCode": null,
+    "summary": "DL637 NRT-ICN 2026-10-26T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:34.499809Z"
+   },
+   {
+    "componentId": "cmp_01M36A488C14G1MSZESZWM6WAP",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A48Q9RJ002NV302T9J256",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A4A4FNRYTDY24NGVR85YS",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 29843,
+     "display": "USD 298.43"
+    },
+    "failureCode": null,
+    "summary": "DL133 ICN-SIN 2026-10-29T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:34.499809Z"
+   },
+   {
+    "componentId": "cmp_01M36A488C14G1MSZESZWM6WAQ",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A48QNSHYY6ZRCWHB86XSC",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A4A4KYNSZXC96MRW1H0E3",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 25544,
+     "display": "USD 255.44"
+    },
+    "failureCode": null,
+    "summary": "DL365 SIN-SFO 2026-11-01T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:34.499809Z"
+   }
+  ]
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M36A4A4183W4PPX3J9Z298D9",
+   "tripId": "trip_01M36A488DWXHSFTE7KZA6HR23",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A48YPNGECM5K0GR492FHH",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36A4A47CHFFWJQWSQFV1ET3",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 104585,
+    "display": "USD 1045.85"
+   },
+   "policyDecisionId": "pd_01M36A491N6RT43D11YSP1BQ1G",
+   "optimizationRunId": "opt_01M36A48YP3C3TGSJ8VMMMHXWD",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36A4A4183W4PPX3J9Z298D5",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxTRk98TlJUfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDEzOTU3Mg",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A4A47CHFFWJQWSQFV1ET3",
+     "recordLocator": "FMDZNL",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 26808,
+      "display": "USD 268.08"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL805",
+       "origin": "SFO",
+       "destination": "NRT",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T22:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A488C14G1MSZESZWM6WAM"
+    },
+    {
+     "itemId": "itm_01M36A4A4183W4PPX3J9Z298D6",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxOUlR8SUNOfDIwMjYtMTAtMjZ8LXwyfEVDT05PTVl8MTc5MDEzOTU3Mg",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A4A4BCXG653PDQ85QR43T",
+     "recordLocator": "PULEJ2",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 22390,
+      "display": "USD 223.90"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL637",
+       "origin": "NRT",
+       "destination": "ICN",
+       "departure": "2026-10-26T17:45:00Z",
+       "arrival": "2026-10-26T21:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A488C14G1MSZESZWM6WAN"
+    },
+    {
+     "itemId": "itm_01M36A4A4183W4PPX3J9Z298D7",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxJQ058U0lOfDIwMjYtMTAtMjl8LXwyfEVDT05PTVl8MTc5MDEzOTU3Mg",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A4A4FNRYTDY24NGVR85YS",
+     "recordLocator": "ZSWDQS",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 29843,
+      "display": "USD 298.43"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL133",
+       "origin": "ICN",
+       "destination": "SIN",
+       "departure": "2026-10-29T17:45:00Z",
+       "arrival": "2026-10-29T21:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A488C14G1MSZESZWM6WAP"
+    },
+    {
+     "itemId": "itm_01M36A4A4183W4PPX3J9Z298D8",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxTSU58U0ZPfDIwMjYtMTEtMDF8LXwyfEVDT05PTVl8MTc5MDEzOTU3Mg",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A4A4KYNSZXC96MRW1H0E3",
+     "recordLocator": "VTY2KG",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 25544,
+      "display": "USD 255.44"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL365",
+       "origin": "SIN",
+       "destination": "SFO",
+       "departure": "2026-11-01T17:45:00Z",
+       "arrival": "2026-11-01T23:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A488C14G1MSZESZWM6WAQ"
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:59:34.401112Z",
+   "updatedAt": "2026-09-23T04:59:34.421360Z"
+  }
+ ]
+}

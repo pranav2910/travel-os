@@ -1,0 +1,389 @@
+{
+ "final": {
+  "tripId": "trip_01M36BPFCDYDX4DVJDPBG9BG5R",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LHR",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-11-02T05:00:00Z",
+   "latestReturn": "2026-11-02T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb ML4",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36BPFCC3P51QCB1X18SM6MC",
+      "origin": "BOS",
+      "destination": "LHR",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36BPFCC3P51QCB1X18SM6MD",
+      "origin": "LHR",
+      "destination": "DXB",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5M",
+      "origin": "DXB",
+      "destination": "DEL",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5N",
+      "origin": "DEL",
+      "destination": "SIN",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5P",
+      "origin": "SIN",
+      "destination": "NRT",
+      "earliestDeparture": "2026-10-31T05:00:00Z",
+      "arrivalDeadline": "2026-10-31T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5Q",
+      "origin": "NRT",
+      "destination": "BOS",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36BPG90BSYEV36F7W0N1N7X",
+   "optimizationRunId": "opt_01M36BPG90BN2GDE9SWK0SAQPB",
+   "policyDecisionId": "pd_01M36BPGBR7C2YZF0VY6BAZP4S",
+   "approvalId": "apr_01M36BPGN3XFJQX0CTQ5TD1WXB",
+   "orderId": "ord_01M36BPHS34JBSVKSXDCCQBZQW"
+  },
+  "createdBy": "human/alice",
+  "version": 5,
+  "createdAt": "2026-09-23T05:26:58.189439Z",
+  "updatedAt": "2026-09-23T05:27:00.840268Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 177141,
+   "display": "USD 1771.41"
+  },
+  "approval": {
+   "approvalId": "apr_01M36BPGN3XFJQX0CTQ5TD1WXB",
+   "tripId": "trip_01M36BPFCDYDX4DVJDPBG9BG5R",
+   "requiredRole": "MANAGER",
+   "status": "APPROVED",
+   "policyDecisionId": "pd_01M36BPGBR7C2YZF0VY6BAZP4S",
+   "requestedAt": "2026-09-23T05:26:59.491301Z",
+   "decidedBy": "human/bob",
+   "decidedAt": "2026-09-23T05:26:59.743261Z",
+   "comment": "qa-20260923-repair-cda5ccb style approved for the test"
+  },
+  "explanation": "For the BOS to LHR to DXB to DEL to SIN to NRT to BOS we chose DL821 BOS-LHR via sandbox-air; DL253 LHR-DXB via sandbox-air; DL402 DXB-DEL via sandbox-air; DL284 DEL-SIN via sandbox-air; DL737 SIN-NRT via sandbox-air; DL687 NRT-BOS via sandbox-air at USD 1771.41 (6 legs). 306 options were searched and 204 were permitted by policy US_STANDARD_TRAVEL v99. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 1771.41 exceeds the USD 1200.00 auto-approve limit. A manager's approval is required before booking.",
+  "components": [
+   {
+    "componentId": "cmp_01M36BPFCC3P51QCB1X18SM6MC",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36BPFN31WDF8XKCZJ3539DZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36BPHSE46PFYZQ4BQZ9Y1FB",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 34222,
+     "display": "USD 342.22"
+    },
+    "failureCode": null,
+    "summary": "DL821 BOS-LHR 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T05:27:00.737202Z"
+   },
+   {
+    "componentId": "cmp_01M36BPFCC3P51QCB1X18SM6MD",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36BPFNTZCYZAM5KKTG590RD",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36BPHSND5C1YVMJRQZNT5GQ",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 31014,
+     "display": "USD 310.14"
+    },
+    "failureCode": null,
+    "summary": "DL253 LHR-DXB 2026-10-25T17:45:00Z",
+    "updatedAt": "2026-09-23T05:27:00.737202Z"
+   },
+   {
+    "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5M",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36BPFP7NPT7XSZS8Z6G8WDZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36BPHSVN6SRHPAKYA9E8RQ6",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 25946,
+     "display": "USD 259.46"
+    },
+    "failureCode": null,
+    "summary": "DL402 DXB-DEL 2026-10-27T17:45:00Z",
+    "updatedAt": "2026-09-23T05:27:00.737202Z"
+   },
+   {
+    "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5N",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36BPFPPX9G2S6CNGWKZXN1H",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36BPHT0TVXGXJYKSXQJQ1BR",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 26035,
+     "display": "USD 260.35"
+    },
+    "failureCode": null,
+    "summary": "DL284 DEL-SIN 2026-10-29T17:45:00Z",
+    "updatedAt": "2026-09-23T05:27:00.737202Z"
+   },
+   {
+    "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5P",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36BPFQ3Y5833Q6DT119JY3S",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36BPHT5NM3W8YY4Y8J2S4E0",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 33116,
+     "display": "USD 331.16"
+    },
+    "failureCode": null,
+    "summary": "DL737 SIN-NRT 2026-10-31T17:45:00Z",
+    "updatedAt": "2026-09-23T05:27:00.737202Z"
+   },
+   {
+    "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5Q",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36BPFQFTZF8S38HQH036C6H",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36BPHTBRKVYWHFVMSFDN44C",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 26808,
+     "display": "USD 268.08"
+    },
+    "failureCode": null,
+    "summary": "DL687 NRT-BOS 2026-11-02T17:45:00Z",
+    "updatedAt": "2026-09-23T05:27:00.737202Z"
+   }
+  ]
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M36BPHS34JBSVKSXDCCQBZQW",
+   "tripId": "trip_01M36BPFCDYDX4DVJDPBG9BG5R",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36BPG90BSYEV36F7W0N1N7X",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36BPHSE46PFYZQ4BQZ9Y1FB",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 177141,
+    "display": "USD 1771.41"
+   },
+   "policyDecisionId": "pd_01M36BPGBR7C2YZF0VY6BAZP4S",
+   "optimizationRunId": "opt_01M36BPG90BN2GDE9SWK0SAQPB",
+   "approvalId": "apr_01M36BPGN3XFJQX0CTQ5TD1WXB",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36BPHS2K9VPWXA2T72BQV2S",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8TEhSfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDE0MTIxOA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36BPHSE46PFYZQ4BQZ9Y1FB",
+     "recordLocator": "9XA8FX",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 34222,
+      "display": "USD 342.22"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL821",
+       "origin": "BOS",
+       "destination": "LHR",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T22:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36BPFCC3P51QCB1X18SM6MC"
+    },
+    {
+     "itemId": "itm_01M36BPHS2K9VPWXA2T72BQV2T",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxMSFJ8RFhCfDIwMjYtMTAtMjV8LXwyfEVDT05PTVl8MTc5MDE0MTIxOA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36BPHSND5C1YVMJRQZNT5GQ",
+     "recordLocator": "BU9TRH",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 31014,
+      "display": "USD 310.14"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL253",
+       "origin": "LHR",
+       "destination": "DXB",
+       "departure": "2026-10-25T17:45:00Z",
+       "arrival": "2026-10-25T22:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36BPFCC3P51QCB1X18SM6MD"
+    },
+    {
+     "itemId": "itm_01M36BPHS2K9VPWXA2T72BQV2V",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxEWEJ8REVMfDIwMjYtMTAtMjd8LXwyfEVDT05PTVl8MTc5MDE0MTIxOA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36BPHSVN6SRHPAKYA9E8RQ6",
+     "recordLocator": "822XUF",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 25946,
+      "display": "USD 259.46"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL402",
+       "origin": "DXB",
+       "destination": "DEL",
+       "departure": "2026-10-27T17:45:00Z",
+       "arrival": "2026-10-27T22:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5M"
+    },
+    {
+     "itemId": "itm_01M36BPHS34JBSVKSXDCCQBZQS",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxERUx8U0lOfDIwMjYtMTAtMjl8LXwyfEVDT05PTVl8MTc5MDE0MTIxOA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36BPHT0TVXGXJYKSXQJQ1BR",
+     "recordLocator": "Q2HBGU",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 26035,
+      "display": "USD 260.35"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL284",
+       "origin": "DEL",
+       "destination": "SIN",
+       "departure": "2026-10-29T17:45:00Z",
+       "arrival": "2026-10-29T21:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5N"
+    },
+    {
+     "itemId": "itm_01M36BPHS34JBSVKSXDCCQBZQT",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxTSU58TlJUfDIwMjYtMTAtMzF8LXwyfEVDT05PTVl8MTc5MDE0MTIxOA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36BPHT5NM3W8YY4Y8J2S4E0",
+     "recordLocator": "CZFXR9",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 33116,
+      "display": "USD 331.16"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL737",
+       "origin": "SIN",
+       "destination": "NRT",
+       "departure": "2026-10-31T17:45:00Z",
+       "arrival": "2026-10-31T23:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5P"
+    },
+    {
+     "itemId": "itm_01M36BPHS34JBSVKSXDCCQBZQV",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxOUlR8Qk9TfDIwMjYtMTEtMDJ8LXwyfEVDT05PTVl8MTc5MDE0MTIxOA",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36BPHTBRKVYWHFVMSFDN44C",
+     "recordLocator": "VCS3X3",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 26808,
+      "display": "USD 268.08"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL687",
+       "origin": "NRT",
+       "destination": "BOS",
+       "departure": "2026-11-02T17:45:00Z",
+       "arrival": "2026-11-02T23:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36BPFCDYDX4DVJDPBG9BG5Q"
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T05:27:00.642033Z",
+   "updatedAt": "2026-09-23T05:27:00.685275Z"
+  }
+ ]
+}

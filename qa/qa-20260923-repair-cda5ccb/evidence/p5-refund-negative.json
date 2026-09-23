@@ -1,0 +1,21 @@
+{
+ "request": {
+  "tripId": "trip_01M36A3B76FAZG21M1K21YJDHV",
+  "orderId": "ord_01M36A3CJP9016EY5TD19YFND0",
+  "amountMinor": -100,
+  "currency": "USD",
+  "reference": "qa-20260923-repair-cda5ccb-negative"
+ },
+ "status": 400,
+ "body": {
+  "detail": "request validation failed",
+  "instance": "/api/v1/learning/outcomes/refunds",
+  "status": 400,
+  "title": "VALIDATION_FAILED",
+  "type": "https://contracts.travelos.io/problems/validation-failed",
+  "code": "VALIDATION_FAILED",
+  "fields": {
+   "amountMinor": "must be greater than or equal to 0"
+  }
+ }
+}

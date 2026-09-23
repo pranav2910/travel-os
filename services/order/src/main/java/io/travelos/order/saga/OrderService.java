@@ -554,6 +554,15 @@ public class OrderService {
                 order.failureMessage(),
                 true,
                 now);
+          } else if (!anyOpen && order.status() == OrderStatus.CANCELLATION_PENDING) {
+            // A cancellation a supplier refused is complete once people released the rest: the
+            // order is CANCELLED now, and only now, with every refund that was recorded.
+            String reason = "every exposure resolved by " + by.id();
+            orders.transition(order, OrderStatus.CANCELLED, reason, null, null, null, true, now);
+            OrderRecord cancelled = orders.find(tenant, orderId).orElseThrow();
+            outbox.append(
+                OrderEvents.cancelled(
+                    cancelled, orders.refundsOf(orderId).orElse(null), reason, by, null, clock));
           }
           return resolved;
         });
@@ -573,54 +582,175 @@ public class OrderService {
     return orders.byTrip(tenant, tripId);
   }
 
-  /** Idempotent by state: cancelling a cancelled order returns it. */
+  /**
+   * Releases a confirmed order at its suppliers, for a person or for the trip's cancellation
+   * workflow. The order is CANCELLATION_PENDING before any supplier is called and CANCELLED only
+   * once every confirmed item is released, so a crash in between leaves an honest state that a
+   * retry continues from: released items are skipped, refused ones are left to the person who owns
+   * their exposure (never asked again, never exposed twice). A refusal (a non-refundable rate, a
+   * reference the supplier does not know) becomes an OPEN exposure and the order stays
+   * CANCELLATION_PENDING with failure code CANCELLATION_INCOMPLETE until a person resolves it
+   * ({@link #resolveExposure}); a transient supplier error propagates so the caller retries.
+   * Idempotent by state: a cancelled order is returned as it is.
+   */
   public OrderRecord cancel(CancelOrderCommand command) {
     RequestContexts.Validated ctx = RequestContexts.require(command.getCtx());
     OrderRecord order = get(ctx.tenant(), command.getOrderId());
     if (order.status() == OrderStatus.CANCELLED) {
       return order;
     }
-    if (!order.status().canTransitionTo(OrderStatus.CANCELLED)) {
-      throw Status.FAILED_PRECONDITION
-          .withDescription("ORDER_NOT_CANCELLABLE: status " + order.status())
-          .asRuntimeException();
+    String reason = command.getReason().isBlank() ? "cancelled" : command.getReason();
+    if (order.status() != OrderStatus.CANCELLATION_PENDING) {
+      if (!order.status().canTransitionTo(OrderStatus.CANCELLATION_PENDING)) {
+        throw Status.FAILED_PRECONDITION
+            .withDescription("ORDER_NOT_CANCELLABLE: status " + order.status())
+            .asRuntimeException();
+      }
+      // The intent is on record before the first supplier hears of it.
+      OrderRecord pending = order;
+      Boolean moved =
+          tx.execute(
+              s ->
+                  orders.transition(
+                      pending,
+                      OrderStatus.CANCELLATION_PENDING,
+                      reason,
+                      null,
+                      null,
+                      null,
+                      false,
+                      clock.instant()));
+      if (!Boolean.TRUE.equals(moved)) {
+        throw Status.ABORTED
+            .withDescription("order changed concurrently; retry")
+            .asRuntimeException();
+      }
     }
-    Money refund = null;
-    for (Item item : order.items()) {
-      if (item.status() != ItemStatus.CONFIRMED) {
+    OrderRecord current = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+    // Reverse booking order, confirmed items only: CANCELLED ones are already released and
+    // CANCEL_FAILED ones belong to the person resolving their exposure.
+    List<Item> confirmed =
+        new ArrayList<>(
+            current.items().stream().filter(i -> i.status() == ItemStatus.CONFIRMED).toList());
+    java.util.Collections.reverse(confirmed);
+    List<ExposureRecord> refused = new ArrayList<>();
+    for (Item item : confirmed) {
+      CancelOrderResponse response;
+      try {
+        response =
+            suppliers.cancelOrder(
+                CancelOrderRequest.newBuilder()
+                    .setCtx(command.getCtx())
+                    .setProvider(item.provider())
+                    .setExternalOrderId(item.externalRef() == null ? "" : item.externalRef())
+                    .build());
+      } catch (StatusRuntimeException e) {
+        if (SupplierClient.isRetryable(e.getStatus())) {
+          // The answer is not known yet. Everything released so far is recorded; the caller
+          // retries and this method continues from the item states.
+          throw e;
+        }
+        String code = failureCode(e);
+        metrics.cancelled(item.offerType(), "REFUSED");
+        log.warn(
+            "order {} item {} ({}) could not be released: {}; exposure recorded for a person",
+            current.orderId(),
+            item.itemId(),
+            item.externalRef(),
+            code);
+        ExposureRecord exposure =
+            new ExposureRecord(
+                Ids.newId(IdPrefix.EXPOSURE),
+                current.orderId(),
+                item.itemId(),
+                item.componentId(),
+                item.provider(),
+                item.externalRef() == null ? "" : item.externalRef(),
+                item.total(),
+                "CANCELLATION_REFUSED",
+                code
+                    + ": "
+                    + (e.getStatus().getDescription() == null
+                        ? code
+                        : e.getStatus().getDescription()),
+                ExposureRecord.Status.OPEN,
+                null,
+                null,
+                null,
+                clock.instant(),
+                null);
+        refused.add(exposure);
+        tx.executeWithoutResult(
+            s -> {
+              orders.updateItem(
+                  item.itemId(), ItemStatus.CANCEL_FAILED, null, null, code, clock.instant());
+              exposures.insert(ctx.tenant(), exposure);
+            });
         continue;
       }
-      CancelOrderResponse response =
-          suppliers.cancelOrder(
-              CancelOrderRequest.newBuilder()
-                  .setCtx(command.getCtx())
-                  .setProvider(item.provider())
-                  .setExternalOrderId(item.externalRef())
-                  .build());
-      Money itemRefund = money(response.getRefund());
-      refund = refund == null ? itemRefund : refund.plus(itemRefund);
+      Money itemRefund =
+          response.hasRefund() && !response.getRefund().getCurrency().isBlank()
+              ? money(response.getRefund())
+              : Money.of(item.total().currency(), 0);
+      metrics.cancelled(item.offerType(), "RELEASED");
       tx.executeWithoutResult(
-          s ->
-              orders.updateItem(
-                  item.itemId(), ItemStatus.CANCELLED, null, null, null, clock.instant()));
+          s -> {
+            orders.updateItem(
+                item.itemId(), ItemStatus.CANCELLED, null, null, null, clock.instant());
+            orders.recordItemRefund(item.itemId(), itemRefund, clock.instant());
+          });
     }
-    Money finalRefund = refund;
-    String reason = command.getReason().isBlank() ? "cancelled" : command.getReason();
     return tx.execute(
         s -> {
           OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+          boolean anyRefused =
+              fresh.items().stream().anyMatch(i -> i.status() == ItemStatus.CANCEL_FAILED);
+          boolean anyOpen =
+              exposures.byOrder(ctx.tenant(), fresh.orderId()).stream()
+                  .anyMatch(e -> e.status() == ExposureRecord.Status.OPEN);
+          if (!anyRefused && !anyOpen) {
+            orders.transition(
+                fresh, OrderStatus.CANCELLED, reason, null, null, null, false, clock.instant());
+            OrderRecord cancelled = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+            outbox.append(
+                OrderEvents.cancelled(
+                    cancelled,
+                    orders.refundsOf(cancelled.orderId()).orElse(null),
+                    reason,
+                    ctx.principal(),
+                    command.getCtx().getCausationId(),
+                    clock));
+            return cancelled;
+          }
+          if (refused.isEmpty()) {
+            // a retry after an earlier refusal: nothing new happened, nothing new is said
+            return fresh;
+          }
+          String message =
+              refused.size()
+                  + " component(s) could not be released: "
+                  + refused.stream()
+                      .map(e -> e.provider() + " " + e.externalRef() + " (" + e.detail() + ")")
+                      .collect(java.util.stream.Collectors.joining("; "));
           orders.transition(
-              fresh, OrderStatus.CANCELLED, reason, null, null, null, false, clock.instant());
-          OrderRecord cancelled = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+              fresh,
+              OrderStatus.CANCELLATION_PENDING,
+              "cancellation incomplete: " + message,
+              null,
+              "CANCELLATION_INCOMPLETE",
+              message,
+              false,
+              clock.instant());
+          OrderRecord incomplete = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
           outbox.append(
-              OrderEvents.cancelled(
-                  cancelled,
-                  finalRefund,
-                  reason,
-                  ctx.principal(),
+              OrderEvents.compensationFailed(
+                  incomplete,
+                  refused,
+                  "CANCELLATION_INCOMPLETE",
+                  message,
                   command.getCtx().getCausationId(),
                   clock));
-          return cancelled;
+          return incomplete;
         });
   }
 

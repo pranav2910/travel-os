@@ -1,0 +1,25 @@
+[FAIL   ] BUG-08-1-before: booked=BOOKED; cancel 200 -> CANCELLED; final=CANCELLED; orders=['CONFIRMED']; supplier before=[('sandbox-air'
+[FAIL   ] BUG-08-2-before: cancel 200; trip=CANCELLED/None; order=CONFIRMED items=[('AIR', 'CONFIRMED'), ('AIR', 'CONFIRMED'), ('HOTEL', 
+[FAIL   ] BUG-08-4-before: awaiting=AWAITING_APPROVAL; cancel 200 CANCELLED; late approval 200 None; final=CANCELLED; orders=0
+[FAIL   ] BUG-01-1-before: 202  
+[FAIL   ] BUG-01-2-before: 202  
+[FAIL   ] BUG-01-3-before: 202  
+[FAIL   ] BUG-01-4-before: 422 INTENT_INVALID unknown location LON: the platform does not know its clock
+[FAIL   ] BUG-01-5-before: 422 INTENT_INVALID unknown location QQQ: the platform does not know its clock
+[FAIL   ] BUG-10-1-before: 422 INTENT_INVALID
+[FAIL   ] BUG-03-1-before: 202  
+[FAIL   ] BUG-03-2-before: 202  
+[FAIL   ] BUG-03-3-before: 202  
+[PASS   ] BUG-03-4-before: 202  
+[PASS   ] BUG-03-5-before: 202  
+[PASS   ] BUG-03-6-before: 202  
+[FAIL   ] BUG-07-1-before: statuses=[400, 400, 400, 400, 400] codes=['IDEMPOTENCY_KEY_MALFORMED', 'IDEMPOTENCY_KEY_MALFORMED', 'IDEMPOTEN
+[FAIL   ] BUG-05-1-before: 202  
+[PASS   ] BUG-05-2-before: 202 
+[FAIL   ] BUG-05-3-before: codes=['ACTIVITY_io.grpc.StatusRuntimeException', 'ALL_CANDIDATES_DENIED', 'COMPENSATION_INCOMPLETE', 'NEEDS_C
+[FAIL   ] BUG-04-1-before: anonymous 202 ; named 202 snapshot={'travelerId': 'emp_1001', 'givenName': '', 'familyName': '', 'email': ''}
+[FAIL   ] BUG-06-1-before: {"0": "200 ", "-1": "200 ", "201": "200 ", "200": "200 ", "1": "200 "}
+[FAIL   ] BUG-12-1-before: {"zero": "200 ", "one-cent": "200 ", "negative": "400 VALIDATION_FAILED", "eur-on-usd": "200 "}
+[FAIL   ] BUG-09-1-before: {"/": {"status": 200, "Content-Security-Policy": null, "X-Content-Type-Options": null, "X-Frame-Options": null
+{'FAIL': 19, 'PASS': 4}
+EXIT=0

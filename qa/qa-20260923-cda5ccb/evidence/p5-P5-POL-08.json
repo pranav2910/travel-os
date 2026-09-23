@@ -1,0 +1,52 @@
+{
+ "final": {
+  "tripId": "trip_01M364FPFZSAA2PHTHHRRF5E82",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-21T05:00:00Z",
+   "arrivalDeadline": "2026-11-21T23:59:00Z",
+   "returnAfter": "2026-11-23T10:00:00Z",
+   "latestReturn": "2026-11-23T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb POL boundary 37094",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T03:20:56.062992Z",
+  "updatedAt": "2026-09-23T03:20:56.488341Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "POLICY",
+  "failureCode": "ALL_CANDIDATES_DENIED"
+ },
+ "outcomes": {
+  "DENY": 69
+ },
+ "sample_reason": [
+  [
+   {
+    "code": "TRIP_TOTAL_ABOVE_BUDGET",
+    "ruleId": "TRIP_BUDGET",
+    "message": "the itinerary costs USD 427.68, above the USD 370.94 trip budget"
+   }
+  ]
+ ]
+}

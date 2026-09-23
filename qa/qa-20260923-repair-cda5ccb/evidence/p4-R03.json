@@ -1,0 +1,271 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R03",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "SJC",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-15T05:00:00Z",
+      "arrivalDeadline": "2026-10-15T23:59:00Z"
+     },
+     {
+      "origin": "SEA",
+      "destination": "SJC",
+      "earliestDeparture": "2026-10-16T05:00:00Z",
+      "arrivalDeadline": "2026-10-16T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "city": "SEA",
+      "checkInDate": "2026-10-15",
+      "checkOutDate": "2026-10-16",
+      "required": true
+     }
+    ],
+    "transfers": []
+   }
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36A1PRB0GD4NCV92PV7HRT3",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "SJC",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-15T05:00:00Z",
+    "arrivalDeadline": "2026-10-15T23:59:00Z",
+    "returnAfter": "2026-10-16T05:00:00Z",
+    "latestReturn": "2026-10-16T23:59:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb R03",
+    "hotelRequired": true,
+    "travelers": 1,
+    "itinerary": {
+     "legs": [
+      {
+       "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWF",
+       "origin": "SJC",
+       "destination": "SEA",
+       "earliestDeparture": "2026-10-15T05:00:00Z",
+       "arrivalDeadline": "2026-10-15T23:59:00Z"
+      },
+      {
+       "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWG",
+       "origin": "SEA",
+       "destination": "SJC",
+       "earliestDeparture": "2026-10-16T05:00:00Z",
+       "arrivalDeadline": "2026-10-16T23:59:00Z"
+      }
+     ],
+     "stays": [
+      {
+       "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWH",
+       "city": "SEA",
+       "checkInDate": "2026-10-15",
+       "checkOutDate": "2026-10-16",
+       "required": true
+      }
+     ],
+     "transfers": [],
+     "currency": "USD"
+    }
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T04:58:09.034978Z",
+   "updatedAt": "2026-09-23T04:58:09.034978Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A1PRB0GD4NCV92PV7HRT3",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "SJC",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-15T05:00:00Z",
+   "arrivalDeadline": "2026-10-15T23:59:00Z",
+   "returnAfter": "2026-10-16T05:00:00Z",
+   "latestReturn": "2026-10-16T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb R03",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWF",
+      "origin": "SJC",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-15T05:00:00Z",
+      "arrivalDeadline": "2026-10-15T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWG",
+      "origin": "SEA",
+      "destination": "SJC",
+      "earliestDeparture": "2026-10-16T05:00:00Z",
+      "arrivalDeadline": "2026-10-16T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWH",
+      "city": "SEA",
+      "checkInDate": "2026-10-15",
+      "checkOutDate": "2026-10-16",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A1Q4YF4G7HAHK1BS3BMQN",
+   "optimizationRunId": "opt_01M36A1Q4YS3EM3DH1F4Z96Q4J",
+   "policyDecisionId": "pd_01M36A1Q5F1NX0T40AH36SV0VD",
+   "approvalId": null,
+   "orderId": "ord_01M36A1R4VQFF4109CT91ERTDX"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:09.034978Z",
+  "updatedAt": "2026-09-23T04:58:10.656992Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 80631,
+   "display": "USD 806.31"
+  },
+  "explanation": "For the SJC to SEA to SJC we chose DL340 SJC-SEA via sandbox-air; DL500 SEA-SJC via sandbox-air; hotel Budget Inn in SEA (1 night, 2026-10-15) at USD 806.31 (2 legs, 1 stays). 107 options were searched and 39 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 96.1 (cost 90, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWF",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A1Q0PCDP1RK7R8DR0FBEX",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A1R53C4X7RFVES4X2E47D",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 36002,
+     "display": "USD 360.02"
+    },
+    "failureCode": null,
+    "summary": "DL340 SJC-SEA 2026-10-15T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:10.556885Z"
+   },
+   {
+    "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWG",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A1Q15CZG4S8F3XXABNEBK",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A1R5958G7SRX8ZJ1XDF0T",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 32729,
+     "display": "USD 327.29"
+    },
+    "failureCode": null,
+    "summary": "DL500 SEA-SJC 2026-10-16T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:10.556885Z"
+   },
+   {
+    "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWH",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A1Q1MYQGS32K1PKCRN8Y1",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M36A1R5FCNXW3S9PWSFQTGS3",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 11900,
+     "display": "USD 119.00"
+    },
+    "failureCode": null,
+    "summary": "Budget Inn SEA 2026-10-15 to 2026-10-16 (1 nights)",
+    "updatedAt": "2026-09-23T04:58:10.556885Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWF",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A1Q0PCDP1RK7R8DR0FBEX",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A1R53C4X7RFVES4X2E47D",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 36002,
+    "display": "USD 360.02"
+   },
+   "failureCode": null,
+   "summary": "DL340 SJC-SEA 2026-10-15T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:10.556885Z"
+  },
+  {
+   "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWG",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A1Q15CZG4S8F3XXABNEBK",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A1R5958G7SRX8ZJ1XDF0T",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 32729,
+    "display": "USD 327.29"
+   },
+   "failureCode": null,
+   "summary": "DL500 SEA-SJC 2026-10-16T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:10.556885Z"
+  },
+  {
+   "componentId": "cmp_01M36A1PRAYJQZZY6CPPC1HHWH",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A1Q1MYQGS32K1PKCRN8Y1",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36A1R5FCNXW3S9PWSFQTGS3",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 11900,
+    "display": "USD 119.00"
+   },
+   "failureCode": null,
+   "summary": "Budget Inn SEA 2026-10-15 to 2026-10-16 (1 nights)",
+   "updatedAt": "2026-09-23T04:58:10.556885Z"
+  }
+ ]
+}

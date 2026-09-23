@@ -1,0 +1,9 @@
+[PASS   ] P9-DISC-01: workflow status line: ['Status          COMPLETED', 'Result          {"failureCode":null,"failureStage":null,"
+[PASS   ] P9-IDEM-01: alice 202 trip_01M36A4EGZ69QH4R0ZQ7GPCFM0; zoe 202 trip_01M36A4EJSS1E5BMDEJB2Q0V82; same id=False
+[PASS   ] P9-IDEM-02: dan 422 ; equals alice's=False
+[PASS   ] P9-DONE-01: approve BOOKED 409 NO_PENDING_APPROVAL; cancel 200 -> CANCELLED; reject CANCELLED 409 NO_PENDING_APPROVAL
+[PASS   ] P9-RACE-01: statuses=[409, 200] codes=['APPROVAL_ALREADY_DECIDED', None]; final=CANCELLED; decision rows=[]
+[PASS   ] P9-RACE-02: cancel 200 None; final=CANCELLED; orders=[]; history=[None, None, None, None]
+[PASS   ] P9-INTEG-01: orders without items=n/a; BOOKED trips without order_id=0; unpublished outbox={'travel_core': '0', 'order': ''
+[PASS   ] P9-RETRY-01: P1-FAIL-02 (supplier down 25 s then back: BOOKED, one order), P1-FAIL-03 (commit-then-lost answer reconciled o
+{'FAIL': 35, 'PASS': 159, 'NOT_IMPLEMENTED': 10, 'BLOCKED': 1, 'NOT_APPLICABLE': 1}

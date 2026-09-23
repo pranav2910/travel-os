@@ -1,0 +1,24 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb missing destination",
+   "origin": "BOS",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 422,
+ "response": {
+  "detail": "origin, destination, earliestDeparture and arrivalDeadline are required (or an itinerary)",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "INTENT_INVALID",
+  "type": "https://contracts.travelos.io/problems/intent-invalid",
+  "code": "INTENT_INVALID"
+ },
+ "stored": null
+}

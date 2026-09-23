@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R28",
+   "origin": "HNL",
+   "destination": "AKL",
+   "earliestDeparture": "2026-12-30T05:00:00Z",
+   "arrivalDeadline": "2026-12-30T23:59:00Z",
+   "returnAfter": "2027-01-05T10:00:00Z",
+   "latestReturn": "2027-01-05T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643P4QN2ZK941KPYP7TY7C",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "HNL",
+    "destination": "AKL",
+    "earliestDeparture": "2026-12-30T05:00:00Z",
+    "arrivalDeadline": "2026-12-30T23:59:00Z",
+    "returnAfter": "2027-01-05T10:00:00Z",
+    "latestReturn": "2027-01-05T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb R28",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:22.487515Z",
+   "updatedAt": "2026-09-23T03:14:22.487515Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643P4QN2ZK941KPYP7TY7C",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "HNL",
+   "destination": "AKL",
+   "earliestDeparture": "2026-12-30T05:00:00Z",
+   "arrivalDeadline": "2026-12-30T23:59:00Z",
+   "returnAfter": "2027-01-05T10:00:00Z",
+   "latestReturn": "2027-01-05T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb R28",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643PJ3Y2312915YTXV47AN",
+   "optimizationRunId": "opt_01M3643PVJWNCCK2176C7Q9ZJ7",
+   "policyDecisionId": "pd_01M3643PN8YBWJZ29MSTMF3DT3",
+   "approvalId": null,
+   "orderId": "ord_01M3643Q7ZYPSG8VD5K12PYKDY"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:22.487515Z",
+  "updatedAt": "2026-09-23T03:14:23.715290Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 48436,
+   "display": "USD 484.36"
+  },
+  "explanation": "For the HNL to AKL we chose DL131 HNL-AKL / return DL331 AKL-HNL via sandbox-air at USD 484.36. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

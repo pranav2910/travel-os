@@ -1,0 +1,12 @@
+[N/I    ] P6-S02: no offer list is shown or selectable; the optimizer picks one bundle and explains it
+[N/I    ] P6-S03: cost is one of five weighted criteria (cost 0.4, time 0.25, risk 0.15, preference 0.1, experience 0.1); 'cheap
+[N/I    ] P6-S04: time is a weighted criterion, not a selectable mode
+[N/I    ] P6-S07: no carrier filter in the request contract
+[N/I    ] P6-S08: the request takes one airport code per leg; there is no metro search. A city code (NYC) is refused with the ai
+[N/I    ] P6-S09: stops are governed by policy (maxStops=1, violation -> approval), not by the traveler
+[N/I    ] P6-S14: one traveler per trip; no counts, ages or fees
+[PASS   ] P6-ML-04: BOOKED /; flights=[('BOS', 'LHR', '2026-10-23T17:45:00Z'), ('LHR', 'DXB', '2026-10-25T17:45:00Z'), ('DXB', 'DE
+[N/A    ] P6-SUM-01: by design there is no offer at confirmation time: the traveler confirms a request, the platform then searches,
+[N/I    ] P6-ML-EDIT: trips are immutable requests (see P3-EDIT-01); a changed plan is a new trip; unsupported structures are refuse
+[PASS   ] P6-DUP-01: proven by P3-MUT-01 (same key twice = one trip), P3-MUT-02 (5 concurrent = one trip), P1-FAIL-01c (cancel righ
+{'FAIL': 39, 'PASS': 212, 'NOT_IMPLEMENTED': 18, 'BLOCKED': 2, 'NOT_APPLICABLE': 2}

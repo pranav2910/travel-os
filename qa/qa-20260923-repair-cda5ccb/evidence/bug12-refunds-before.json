@@ -1,0 +1,100 @@
+{
+ "zero": {
+  "status": 200,
+  "body": {
+   "outcomeId": "out_01M3694A96J3SW8E4BXP1AF84X",
+   "logicalKey": "refund:ord_01M36948GMQ392SVD8P38XZDQ0:order",
+   "revision": 1,
+   "kind": "REFUND_SETTLED",
+   "quality": "NEUTRAL",
+   "supplierKey": null,
+   "provider": null,
+   "evidenceClass": "SANDBOX",
+   "tripId": "trip_01M369472PHC822MSFF89WP2H7",
+   "orderId": "ord_01M36948GMQ392SVD8P38XZDQ0",
+   "itemId": null,
+   "componentId": null,
+   "disruptionId": null,
+   "observedAt": "2026-09-23T04:42:05.990325Z",
+   "recordedAt": "2026-09-23T04:42:05.990325Z",
+   "source": "API",
+   "sourceRef": "human/carol",
+   "provenance": {
+    "amountMinor": 0,
+    "currency": "USD",
+    "reference": "qa-20260923-repair-cda5ccb before-zero-ac3fce",
+    "recordedBy": "human/carol"
+   }
+  }
+ },
+ "one-cent": {
+  "status": 200,
+  "body": {
+   "outcomeId": "out_01M3694A9KE7Z2YKDBKWH5Z4RZ",
+   "logicalKey": "refund:ord_01M36948GMQ392SVD8P38XZDQ0:order",
+   "revision": 2,
+   "kind": "REFUND_SETTLED",
+   "quality": "NEUTRAL",
+   "supplierKey": null,
+   "provider": null,
+   "evidenceClass": "SANDBOX",
+   "tripId": "trip_01M369472PHC822MSFF89WP2H7",
+   "orderId": "ord_01M36948GMQ392SVD8P38XZDQ0",
+   "itemId": null,
+   "componentId": null,
+   "disruptionId": null,
+   "observedAt": "2026-09-23T04:42:06.003578Z",
+   "recordedAt": "2026-09-23T04:42:06.003578Z",
+   "source": "API",
+   "sourceRef": "human/carol",
+   "provenance": {
+    "amountMinor": 1,
+    "currency": "USD",
+    "reference": "qa-20260923-repair-cda5ccb before-one-cent-0efbf0",
+    "recordedBy": "human/carol"
+   }
+  }
+ },
+ "negative": {
+  "status": 400,
+  "body": {
+   "detail": "request validation failed",
+   "instance": "/api/v1/learning/outcomes/refunds",
+   "status": 400,
+   "title": "VALIDATION_FAILED",
+   "type": "https://contracts.travelos.io/problems/validation-failed",
+   "code": "VALIDATION_FAILED",
+   "fields": {
+    "amountMinor": "must be greater than or equal to 0"
+   }
+  }
+ },
+ "eur-on-usd": {
+  "status": 200,
+  "body": {
+   "outcomeId": "out_01M3694AAKXYDEEZVTDF4Z0GKZ",
+   "logicalKey": "refund:ord_01M36948GMQ392SVD8P38XZDQ0:order",
+   "revision": 3,
+   "kind": "REFUND_SETTLED",
+   "quality": "NEUTRAL",
+   "supplierKey": null,
+   "provider": null,
+   "evidenceClass": "SANDBOX",
+   "tripId": "trip_01M369472PHC822MSFF89WP2H7",
+   "orderId": "ord_01M36948GMQ392SVD8P38XZDQ0",
+   "itemId": null,
+   "componentId": null,
+   "disruptionId": null,
+   "observedAt": "2026-09-23T04:42:06.035501Z",
+   "recordedAt": "2026-09-23T04:42:06.035501Z",
+   "source": "API",
+   "sourceRef": "human/carol",
+   "provenance": {
+    "amountMinor": 100,
+    "currency": "EUR",
+    "reference": "qa-20260923-repair-cda5ccb before-eur-on-usd-1b14dd",
+    "recordedBy": "human/carol"
+   }
+  }
+ }
+}

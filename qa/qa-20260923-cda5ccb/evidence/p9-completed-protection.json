@@ -1,0 +1,66 @@
+{
+ "approve": {
+  "status": 409,
+  "body": {
+   "detail": "this trip is not awaiting approval",
+   "instance": "/api/v1/trips/trip_01M3645ZX7JCQF41ZGPPMPHBDC/approval",
+   "status": 409,
+   "title": "NO_PENDING_APPROVAL",
+   "type": "https://contracts.travelos.io/problems/no-pending-approval",
+   "code": "NO_PENDING_APPROVAL"
+  }
+ },
+ "cancel": {
+  "tripId": "trip_01M3645ZX7JCQF41ZGPPMPHBDC",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-24T10:00:00Z",
+   "latestReturn": "2026-10-24T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb WF discovery",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36460K28SVN7ERGPT3KMZ90",
+   "optimizationRunId": "opt_01M36460RS9MQE8A12AKPNCK6B",
+   "policyDecisionId": "pd_01M36460P2841SXXEZE3HWD830",
+   "approvalId": null,
+   "orderId": "ord_01M36460VPQBV5EE8SRHGMJJCE"
+  },
+  "createdBy": "human/alice",
+  "version": 5,
+  "createdAt": "2026-09-23T03:15:38.023855Z",
+  "updatedAt": "2026-09-23T03:15:39.761771Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "reject": {
+  "status": 409,
+  "body": {
+   "detail": "this trip is not awaiting approval",
+   "instance": "/api/v1/trips/trip_01M3645ZX7JCQF41ZGPPMPHBDC/approval",
+   "status": 409,
+   "title": "NO_PENDING_APPROVAL",
+   "type": "https://contracts.travelos.io/problems/no-pending-approval",
+   "code": "NO_PENDING_APPROVAL"
+  }
+ }
+}

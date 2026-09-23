@@ -1,0 +1,11 @@
+{
+ "status": 409,
+ "body": {
+  "detail": "trip in status FAILED cannot be cancelled here",
+  "instance": "/api/v1/trips/trip_01M363A73EC23JTGGFDHCMTC2V/cancellation",
+  "status": 409,
+  "title": "TRIP_NOT_CANCELLABLE",
+  "type": "https://contracts.travelos.io/problems/trip-not-cancellable",
+  "code": "TRIP_NOT_CANCELLABLE"
+ }
+}

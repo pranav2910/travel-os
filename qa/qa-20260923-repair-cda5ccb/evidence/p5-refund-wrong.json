@@ -1,0 +1,18 @@
+{
+ "request": {
+  "tripId": "trip_01M36A3B76FAZG21M1K21YJDHV",
+  "orderId": "ord_01M36A3CJP9016EY5TD19YFND0",
+  "amountMinor": 100,
+  "currency": "EUR",
+  "reference": "qa-20260923-repair-cda5ccb-wrong currency EUR on a USD order"
+ },
+ "status": 422,
+ "body": {
+  "detail": "order ord_01M36A3CJP9016EY5TD19YFND0 is priced in USD; a refund in EUR cannot be settled against it (the platform does not convert currencies)",
+  "instance": "/api/v1/learning/outcomes/refunds",
+  "status": 422,
+  "title": "CURRENCY_MISMATCH",
+  "type": "https://contracts.travelos.io/problems/currency-mismatch",
+  "code": "CURRENCY_MISMATCH"
+ }
+}

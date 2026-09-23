@@ -1,0 +1,144 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb hotelRequired true without stay dates (round trip: nights between flights)",
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "hotelRequired": true
+  }
+ },
+ "status": 202,
+ "response": {
+  "tripId": "trip_01M36A1DBGBRSS661F1VN6A6R2",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb hotelRequired true without stay dates (round trip: nights between flights)",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A1DBFRWCC6XT9PN7CJ8HQ",
+      "origin": "BOS",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DBFRWCC6XT9PN7CJ8HR",
+      "origin": "SEA",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T10:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:00:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A1DBFRWCC6XT9PN7CJ8HS",
+      "city": "SEA",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:57:59.408336Z",
+  "updatedAt": "2026-09-23T04:57:59.408336Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "stored": {
+  "tripId": "trip_01M36A1DBGBRSS661F1VN6A6R2",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb hotelRequired true without stay dates (round trip: nights between flights)",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A1DBFRWCC6XT9PN7CJ8HQ",
+      "origin": "BOS",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1DBFRWCC6XT9PN7CJ8HR",
+      "origin": "SEA",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T10:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:00:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A1DBFRWCC6XT9PN7CJ8HS",
+      "city": "SEA",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:57:59.408336Z",
+  "updatedAt": "2026-09-23T04:57:59.408336Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ }
+}

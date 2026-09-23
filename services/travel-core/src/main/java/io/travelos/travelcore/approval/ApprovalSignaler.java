@@ -10,4 +10,11 @@ import io.travelos.workflows.TripPlanning;
 public interface ApprovalSignaler {
 
   void approvalDecided(String tripId, TripPlanning.ApprovalDecision decision);
+
+  /**
+   * The requester cancelled a trip that holds no reservation. CANCELLED is already durable; the
+   * workflow stops waiting for a person and books nothing (it also re-reads the trip on its own, so
+   * a lost signal delays nothing that matters).
+   */
+  default void cancelled(String tripId) {}
 }

@@ -1,0 +1,271 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R09",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "BOS",
+      "destination": "CDG",
+      "earliestDeparture": "2026-10-26T05:00:00Z",
+      "arrivalDeadline": "2026-10-26T23:59:00Z"
+     },
+     {
+      "origin": "CDG",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "city": "CDG",
+      "checkInDate": "2026-10-26",
+      "checkOutDate": "2026-10-29",
+      "required": true
+     }
+    ],
+    "transfers": []
+   }
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36A1Y75192WEM4DE8WKTMRP",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "CDG",
+    "earliestDeparture": "2026-10-26T05:00:00Z",
+    "arrivalDeadline": "2026-10-26T23:59:00Z",
+    "returnAfter": "2026-10-29T05:00:00Z",
+    "latestReturn": "2026-10-29T23:59:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb R09",
+    "hotelRequired": true,
+    "travelers": 1,
+    "itinerary": {
+     "legs": [
+      {
+       "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BH",
+       "origin": "BOS",
+       "destination": "CDG",
+       "earliestDeparture": "2026-10-26T05:00:00Z",
+       "arrivalDeadline": "2026-10-26T23:59:00Z"
+      },
+      {
+       "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BJ",
+       "origin": "CDG",
+       "destination": "BOS",
+       "earliestDeparture": "2026-10-29T05:00:00Z",
+       "arrivalDeadline": "2026-10-29T23:59:00Z"
+      }
+     ],
+     "stays": [
+      {
+       "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BK",
+       "city": "CDG",
+       "checkInDate": "2026-10-26",
+       "checkOutDate": "2026-10-29",
+       "required": true
+      }
+     ],
+     "transfers": [],
+     "currency": "USD"
+    }
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T04:58:16.677225Z",
+   "updatedAt": "2026-09-23T04:58:16.677225Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A1Y75192WEM4DE8WKTMRP",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "CDG",
+   "earliestDeparture": "2026-10-26T05:00:00Z",
+   "arrivalDeadline": "2026-10-26T23:59:00Z",
+   "returnAfter": "2026-10-29T05:00:00Z",
+   "latestReturn": "2026-10-29T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb R09",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BH",
+      "origin": "BOS",
+      "destination": "CDG",
+      "earliestDeparture": "2026-10-26T05:00:00Z",
+      "arrivalDeadline": "2026-10-26T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BJ",
+      "origin": "CDG",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-29T05:00:00Z",
+      "arrivalDeadline": "2026-10-29T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BK",
+      "city": "CDG",
+      "checkInDate": "2026-10-26",
+      "checkOutDate": "2026-10-29",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A1YQS2PJ77406EK1CSXDX",
+   "optimizationRunId": "opt_01M36A1YQSSCW6PCFQ6ANX93P6",
+   "policyDecisionId": "pd_01M36A1YTQDHC4AFY6HAAGCSMW",
+   "approvalId": null,
+   "orderId": "ord_01M36A1ZSY4EJHNK3PC8S3RRMY"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:16.677225Z",
+  "updatedAt": "2026-09-23T04:58:18.503139Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 80692,
+   "display": "USD 806.92"
+  },
+  "explanation": "For the BOS to CDG to BOS we chose DL837 BOS-CDG via sandbox-air; DL197 CDG-BOS via sandbox-air; hotel Budget Inn in CDG (3 nights, 2026-10-26) at USD 806.92 (2 legs, 1 stays). 106 options were searched and 72 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 99.5 (cost 99, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BH",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A1YGQ5DRSP4XYWY7T49Z8",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A1ZT4MDNVRMHNYAJFVKYG",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 23029,
+     "display": "USD 230.29"
+    },
+    "failureCode": null,
+    "summary": "DL837 BOS-CDG 2026-10-26T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:18.403802Z"
+   },
+   {
+    "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BJ",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A1YH5ZZCJZ5ABVCZ49W2G",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A1ZTAVK9TSTBYTRMAMH1W",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 21963,
+     "display": "USD 219.63"
+    },
+    "failureCode": null,
+    "summary": "DL197 CDG-BOS 2026-10-29T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:18.403802Z"
+   },
+   {
+    "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BK",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A1YHHAPS7X131VSRDX8DG",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M36A1ZTD3TB1GZA4EJMNBR1G",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 35700,
+     "display": "USD 357.00"
+    },
+    "failureCode": null,
+    "summary": "Budget Inn CDG 2026-10-26 to 2026-10-29 (3 nights)",
+    "updatedAt": "2026-09-23T04:58:18.403802Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BH",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A1YGQ5DRSP4XYWY7T49Z8",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A1ZT4MDNVRMHNYAJFVKYG",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 23029,
+    "display": "USD 230.29"
+   },
+   "failureCode": null,
+   "summary": "DL837 BOS-CDG 2026-10-26T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:18.403802Z"
+  },
+  {
+   "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BJ",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A1YH5ZZCJZ5ABVCZ49W2G",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A1ZTAVK9TSTBYTRMAMH1W",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 21963,
+    "display": "USD 219.63"
+   },
+   "failureCode": null,
+   "summary": "DL197 CDG-BOS 2026-10-29T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:18.403802Z"
+  },
+  {
+   "componentId": "cmp_01M36A1Y74J8QPZPTSW60WQ9BK",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A1YHHAPS7X131VSRDX8DG",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36A1ZTD3TB1GZA4EJMNBR1G",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 35700,
+    "display": "USD 357.00"
+   },
+   "failureCode": null,
+   "summary": "Budget Inn CDG 2026-10-26 to 2026-10-29 (3 nights)",
+   "updatedAt": "2026-09-23T04:58:18.403802Z"
+  }
+ ]
+}

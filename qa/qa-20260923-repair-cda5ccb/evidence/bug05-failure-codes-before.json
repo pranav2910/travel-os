@@ -1,0 +1,15 @@
+{
+ "codes": [
+  "ACTIVITY_io.grpc.StatusRuntimeException",
+  "ALL_CANDIDATES_DENIED",
+  "COMPENSATION_INCOMPLETE",
+  "NEEDS_CLARIFICATION",
+  "NO_FEASIBLE_CANDIDATE",
+  "NO_OFFERS",
+  "NOT_A_TRAVEL_REQUEST",
+  "ROOM_NO_LONGER_AVAILABLE"
+ ],
+ "offending": [
+  "ACTIVITY_io.grpc.StatusRuntimeException"
+ ]
+}

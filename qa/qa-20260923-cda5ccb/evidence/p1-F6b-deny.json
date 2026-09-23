@@ -1,0 +1,103 @@
+{
+ "final": {
+  "tripId": "trip_01M363PQX2AKTM91RY2H6RJZGA",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-09T05:00:00Z",
+   "arrivalDeadline": "2026-11-09T23:59:00Z",
+   "returnAfter": "2026-11-11T10:00:00Z",
+   "latestReturn": "2026-11-11T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb F6b policy denies (onViolation DENY)",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T03:07:18.306304Z",
+  "updatedAt": "2026-09-23T03:07:18.576549Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "POLICY",
+  "failureCode": "ALL_CANDIDATES_DENIED"
+ },
+ "reasons": [
+  "CABIN_NOT_PERMITTED",
+  "FARE_ABOVE_POLICY_CEILING",
+  "TOTAL_ABOVE_APPROVAL_THRESHOLD",
+  "TRIP_TOTAL_ABOVE_BUDGET"
+ ],
+ "first": [
+  {
+   "decisionId": "pd_01M363PR3G5PE8QE5K6E6F0RVR",
+   "evaluationId": "dec_01M363PR3ETMS7RNTNDEQA0BT6",
+   "tripId": "trip_01M363PQX2AKTM91RY2H6RJZGA",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M363PR1D8FFJGSDY4BCAZYPA",
+   "action": null,
+   "policyId": "US_STANDARD_TRAVEL",
+   "policyVersion": 61,
+   "outcome": "DENY",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T03:07:18.510918Z",
+   "decision": {
+    "outcome": "DENY",
+    "reasons": [
+     {
+      "code": "TRIP_TOTAL_ABOVE_BUDGET",
+      "ruleId": "TRIP_BUDGET",
+      "message": "the itinerary costs USD 427.68, above the USD 1.00 trip budget"
+     }
+    ],
+    "policyId": "US_STANDARD_TRAVEL",
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD",
+      "amountMinor": "37095"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD",
+      "amountMinor": "52095"
+     },
+     "travelerIncentive": {
+      "currency": "USD"
+     }
+    },
+    "decisionId": "pd_01M363PR3G5PE8QE5K6E6F0RVR",
+    "evaluatedAt": "2026-09-23T03:07:18.510918Z",
+    "policyVersion": 61,
+    "rulesEvaluated": [
+     "CURRENCY",
+     "CABIN_PERMITTED",
+     "MAX_STOPS",
+     "LOWEST_LOGICAL_FARE",
+     "HOTEL_NIGHTLY_LIMIT",
+     "GROUND_TRANSFER_LIMIT",
+     "TRIP_BUDGET",
+     "MANAGER_APPROVAL_THRESHOLD",
+     "INCENTIVE_SHARE"
+    ]
+   }
+  }
+ ]
+}

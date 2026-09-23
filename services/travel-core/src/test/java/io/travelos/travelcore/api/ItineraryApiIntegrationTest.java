@@ -63,7 +63,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@Import({TestTokens.class, ItineraryApiIntegrationTest.Signals.class})
+@Import({TestTokens.class, TestClock.class, ItineraryApiIntegrationTest.Signals.class})
 @Testcontainers
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ItineraryApiIntegrationTest {
@@ -389,8 +389,6 @@ class ItineraryApiIntegrationTest {
     String[] bad = {
       // leg 2 does not depart where leg 1 lands
       "{\"intent\":{\"itinerary\":{\"legs\":[{\"origin\":\"BOS\",\"destination\":\"SEA\",\"earliestDeparture\":\"2026-10-06T10:00:00Z\",\"arrivalDeadline\":\"2026-10-06T23:00:00Z\"},{\"origin\":\"SFO\",\"destination\":\"BOS\",\"earliestDeparture\":\"2026-10-08T10:00:00Z\",\"arrivalDeadline\":\"2026-10-08T23:00:00Z\"}]}}}",
-      // an unknown place
-      "{\"intent\":{\"itinerary\":{\"legs\":[{\"origin\":\"BOS\",\"destination\":\"XXX\",\"earliestDeparture\":\"2026-10-06T10:00:00Z\",\"arrivalDeadline\":\"2026-10-06T23:00:00Z\"}]}}}",
       // a stay nobody flies to
       "{\"intent\":{\"itinerary\":{\"legs\":[{\"origin\":\"BOS\",\"destination\":\"SEA\",\"earliestDeparture\":\"2026-10-06T10:00:00Z\",\"arrivalDeadline\":\"2026-10-06T23:00:00Z\"}],\"stays\":[{\"city\":\"SFO\",\"checkInDate\":\"2026-10-06\",\"checkOutDate\":\"2026-10-07\"}]}}}",
       // both shapes at once
@@ -403,6 +401,48 @@ class ItineraryApiIntegrationTest {
       assertThat(r.getStatusCode().value()).as(body + " -> " + r.getBody()).isEqualTo(422);
       assertThat(r.getBody()).contains("INTENT_INVALID");
     }
+  }
+
+  @Test
+  void placesAndCurrenciesOutsideTheCatalogAreRefusedWithTheReason() {
+    // BUG-01 / BUG-10 / BUG-05 on the itinerary path
+    String toNowhere =
+        "{\"intent\":{\"itinerary\":{\"legs\":[{\"origin\":\"BOS\",\"destination\":\"QQQ\","
+            + "\"earliestDeparture\":\"2026-10-06T10:00:00Z\",\"arrivalDeadline\":\"2026-10-06T23:00:00Z\"}]}}}";
+    ResponseEntity<String> nowhere = post(TestTokens.alice(), toNowhere);
+    assertThat(nowhere.getStatusCode().value()).isEqualTo(422);
+    assertThat(json.readTree(nowhere.getBody()).get("code").asString())
+        .isEqualTo("UNKNOWN_LOCATION");
+
+    String secondLegToACity =
+        "{\"intent\":{\"itinerary\":{\"legs\":[{\"origin\":\"BOS\",\"destination\":\"JFK\","
+            + "\"earliestDeparture\":\"2026-10-06T10:00:00Z\",\"arrivalDeadline\":\"2026-10-06T23:00:00Z\"},"
+            + "{\"origin\":\"JFK\",\"destination\":\"LON\","
+            + "\"earliestDeparture\":\"2026-10-08T10:00:00Z\",\"arrivalDeadline\":\"2026-10-08T23:00:00Z\"}]}}}";
+    ResponseEntity<String> city = post(TestTokens.alice(), secondLegToACity);
+    assertThat(city.getStatusCode().value()).isEqualTo(422);
+    JsonNode cityProblem = json.readTree(city.getBody());
+    assertThat(cityProblem.get("code").asString()).isEqualTo("UNKNOWN_LOCATION");
+    assertThat(cityProblem.get("detail").asString()).contains("LON is a city").contains("LHR, LGW");
+
+    ResponseEntity<String> xxx =
+        post(
+            TestTokens.alice(),
+            ITINERARY.replace("\"transfers\":", "\"currency\":\"XXX\",\"transfers\":"));
+    assertThat(xxx.getStatusCode().value()).isEqualTo(422);
+    JsonNode xxxProblem = json.readTree(xxx.getBody());
+    assertThat(xxxProblem.get("code").asString()).isEqualTo("CURRENCY_UNSUPPORTED");
+    assertThat(xxxProblem.get("detail").asString()).contains("XXX").contains("priced in USD");
+
+    ResponseEntity<String> late =
+        post(
+            TestTokens.alice(),
+            ITINERARY
+                .replace("2026-10-06T23:00:00Z", "2026-09-01T23:00:00Z")
+                .replace("2026-10-06T10:00:00Z", "2026-09-01T10:00:00Z"));
+    assertThat(late.getStatusCode().value()).isEqualTo(422);
+    assertThat(json.readTree(late.getBody()).get("code").asString())
+        .isIn("DEPARTURE_IN_PAST", "INTENT_INVALID");
   }
 
   // ------------------------------------------------------------------ helpers

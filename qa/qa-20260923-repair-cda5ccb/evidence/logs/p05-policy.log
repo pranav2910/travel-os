@@ -1,0 +1,25 @@
+[PASS   ] P5-SUP-01: 202 -> FAILED SEARCH/NO_OFFERS; components=[]; orders=[]
+[PASS   ] P5-SUP-02: 202 -> BOOKED /; components=[('AIR', 'CONFIRMED'), ('AIR', 'CONFIRMED'), ('HOTEL', 'CONFIRMED')]; orders=['CON
+[PASS   ] P5-SUP-03: 202 -> BOOKED /; components=[('AIR', 'CONFIRMED'), ('AIR', 'CONFIRMED'), ('HOTEL', 'CONFIRMED')]; orders=['CON
+[FAIL   ] P5-SUP-04: 422 -> REJECTED /; components=[]; orders=[]
+[FAIL   ] P5-SUP-05: 422 -> REJECTED /; components=[]; orders=[]
+[PASS   ] P5-SUP-06: 202 -> BOOKED /; components=[('AIR', 'CONFIRMED'), ('AIR', 'CONFIRMED'), ('HOTEL', 'CONFIRMED')]; orders=['CON
+[PASS   ] P5-SUP-07: 202 -> FAILED POLICY/ALL_CANDIDATES_DENIED; components=[('AIR', 'PLANNED'), ('HOTEL', 'FAILED'), ('AIR', 'PLAN
+[BLOCKED] P5-SUP-08: the sandbox suppliers are in-process adapters behind the gateway's gRPC contract; the only documented seams ar
+[PASS   ] P5-POL-01: BOOKED total={'currency': 'USD', 'amountMinor': 37095, 'display': 'USD 370.95'} policy v85
+[FAIL   ] P5-POL-02: BOOKED total={'currency': 'USD', 'amountMinor': 37095, 'display': 'USD 370.95'} policy v86
+[PASS   ] P5-POL-03: BOOKED total={'currency': 'USD', 'amountMinor': 37095, 'display': 'USD 370.95'} policy v87
+[PASS   ] P5-POL-04: AWAITING_APPROVAL total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'} policy v88
+[PASS   ] P5-POL-05: FAILED total=None policy v89
+[PASS   ] P5-POL-06: BOOKED total={'currency': 'USD', 'amountMinor': 43507, 'display': 'USD 435.07'} policy v90
+[PASS   ] P5-POL-HIST: decision policyVersion=85; current=91
+[PASS   ] P5-POL-ENF: None
+[PASS   ] P5-POL-ENF: 202; evidence={'selectedBundleId': None, 'optimizationRunId': None, 'policyDecisionId': None, 'approvalId': No
+[PASS   ] P5-MONEY-01: items=[('AIR', 24499), ('AIR', 31946), ('HOTEL', 35700)] sum=92145 order=92145 trip=92145 currencies={'USD'}
+[PASS   ] P5-MONEY-ZERO: 200 None {"outcomeId": "out_01M36A3E80Q4DSQ8590K1DWT7K", "logicalKey": "refund:ord_01M36A3CJP9016EY5TD19YFND0
+[PASS   ] P5-MONEY-ONE: 200 None {"outcomeId": "out_01M36A3E87RZMTWYJ3EVCHMG73", "logicalKey": "refund:ord_01M36A3CJP9016EY5TD19YFND0
+[PASS   ] P5-MONEY-NEGATIVE: 400 VALIDATION_FAILED 
+[PASS   ] P5-MONEY-HUGE: 200 None {"outcomeId": "out_01M36A3E8NDQF2MZESTRX66693", "logicalKey": "refund:ord_01M36A3CJP9016EY5TD19YFND0
+[PASS   ] P5-MONEY-WRONG: 422 CURRENCY_MISMATCH 
+[PASS   ] P5-OPT-01: status=BOOKED; flights=[('UA243', '2026-12-02T08:30:00Z', '2026-12-02T15:00:00Z', 'ECONOMY'), ('UA343', '2026-
+{'FAIL': 32, 'PASS': 138, 'NOT_IMPLEMENTED': 2, 'BLOCKED': 1}

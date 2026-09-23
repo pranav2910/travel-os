@@ -1,0 +1,95 @@
+{
+ "final": {
+  "tripId": "trip_01M3644ZXR0MXXK0T2ZG671NQJ",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": null,
+   "latestReturn": null,
+   "purpose": "qa-20260923-cda5ccb S10 one way",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36450B65EKF2DTM4K4GTQSG",
+   "optimizationRunId": "opt_01M36450D0946NY6F3HBHDDBD9",
+   "policyDecisionId": "pd_01M36450BW44BR7AWPFRWY4Z96",
+   "approvalId": null,
+   "orderId": "ord_01M36450E6WG76W860AQFYHXYC"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:15:05.272712Z",
+  "updatedAt": "2026-09-23T03:15:05.815908Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 24499,
+   "display": "USD 244.99"
+  },
+  "explanation": "For the BOS to SEA we chose UA240 BOS-SEA via sandbox-air at USD 244.99. 51 options were searched and 17 were permitted by policy US_STANDARD_TRAVEL v69. It ranked first with a score of 94.4 (cost 86, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M36450E6WG76W860AQFYHXYC",
+   "tripId": "trip_01M3644ZXR0MXXK0T2ZG671NQJ",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36450B65EKF2DTM4K4GTQSG",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36450EAYF28XB0KE5DWTN20",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 24499,
+    "display": "USD 244.99"
+   },
+   "policyDecisionId": "pd_01M36450BW44BR7AWPFRWY4Z96",
+   "optimizationRunId": "opt_01M36450D0946NY6F3HBHDDBD9",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36450E6WG76W860AQFYHXYB",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTAtMjJ8LXw0fEVDT05PTVl8MTc5MDEzMzMwNQ",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36450EAYF28XB0KE5DWTN20",
+     "recordLocator": "V6AJBN",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 24499,
+      "display": "USD 244.99"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA240",
+       "origin": "BOS",
+       "destination": "SEA",
+       "departure": "2026-10-22T08:30:00Z",
+       "arrival": "2026-10-22T15:00:00Z",
+       "cabin": "ECONOMY"
+      }
+     ]
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T03:15:05.798088Z",
+   "updatedAt": "2026-09-23T03:15:05.805112Z"
+  }
+ ]
+}

@@ -1,0 +1,11 @@
+[PASS   ] P10-A11Y-01: routes scanned=10; violations=none
+[PASS   ] P10-STATE-01: text='Trips\n\nEverything you requested, newest first.\n\nNew trip\nTrips could not be loaded. simulated outag
+[PASS   ] P10-NET-01: stillOnForm=True phantomSuccess=False; retry={'url': '/trips/trip_01M36CC9SM3S917RMKKZKDYRQH', 'inputRetained'
+[PASS   ] P10-LOAD-01: slowLoading={'loadingVisible': True}; rapidConfirm={'tripUrl': '/trips/trip_01M36CDB1YMSXDS4CPWP2VVZ04'}
+[PASS   ] P10-RESP-01: overflowing routes per width=none
+[BLOCKED] P10-UX-01: not run: no human participant; the guided journey screenshots (p01-*.png) stand in
+[PASS   ] P10-KEY-01: {"signInReachable": true, "newTripLinkReachable": true, "submitted": true, "focusRing": {"outlineStyle": "soli
+[PASS   ] P10-XSS-01: {"rowVisible": true, "injectedImg": 0, "scripts": 0, "dialogs": 0, "rowText": "qa-20260923-repair-cda5ccb <img
+[PASS   ] P10-A11Y-02: violations=none
+[PASS   ] P10-ENG-01: {"chromium": "153.0.8010.12", "webkit": "26.6", "webkitSmoke": {"tripsHeading": true, "rows": 101}, "firefox":
+{'FAIL': 41, 'PASS': 246, 'NOT_IMPLEMENTED': 19, 'BLOCKED': 5, 'NOT_APPLICABLE': 3}

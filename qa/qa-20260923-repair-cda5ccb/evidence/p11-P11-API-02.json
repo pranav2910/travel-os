@@ -1,0 +1,12 @@
+{
+ "status": 415,
+ "headers": {
+  "Content-Type": "application/problem+json"
+ },
+ "body": {
+  "detail": "Content-Type 'text/plain' is not supported.",
+  "instance": "/api/v1/trips",
+  "status": 415,
+  "title": "Unsupported Media Type"
+ }
+}

@@ -1,0 +1,227 @@
+{
+ "final": {
+  "tripId": "trip_01M36A4294YB3DFD3G3CY8JY2C",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BGR",
+   "destination": "BOS",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-27T05:00:00Z",
+   "latestReturn": "2026-10-27T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb ML1",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A42935PH0R9DWA1W8831J",
+      "origin": "BGR",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A42935PH0R9DWA1W8831K",
+      "origin": "BOS",
+      "destination": "JFK",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A42935PH0R9DWA1W8831M",
+      "origin": "JFK",
+      "destination": "BGR",
+      "earliestDeparture": "2026-10-27T05:00:00Z",
+      "arrivalDeadline": "2026-10-27T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A42X78HRAXY33W65VJYTH",
+   "optimizationRunId": "opt_01M36A42X78FRK35H5AVYDEWNY",
+   "policyDecisionId": "pd_01M36A42XRBBNX5GC29BJXZZEJ",
+   "approvalId": null,
+   "orderId": "ord_01M36A43X4C2QHT0XS6668V5NF"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:59:26.372159Z",
+  "updatedAt": "2026-09-23T04:59:28.235378Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 71017,
+   "display": "USD 710.17"
+  },
+  "explanation": "For the BGR to BOS to JFK to BGR we chose DL300 BGR-BOS via sandbox-air; DL430 BOS-JFK via sandbox-air; DL309 JFK-BGR via sandbox-air at USD 710.17 (3 legs). 153 options were searched and 85 were permitted by policy US_STANDARD_TRAVEL v91. It ranked first with a score of 98.9 (cost 97, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A42935PH0R9DWA1W8831J",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A42S40120WB13WJH8TGV2",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A43XBZYQT8NHJSFR1F023",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 33711,
+     "display": "USD 337.11"
+    },
+    "failureCode": null,
+    "summary": "DL300 BGR-BOS 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:28.132960Z"
+   },
+   {
+    "componentId": "cmp_01M36A42935PH0R9DWA1W8831K",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A42SMGTXZ7C5E6DFQ03SF",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A43XFDC5BSMJTF8CZ26CT",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 18388,
+     "display": "USD 183.88"
+    },
+    "failureCode": null,
+    "summary": "DL430 BOS-JFK 2026-10-25T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:28.132960Z"
+   },
+   {
+    "componentId": "cmp_01M36A42935PH0R9DWA1W8831M",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A42SZARX0HDNP7CH6HNQP",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A43XKXJGRFEGTVNCADXY7",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 18918,
+     "display": "USD 189.18"
+    },
+    "failureCode": null,
+    "summary": "DL309 JFK-BGR 2026-10-27T17:45:00Z",
+    "updatedAt": "2026-09-23T04:59:28.132960Z"
+   }
+  ]
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M36A43X4C2QHT0XS6668V5NF",
+   "tripId": "trip_01M36A4294YB3DFD3G3CY8JY2C",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A42X78HRAXY33W65VJYTH",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36A43XBZYQT8NHJSFR1F023",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 71017,
+    "display": "USD 710.17"
+   },
+   "policyDecisionId": "pd_01M36A42XRBBNX5GC29BJXZZEJ",
+   "optimizationRunId": "opt_01M36A42X78FRK35H5AVYDEWNY",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36A43X3807XPNM6WCDDD6ZH",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCR1J8Qk9TfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDEzOTU2Ng",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A43XBZYQT8NHJSFR1F023",
+     "recordLocator": "Y7JAEA",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 33711,
+      "display": "USD 337.11"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL300",
+       "origin": "BGR",
+       "destination": "BOS",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T21:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A42935PH0R9DWA1W8831J"
+    },
+    {
+     "itemId": "itm_01M36A43X4C2QHT0XS6668V5ND",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8SkZLfDIwMjYtMTAtMjV8LXwyfEVDT05PTVl8MTc5MDEzOTU2Ng",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A43XFDC5BSMJTF8CZ26CT",
+     "recordLocator": "T84Y5N",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 18388,
+      "display": "USD 183.88"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL430",
+       "origin": "BOS",
+       "destination": "JFK",
+       "departure": "2026-10-25T17:45:00Z",
+       "arrival": "2026-10-25T22:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A42935PH0R9DWA1W8831K"
+    },
+    {
+     "itemId": "itm_01M36A43X4C2QHT0XS6668V5NE",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxKRkt8QkdSfDIwMjYtMTAtMjd8LXwyfEVDT05PTVl8MTc5MDEzOTU2Ng",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A43XKXJGRFEGTVNCADXY7",
+     "recordLocator": "38DR5X",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 18918,
+      "display": "USD 189.18"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL309",
+       "origin": "JFK",
+       "destination": "BGR",
+       "departure": "2026-10-27T17:45:00Z",
+       "arrival": "2026-10-27T21:15:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A42935PH0R9DWA1W8831M"
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:59:28.035606Z",
+   "updatedAt": "2026-09-23T04:59:28.054132Z"
+  }
+ ]
+}

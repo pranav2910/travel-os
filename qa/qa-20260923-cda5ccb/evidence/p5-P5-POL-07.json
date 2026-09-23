@@ -1,0 +1,57 @@
+{
+ "final": {
+  "tripId": "trip_01M364FMX5GHG81E91B9KAT1J1",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-21T05:00:00Z",
+   "arrivalDeadline": "2026-11-21T23:59:00Z",
+   "returnAfter": "2026-11-23T10:00:00Z",
+   "latestReturn": "2026-11-23T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb POL boundary 37095",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M364FNBT5CNPNBM9TP0N8VCM",
+   "optimizationRunId": "opt_01M364FNK50MJJEF1P28Z3HGVQ",
+   "policyDecisionId": "pd_01M364FNE8RG8Q8E7Q8X3FGNBY",
+   "approvalId": null,
+   "orderId": "ord_01M364FNPBSP88PDQ90J1G2HP5"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:20:54.437059Z",
+  "updatedAt": "2026-09-23T03:20:55.288102Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 37095,
+   "display": "USD 370.95"
+  },
+  "explanation": "For the BOS to SEA we chose DL962 BOS-ORD, DL1062 ORD-SEA / return DL902 SEA-ORD, DL1002 ORD-BOS via sandbox-air at USD 370.95. 69 options were searched and 1 were permitted by policy US_STANDARD_TRAVEL v72. It ranked first with a score of 93.8 (cost 100, time 100, risk 75, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "outcomes": {
+  "DENY": 68,
+  "ALLOW": 1
+ },
+ "sample_reason": [
+  [
+   {
+    "code": "TRIP_TOTAL_ABOVE_BUDGET",
+    "ruleId": "TRIP_BUDGET",
+    "message": "the itinerary costs USD 427.68, above the USD 370.95 trip budget"
+   }
+  ]
+ ]
+}

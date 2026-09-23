@@ -1,0 +1,41 @@
+{
+ "absent": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"http://localhost/.well-known/oauth-protected-resource\""
+ },
+ "malformed": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"invalid_token\", error_description=\"An error occurred while attempt"
+ },
+ "tampered-tenant": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"invalid_token\", error_description=\"An error occurred while attempt",
+  "tenant_scope": 401,
+  "learning_config": 401
+ },
+ "tampered-roles": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"invalid_token\", error_description=\"An error occurred while attempt",
+  "tenant_scope": 401,
+  "learning_config": 401
+ },
+ "forged-signature": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"invalid_token\", error_description=\"An error occurred while attempt"
+ },
+ "wrong-issuer": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"invalid_token\", error_description=\"An error occurred while attempt"
+ },
+ "wrong-audience": {
+  "status": 401,
+  "code": null,
+  "www_authenticate": "Bearer <redacted>=\"invalid_token\", error_description=\"An error occurred while attempt"
+ }
+}

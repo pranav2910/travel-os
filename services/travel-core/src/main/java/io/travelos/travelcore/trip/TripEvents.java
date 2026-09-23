@@ -153,6 +153,35 @@ final class TripEvents {
     return envelope("travel.trip.cancelled", trip, causationId, data, clock);
   }
 
+  /** A booked trip's cancellation was asked for: the Order service must release the reservation. */
+  static EventEnvelope cancellationRequested(
+      Trip trip, String orderId, String reason, Principal requestedBy, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("orderId", orderId);
+    data.put("reason", reason);
+    data.put("requestedBy", requestedBy.id());
+    return envelope("travel.trip.cancellation-requested", trip, null, data, clock);
+  }
+
+  /**
+   * A supplier refused to release part of the reservation: the trip stays CANCELLING for a person.
+   */
+  static EventEnvelope cancellationIncomplete(
+      Trip trip,
+      String orderId,
+      String reasonCode,
+      String message,
+      @Nullable String causationId,
+      Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("orderId", orderId);
+    data.put("reasonCode", reasonCode);
+    data.put("message", message);
+    return envelope("travel.trip.cancellation-incomplete", trip, causationId, data, clock);
+  }
+
   static EventEnvelope approvalRequested(Trip trip, Approval approval, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("approvalId", approval.approvalId());

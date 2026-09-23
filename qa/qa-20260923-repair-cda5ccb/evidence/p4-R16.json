@@ -1,0 +1,271 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R16",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "JFK",
+      "destination": "ORD",
+      "earliestDeparture": "2027-03-13T05:00:00Z",
+      "arrivalDeadline": "2027-03-13T23:59:00Z"
+     },
+     {
+      "origin": "ORD",
+      "destination": "JFK",
+      "earliestDeparture": "2027-03-15T05:00:00Z",
+      "arrivalDeadline": "2027-03-15T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "city": "ORD",
+      "checkInDate": "2027-03-13",
+      "checkOutDate": "2027-03-15",
+      "required": true
+     }
+    ],
+    "transfers": []
+   }
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36A24P78FP6CBTS52QXHVNF",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "JFK",
+    "destination": "ORD",
+    "earliestDeparture": "2027-03-13T05:00:00Z",
+    "arrivalDeadline": "2027-03-13T23:59:00Z",
+    "returnAfter": "2027-03-15T05:00:00Z",
+    "latestReturn": "2027-03-15T23:59:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb R16",
+    "hotelRequired": true,
+    "travelers": 1,
+    "itinerary": {
+     "legs": [
+      {
+       "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3G",
+       "origin": "JFK",
+       "destination": "ORD",
+       "earliestDeparture": "2027-03-13T05:00:00Z",
+       "arrivalDeadline": "2027-03-13T23:59:00Z"
+      },
+      {
+       "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3H",
+       "origin": "ORD",
+       "destination": "JFK",
+       "earliestDeparture": "2027-03-15T05:00:00Z",
+       "arrivalDeadline": "2027-03-15T23:59:00Z"
+      }
+     ],
+     "stays": [
+      {
+       "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3J",
+       "city": "ORD",
+       "checkInDate": "2027-03-13",
+       "checkOutDate": "2027-03-15",
+       "required": true
+      }
+     ],
+     "transfers": [],
+     "currency": "USD"
+    }
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T04:58:23.303007Z",
+   "updatedAt": "2026-09-23T04:58:23.303007Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A24P78FP6CBTS52QXHVNF",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "ORD",
+   "earliestDeparture": "2027-03-13T05:00:00Z",
+   "arrivalDeadline": "2027-03-13T23:59:00Z",
+   "returnAfter": "2027-03-15T05:00:00Z",
+   "latestReturn": "2027-03-15T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb R16",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3G",
+      "origin": "JFK",
+      "destination": "ORD",
+      "earliestDeparture": "2027-03-13T05:00:00Z",
+      "arrivalDeadline": "2027-03-13T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3H",
+      "origin": "ORD",
+      "destination": "JFK",
+      "earliestDeparture": "2027-03-15T05:00:00Z",
+      "arrivalDeadline": "2027-03-15T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3J",
+      "city": "ORD",
+      "checkInDate": "2027-03-13",
+      "checkOutDate": "2027-03-15",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A255D0NRQA3W9GQ6098B9",
+   "optimizationRunId": "opt_01M36A255D7VV10YG1R510SHEJ",
+   "policyDecisionId": "pd_01M36A2569QNFPEE5ZX4TW8J48",
+   "approvalId": null,
+   "orderId": "ord_01M36A265S74EYSPJ29F9FMR51"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:23.303007Z",
+  "updatedAt": "2026-09-23T04:58:25.026786Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 77167,
+   "display": "USD 771.67"
+  },
+  "explanation": "For the JFK to ORD to JFK we chose DL329 JFK-ORD via sandbox-air; DL233 ORD-JFK via sandbox-air; hotel River North Flash Sale in ORD (2 nights, 2027-03-13) at USD 771.67 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 96.1 (cost 90, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3G",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A251FNVH0SG4GE8KPTDSD",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A2661QKTAHJA4V18AWAS1",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 28093,
+     "display": "USD 280.93"
+    },
+    "failureCode": null,
+    "summary": "DL329 JFK-ORD 2027-03-13T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:24.918971Z"
+   },
+   {
+    "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3H",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A251WCA17PHY8H1FGADVE",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A2667Q2GJYT4PCQ2FZ693",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 21274,
+     "display": "USD 212.74"
+    },
+    "failureCode": null,
+    "summary": "DL233 ORD-JFK 2027-03-15T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:24.918971Z"
+   },
+   {
+    "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3J",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2528X8AC556PS4KMFK5F",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M36A266CAT133MR482H6CWTW",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 27800,
+     "display": "USD 278.00"
+    },
+    "failureCode": null,
+    "summary": "River North Flash Sale ORD 2027-03-13 to 2027-03-15 (2 nights)",
+    "updatedAt": "2026-09-23T04:58:24.918971Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3G",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A251FNVH0SG4GE8KPTDSD",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A2661QKTAHJA4V18AWAS1",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 28093,
+    "display": "USD 280.93"
+   },
+   "failureCode": null,
+   "summary": "DL329 JFK-ORD 2027-03-13T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:24.918971Z"
+  },
+  {
+   "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3H",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A251WCA17PHY8H1FGADVE",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A2667Q2GJYT4PCQ2FZ693",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 21274,
+    "display": "USD 212.74"
+   },
+   "failureCode": null,
+   "summary": "DL233 ORD-JFK 2027-03-15T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:24.918971Z"
+  },
+  {
+   "componentId": "cmp_01M36A24P6S1S393QDZQR74Q3J",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2528X8AC556PS4KMFK5F",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36A266CAT133MR482H6CWTW",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 27800,
+    "display": "USD 278.00"
+   },
+   "failureCode": null,
+   "summary": "River North Flash Sale ORD 2027-03-13 to 2027-03-15 (2 nights)",
+   "updatedAt": "2026-09-23T04:58:24.918971Z"
+  }
+ ]
+}

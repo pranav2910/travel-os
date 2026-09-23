@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R12",
+   "origin": "BGR",
+   "destination": "MCO",
+   "earliestDeparture": "2027-03-24T05:00:00Z",
+   "arrivalDeadline": "2027-03-24T23:59:00Z",
+   "returnAfter": "2027-03-28T10:00:00Z",
+   "latestReturn": "2027-03-28T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36A21PZMD7MJ13457E6A87W",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "BGR",
+    "destination": "MCO",
+    "earliestDeparture": "2027-03-24T05:00:00Z",
+    "arrivalDeadline": "2027-03-24T23:59:00Z",
+    "returnAfter": "2027-03-28T10:00:00Z",
+    "latestReturn": "2027-03-28T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb R12",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T04:58:20.255047Z",
+   "updatedAt": "2026-09-23T04:58:20.255047Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A21PZMD7MJ13457E6A87W",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BGR",
+   "destination": "MCO",
+   "earliestDeparture": "2027-03-24T05:00:00Z",
+   "arrivalDeadline": "2027-03-24T23:59:00Z",
+   "returnAfter": "2027-03-28T10:00:00Z",
+   "latestReturn": "2027-03-28T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb R12",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A220HKZATEGPG8PMJ7363",
+   "optimizationRunId": "opt_01M36A223AREPAVEZX1K5VVC32",
+   "policyDecisionId": "pd_01M36A221C6WR1TKDW487WF0YW",
+   "approvalId": null,
+   "orderId": "ord_01M36A229K9YPCXG6QDKG1A9KF"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:20.255047Z",
+  "updatedAt": "2026-09-23T04:58:20.953861Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 54241,
+   "display": "USD 542.41"
+  },
+  "explanation": "For the BGR to MCO we chose DL897 BGR-MCO / return DL297 MCO-BGR via sandbox-air at USD 542.41. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

@@ -1,0 +1,18 @@
+{
+ "status": 504,
+ "took_s": 5.1,
+ "headers": {
+  "Server": "nginx",
+  "Date": "Wed, 23 Sep 2026 05:27:09 GMT",
+  "Content-Type": "application/problem+json",
+  "Content-Length": "244",
+  "Connection": "close",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "SAMEORIGIN",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' http://localhost:8180; frame-src 'self' http://localhost:8180; frame-ancestors 'self'; base-uri 'self'; form-action 'self' http://localhost:8180; object-src 'none'",
+  "Cache-Control": "no-store"
+ },
+ "body": "{\"type\":\"about:blank\",\"title\":\"Gateway Timeout\",\"status\":504,\"code\":\"UPSTREAM_TIMEOUT\",\"detail\":\"The service behind this route did not answer in time. The request may or may not have been applied: read the resource before retrying a mutation.\"}"
+}

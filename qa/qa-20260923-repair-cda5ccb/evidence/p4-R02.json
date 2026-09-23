@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R02",
+   "origin": "JFK",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-14T05:00:00Z",
+   "arrivalDeadline": "2026-10-14T23:59:00Z",
+   "returnAfter": "2026-10-21T10:00:00Z",
+   "latestReturn": "2026-10-21T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36A25KDW09RCF6FCPS619CM",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "JFK",
+    "destination": "LAX",
+    "earliestDeparture": "2026-10-14T05:00:00Z",
+    "arrivalDeadline": "2026-10-14T23:59:00Z",
+    "returnAfter": "2026-10-21T10:00:00Z",
+    "latestReturn": "2026-10-21T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb R02",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T04:58:24.237009Z",
+   "updatedAt": "2026-09-23T04:58:24.237009Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M36A25KDW09RCF6FCPS619CM",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-14T05:00:00Z",
+   "arrivalDeadline": "2026-10-14T23:59:00Z",
+   "returnAfter": "2026-10-21T10:00:00Z",
+   "latestReturn": "2026-10-21T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb R02",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A268TQNYFRFWTXNE3QTCF",
+   "optimizationRunId": "opt_01M36A26J3CCKD3VR69TATQD5Z",
+   "policyDecisionId": "pd_01M36A26C0X30SBRYM72V2330B",
+   "approvalId": null,
+   "orderId": "ord_01M36A26YKSGT2DDYAMRGDHZWZ"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:24.237009Z",
+  "updatedAt": "2026-09-23T04:58:25.718662Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 58500,
+   "display": "USD 585.00"
+  },
+  "explanation": "For the JFK to LAX we chose DL137 JFK-LAX / return DL337 LAX-JFK via sandbox-air at USD 585.00. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 94.9 (cost 93, time 100, risk 100, preference 100, experience 75). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

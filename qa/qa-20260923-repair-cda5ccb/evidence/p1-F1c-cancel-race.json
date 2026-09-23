@@ -1,0 +1,94 @@
+{
+ "cancel": {
+  "status": 200,
+  "body": {
+   "tripId": "trip_01M369S0D6JVC2EGJJZ24C3D7B",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "CANCELLED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-23T05:00:00Z",
+    "arrivalDeadline": "2026-10-23T23:59:00Z",
+    "returnAfter": "2026-10-25T10:00:00Z",
+    "latestReturn": "2026-10-25T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb F1b cancel while planning",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 1,
+   "createdAt": "2026-09-23T04:53:24.003233Z",
+   "updatedAt": "2026-09-23T04:53:24.028646Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M369S0D6JVC2EGJJZ24C3D7B",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb F1b cancel while planning",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 1,
+  "createdAt": "2026-09-23T04:53:24.003233Z",
+  "updatedAt": "2026-09-23T04:53:24.028646Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "orders": [],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:53:24.003233Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "CANCELLED",
+   "reason": "qa-20260923-repair-cda5ccb changed my mind",
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:53:24.028646Z"
+  }
+ ]
+}

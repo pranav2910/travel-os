@@ -1,0 +1,169 @@
+{
+ "status": 202,
+ "response": {
+  "tripId": "trip_01M363PWXWB5ZYX3BFRHMENZYQ",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-25T05:00:00Z",
+   "latestReturn": "2026-10-25T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb currency XXX",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYN",
+      "origin": "BOS",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-22T05:00:00Z",
+      "arrivalDeadline": "2026-10-22T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYP",
+      "origin": "SEA",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "XXX"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T03:07:23.452588Z",
+  "updatedAt": "2026-09-23T03:07:23.452588Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "final": {
+  "tripId": "trip_01M363PWXWB5ZYX3BFRHMENZYQ",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-25T05:00:00Z",
+   "latestReturn": "2026-10-25T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb currency XXX",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYN",
+      "origin": "BOS",
+      "destination": "SEA",
+      "earliestDeparture": "2026-10-22T05:00:00Z",
+      "arrivalDeadline": "2026-10-22T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYP",
+      "origin": "SEA",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": [],
+    "currency": "XXX"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 2,
+  "createdAt": "2026-09-23T03:07:23.452588Z",
+  "updatedAt": "2026-09-23T03:07:57.013365Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "OPTIMIZATION",
+  "failureCode": "ACTIVITY_io.grpc.StatusRuntimeException",
+  "components": [
+   {
+    "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYN",
+    "type": "AIR",
+    "status": "PLANNED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": null,
+    "summary": "leg BOS-SEA",
+    "updatedAt": "2026-09-23T03:07:24.424174Z"
+   },
+   {
+    "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYP",
+    "type": "AIR",
+    "status": "PLANNED",
+    "offerId": null,
+    "provider": null,
+    "externalRef": null,
+    "total": null,
+    "failureCode": null,
+    "summary": "leg SEA-BOS",
+    "updatedAt": "2026-09-23T03:07:24.424174Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYN",
+   "type": "AIR",
+   "status": "PLANNED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": null,
+   "summary": "leg BOS-SEA",
+   "updatedAt": "2026-09-23T03:07:24.424174Z"
+  },
+  {
+   "componentId": "cmp_01M363PWXWB5ZYX3BFRHMENZYP",
+   "type": "AIR",
+   "status": "PLANNED",
+   "offerId": null,
+   "provider": null,
+   "externalRef": null,
+   "total": null,
+   "failureCode": null,
+   "summary": "leg SEA-BOS",
+   "updatedAt": "2026-09-23T03:07:24.424174Z"
+  }
+ ]
+}

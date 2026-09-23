@@ -1,0 +1,16 @@
+{
+ "status": 400,
+ "response": {
+  "detail": "request validation failed",
+  "instance": "/api/v1/trips",
+  "status": 400,
+  "title": "VALIDATION_FAILED",
+  "type": "https://contracts.travelos.io/problems/validation-failed",
+  "code": "VALIDATION_FAILED",
+  "fields": {
+   "intent.itinerary.legs": "size must be between 1 and 8"
+  }
+ },
+ "final": null,
+ "components": null
+}

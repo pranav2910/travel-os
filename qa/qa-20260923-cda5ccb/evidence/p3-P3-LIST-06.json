@@ -1,0 +1,11 @@
+{
+ "status": 422,
+ "body": {
+  "detail": "scope must be mine or tenant",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "SCOPE_UNKNOWN",
+  "type": "https://contracts.travelos.io/problems/scope-unknown",
+  "code": "SCOPE_UNKNOWN"
+ }
+}

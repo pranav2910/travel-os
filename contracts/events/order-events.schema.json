@@ -378,7 +378,8 @@
         "reason": {
           "enum": [
             "COMPENSATION_FAILED",
-            "NON_REFUNDABLE"
+            "NON_REFUNDABLE",
+            "CANCELLATION_REFUSED"
           ]
         },
         "detail": {

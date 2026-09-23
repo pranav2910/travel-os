@@ -276,6 +276,42 @@ public class OrderRepository {
         .update();
   }
 
+  /** What the supplier gave back when the item was released; summed into the cancelled event. */
+  public void recordItemRefund(String itemId, Money refund, Instant now) {
+    jdbc.sql(
+            """
+            UPDATE order_item SET refund_currency = :currency, refund_minor = :minor, updated_at = :now
+            WHERE item_id = :id
+            """)
+        .param("currency", refund.currency())
+        .param("minor", refund.amountMinor())
+        .param("now", ts(now))
+        .param("id", itemId)
+        .update();
+  }
+
+  /** The recorded refunds of an order, summed; empty when none was recorded or currencies mix. */
+  public Optional<Money> refundsOf(String orderId) {
+    List<Money> refunds =
+        jdbc.sql(
+                "SELECT refund_currency, refund_minor FROM order_item"
+                    + " WHERE order_id = :id AND refund_minor IS NOT NULL")
+            .param("id", orderId)
+            .query((rs, n) -> Money.of(rs.getString(1), rs.getLong(2)))
+            .list();
+    Money total = null;
+    for (Money m : refunds) {
+      if (total == null) {
+        total = m;
+      } else if (total.currency().equals(m.currency())) {
+        total = total.plus(m);
+      } else {
+        return Optional.empty();
+      }
+    }
+    return Optional.ofNullable(total);
+  }
+
   private OrderRecord map(ResultSet rs, int rowNum) throws SQLException {
     String orderId = rs.getString("order_id");
     List<OrderRecord.Item> items =

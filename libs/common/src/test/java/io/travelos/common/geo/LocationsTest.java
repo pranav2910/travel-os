@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class LocationsTest {
@@ -40,5 +41,36 @@ class LocationsTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("XXX");
     assertThat(Locations.zoneOf(" sea ")).contains(ZoneId.of("America/Los_Angeles"));
+  }
+
+  @Test
+  void theCatalogKnowsAirportsAndTheirClocksOnEveryPath() {
+    // BUG-01 / BUG-10: one table for round trips and itineraries, wider than the audit's 24
+    assertThat(Locations.zoneOf("lhr")).contains(ZoneId.of("Europe/London"));
+    assertThat(Locations.zoneOf("FCO")).contains(ZoneId.of("Europe/Rome"));
+    assertThat(Locations.zoneOf("SJC")).contains(ZoneId.of("America/Los_Angeles"));
+    assertThat(Locations.zoneOf("BGR")).contains(ZoneId.of("America/New_York"));
+    for (String code : List.of("NRT", "ICN", "SIN", "DXB", "DEL", "AKL", "HNL", "ANC", "GRU")) {
+      assertThat(Locations.knows(code)).as(code).isTrue();
+    }
+    assertThat(Locations.knows("QQQ")).isFalse();
+  }
+
+  @Test
+  void cityCodesAreNotAirportsButNameTheirs() {
+    assertThat(Locations.knows("NYC")).isFalse();
+    assertThat(Locations.airportsOfCity("NYC")).containsExactly("JFK", "EWR", "LGA");
+    assertThat(Locations.airportsOfCity("LON")).containsExactly("LHR", "LGW");
+    assertThat(Locations.airportsOfCity("SEA")).isEmpty();
+    assertThat(Locations.explainUnknown("NYC"))
+        .contains("NYC is a city, not an airport")
+        .contains("JFK, EWR, LGA");
+    assertThat(Locations.explainUnknown("QQQ")).contains("unknown location QQQ");
+  }
+
+  @Test
+  void unknownCodesAreListedOnceInRequestOrder() {
+    assertThat(Locations.unknown(List.of("BOS", "QQQ", "NYC", "QQQ", "SEA")))
+        .containsExactly("QQQ", "NYC");
   }
 }

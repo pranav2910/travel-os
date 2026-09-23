@@ -1,0 +1,27 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R18",
+   "origin": "BGR",
+   "destination": "BGR",
+   "earliestDeparture": "2026-10-12T05:00:00Z",
+   "arrivalDeadline": "2026-10-12T23:59:00Z",
+   "returnAfter": "2026-10-14T10:00:00Z",
+   "latestReturn": "2026-10-14T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 422,
+  "body": {
+   "detail": "origin and destination must differ",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "INTENT_INVALID",
+   "type": "https://contracts.travelos.io/problems/intent-invalid",
+   "code": "INTENT_INVALID"
+  }
+ },
+ "final": null,
+ "components": []
+}

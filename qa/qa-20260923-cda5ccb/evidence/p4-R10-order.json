@@ -1,0 +1,59 @@
+{
+ "orderId": "ord_01M3643C0F90PMAM36TGC4K6RG",
+ "tripId": "trip_01M3643BQB2HW00YM1ZMDRPCN8",
+ "travelerId": "emp_1001",
+ "bundleId": "bdl_01M3643BTYK538B3AQAHMQVQM4",
+ "supplier": "sandbox-air",
+ "externalOrderId": "SBX-01M3643C0P97944XQSDRF5BDW0",
+ "status": "CONFIRMED",
+ "total": {
+  "currency": "USD",
+  "amountMinor": 47572,
+  "display": "USD 475.72"
+ },
+ "policyDecisionId": "pd_01M3643BVR459ENKN5VGDH036R",
+ "optimizationRunId": "opt_01M3643BY7XY5GWDERFEY5M75J",
+ "compensated": false,
+ "items": [
+  {
+   "itemId": "itm_01M3643C0E0HE0VAXZ2RM4GE7A",
+   "type": "AIR",
+   "provider": "sandbox-air",
+   "providerOfferId": "SBX-MXxTRUF8U1lEfDIwMjYtMTAtMjZ8MjAyNi0xMS0wMnw1fEVDT05PTVl8MTc5MDEzMzI1MQ",
+   "status": "CONFIRMED",
+   "externalRef": "SBX-01M3643C0P97944XQSDRF5BDW0",
+   "recordLocator": "SM72XJ",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 47572,
+    "display": "USD 475.72"
+   },
+   "flights": [
+    {
+     "direction": "OUTBOUND",
+     "carrier": "DL",
+     "flightNumber": "DL168",
+     "origin": "SEA",
+     "destination": "SYD",
+     "departure": "2026-10-26T17:45:00Z",
+     "arrival": "2026-10-26T22:45:00Z",
+     "cabin": "ECONOMY"
+    },
+    {
+     "direction": "INBOUND",
+     "carrier": "DL",
+     "flightNumber": "DL368",
+     "origin": "SYD",
+     "destination": "SEA",
+     "departure": "2026-11-02T17:45:00Z",
+     "arrival": "2026-11-02T22:45:00Z",
+     "cabin": "ECONOMY"
+    }
+   ]
+  }
+ ],
+ "changes": [],
+ "version": 1,
+ "createdAt": "2026-09-23T03:14:12.110773Z",
+ "updatedAt": "2026-09-23T03:14:12.122464Z"
+}

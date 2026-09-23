@@ -1,0 +1,11 @@
+{
+ "status": 404,
+ "body": {
+  "detail": "trip not-an-id not found",
+  "instance": "/api/v1/trips/not-an-id",
+  "status": 404,
+  "title": "NOT_FOUND",
+  "type": "https://contracts.travelos.io/problems/not-found",
+  "code": "NOT_FOUND"
+ }
+}

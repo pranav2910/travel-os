@@ -1,0 +1,4 @@
+[PASS   ] BUG-05-1-after: 422 CURRENCY_UNSUPPORTED currency XXX is not supported: trips are priced in USD (the platform does not convert
+[PASS   ] BUG-05-2-after: 422 CURRENCY_UNSUPPORTED currency GBP is not supported: trips are priced in USD (the platform does not convert
+[PASS   ] BUG-05-4-after: 202 -> FAILED POLICY/ALL_CANDIDATES_DENIED; hotel component=FAILED 'ALL_CANDIDATES_DENIED'
+{'FAIL': 40, 'PASS': 230, 'NOT_IMPLEMENTED': 19, 'BLOCKED': 2, 'NOT_APPLICABLE': 3}

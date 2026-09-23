@@ -282,6 +282,155 @@ class OrderIntegrationTest {
   }
 
   @Test
+  @org.junit.jupiter.api.Order(60)
+  void aRefusedCancellationKeepsTheOrderPendingWithAnExposureUntilAPersonReleasesIt() {
+    // BUG-08: a supplier that refuses to release a component never makes the order CANCELLED
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary("bdl_01ARZ3NDEKTSV4RRFFQ69G5FC1", "ok-DL170", "norefund-hotel-SEA")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    CancelOrderCommand cancel =
+        CancelOrderCommand.newBuilder()
+            .setCtx(ctx(order.getOrderId() + ":CANCEL-ORDER:1"))
+            .setOrderId(order.getOrderId())
+            .setReason("Meeting moved to video")
+            .build();
+    Order pending = orders.cancelOrder(cancel);
+    assertThat(pending.getStatus()).isEqualTo(OrderStatus.CANCELLATION_PENDING);
+    assertThat(pending.getFailureCode()).isEqualTo("CANCELLATION_INCOMPLETE");
+    assertThat(pending.getItems(0).getStatus())
+        .as("the flight was released")
+        .isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(pending.getItems(1).getStatus())
+        .as("the non-refundable hotel is still confirmed at the supplier")
+        .isEqualTo(OrderItemStatus.ITEM_CANCEL_FAILED);
+    assertThat(pending.getExposuresCount()).isEqualTo(1);
+    assertThat(pending.getExposures(0).getReason()).isEqualTo("CANCELLATION_REFUSED");
+    assertThat(pending.getExposures(0).getStatus()).isEqualTo("OPEN");
+    assertThat(pending.getExposures(0).getAmount()).isEqualTo(pending.getItems(1).getTotal());
+
+    // asked again: the same answer, no second supplier call, no second exposure
+    int attempts = SUPPLIER.cancelAttempts.size();
+    Order again = orders.cancelOrder(cancel);
+    assertThat(again.getStatus()).isEqualTo(OrderStatus.CANCELLATION_PENDING);
+    assertThat(again.getExposuresCount()).isEqualTo(1);
+    assertThat(SUPPLIER.cancelAttempts).hasSize(attempts);
+    assertThat(SUPPLIER.cancelled.stream().filter(pending.getItems(0).getExternalRef()::equals))
+        .as("the flight was released exactly once")
+        .hasSize(1);
+
+    // a person releases the hotel by phone and closes the exposure: now, and only now, CANCELLED
+    String path =
+        "/api/v1/orders/"
+            + order.getOrderId()
+            + "/exposures/"
+            + pending.getExposures(0).getExposureId()
+            + "/resolution";
+    ResponseEntity<String> resolved = resolve(path, TestTokens.carol(), "res-cancel-1");
+    assertThat(resolved.getStatusCode().value()).as(resolved.getBody()).isEqualTo(200);
+    JsonNode view =
+        json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.bob()).getBody());
+    assertThat(view.get("status").asString()).isEqualTo("CANCELLED");
+    JsonNode failureCode = view.get("failureCode");
+    assertThat(failureCode == null || failureCode.isNull() || failureCode.asString().isEmpty())
+        .as("a completed cancellation carries no failure any more")
+        .isTrue();
+    assertThat(orders.cancelOrder(cancel).getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              consumer.poll(Duration.ofMillis(250)).forEach(received::add);
+              List<JsonNode> mine =
+                  received.stream()
+                      .filter(r -> r.value().contains(order.getOrderId()))
+                      .map(r -> json.readTree(r.value()))
+                      .toList();
+              assertThat(mine.stream().map(e -> e.get("eventType").asString()))
+                  .contains(
+                      "travel.order.compensation-failed",
+                      "travel.order.exposure-resolved",
+                      "travel.order.cancelled");
+              JsonNode incomplete =
+                  mine.stream()
+                      .filter(
+                          e ->
+                              e.get("eventType")
+                                  .asString()
+                                  .equals("travel.order.compensation-failed"))
+                      .findFirst()
+                      .orElseThrow();
+              assertThat(incomplete.get("data").get("reasonCode").asString())
+                  .isEqualTo("CANCELLATION_INCOMPLETE");
+              JsonNode cancelled =
+                  mine.stream()
+                      .filter(e -> e.get("eventType").asString().equals("travel.order.cancelled"))
+                      .findFirst()
+                      .orElseThrow();
+              assertThat(cancelled.get("data").get("refund").get("amountMinor").asLong())
+                  .as("the refund the airline gave for the released flight")
+                  .isEqualTo(40000);
+              assertThat(
+                      mine.stream()
+                          .filter(
+                              e -> e.get("eventType").asString().equals("travel.order.cancelled"))
+                          .count())
+                  .isEqualTo(1);
+            });
+    for (ConsumerRecord<String, String> record : received) {
+      if (record.value().contains(order.getOrderId())) {
+        assertThat(EventSchemas.violations(record.value())).as(record.value()).isEmpty();
+      }
+    }
+  }
+
+  @Test
+  @org.junit.jupiter.api.Order(61)
+  void aLostCancellationAnswerResumesFromTheItemStatesAndReleasesNothingTwice() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary("bdl_01ARZ3NDEKTSV4RRFFQ69G5FC2", "stuck-DL190", "ok-hotel-SEA")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    String airRef = order.getItems(0).getExternalRef();
+    String hotelRef = order.getItems(1).getExternalRef();
+    CancelOrderCommand cancel =
+        CancelOrderCommand.newBuilder()
+            .setCtx(ctx(order.getOrderId() + ":CANCEL-ORDER:1"))
+            .setOrderId(order.getOrderId())
+            .setReason("Trip cancelled by traveler")
+            .build();
+    // the hotel (released last-booked-first) is let go; the airline's answer never arrives
+    for (int attempt = 1; attempt <= 2; attempt++) {
+      assertThatThrownBy(() -> orders.cancelOrder(cancel))
+          .isInstanceOfSatisfying(
+              StatusRuntimeException.class,
+              e -> assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.UNAVAILABLE));
+      JsonNode view =
+          json.readTree(get("/api/v1/orders/" + order.getOrderId(), TestTokens.bob()).getBody());
+      assertThat(view.get("status").asString())
+          .as("pending, not cancelled: the flight is still confirmed at the airline")
+          .isEqualTo("CANCELLATION_PENDING");
+      assertThat(view.get("items").get(1).get("status").asString()).isEqualTo("CANCELLED");
+      assertThat(view.get("items").get(0).get("status").asString()).isEqualTo("CONFIRMED");
+      assertThat(view.get("exposures") == null || view.get("exposures").isEmpty()).isTrue();
+    }
+    assertThat(SUPPLIER.cancelled.stream().filter(hotelRef::equals))
+        .as("the hotel was released once, however often the cancel is retried")
+        .hasSize(1);
+    // the airline comes back: the retry finishes what was left, with the same key
+    SUPPLIER.offerByExternalId.put(airRef, "ok-DL190");
+    Order cancelled = orders.cancelOrder(cancel);
+    assertThat(cancelled.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    assertThat(cancelled.getItems(0).getStatus()).isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(SUPPLIER.cancelled.stream().filter(hotelRef::equals)).hasSize(1);
+    assertThat(SUPPLIER.cancelled.stream().filter(airRef::equals)).hasSize(1);
+  }
+
+  @Test
   @org.junit.jupiter.api.Order(6)
   void cancellingAConfirmedOrderReleasesItAndIsIdempotent() {
     Order order =

@@ -1,0 +1,51 @@
+{
+ "keyboard": {
+  "tabStopsToSignIn": [
+   "Sign in"
+  ],
+  "signInReachable": true,
+  "firstTabStopAfterLogin": "Skip to content",
+  "newTripLinkReachable": true,
+  "onNewTrip": true,
+  "focusRing": {
+   "outlineStyle": "solid",
+   "outlineWidth": "3px",
+   "boxShadow": "none"
+  },
+  "submitted": true,
+  "dialog": {
+   "opened": true,
+   "focusInsideOnOpen": true,
+   "closedByEscape": true,
+   "focusRestored": true
+  },
+  "errors": {
+   "invalidFields": 3,
+   "withDescribedBy": 3,
+   "liveRegions": 3,
+   "firstErrorText": "Say what the trip is for; approvers read it."
+  }
+ },
+ "xss": {
+  "rowVisible": true,
+  "injectedImg": 0,
+  "scripts": 0,
+  "dialogs": 0,
+  "rowText": "qa-20260923-repair-cda5ccb <img src=x onerror=alert(1)><script>alert('qa')</script>\ntrip_01M36A1D9MGH1ZZ1JM3834T526\tBOS ",
+  "detail": {
+   "injectedImg": 0,
+   "dialogs": 0,
+   "h1": "qa-20260923-repair-cda5ccb <img src=x onerror=alert(1)><script>alert('qa')</scri"
+  }
+ },
+ "contrast": [],
+ "engines": {
+  "chromium": "153.0.8010.12",
+  "webkit": "26.6",
+  "webkitSmoke": {
+   "tripsHeading": false,
+   "rows": 0
+  },
+  "firefox": "not installed (needs a browser download): BLOCKED"
+ }
+}

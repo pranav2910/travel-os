@@ -1,0 +1,65 @@
+{
+ "keyboard": {
+  "tabStopsToSignIn": [
+   "Sign in"
+  ],
+  "signInReachable": true,
+  "firstTabStopAfterLogin": "Skip to content",
+  "newTripLinkReachable": true,
+  "onNewTrip": true,
+  "focusRing": {
+   "outlineStyle": "solid",
+   "outlineWidth": "3px",
+   "boxShadow": "none"
+  },
+  "submitted": true,
+  "dialog": {
+   "opened": true,
+   "focusInsideOnOpen": true,
+   "closedByEscape": true,
+   "focusRestored": true
+  },
+  "errors": {
+   "invalidFields": 3,
+   "withDescribedBy": 3,
+   "liveRegions": 3,
+   "firstErrorText": "Say what the trip is for; approvers read it."
+  }
+ },
+ "xss": {
+  "rowVisible": true,
+  "injectedImg": 0,
+  "scripts": 0,
+  "dialogs": 0,
+  "rowText": "qa-20260923-cda5ccb <img src=x onerror=alert(1)><script>alert('qa')</script>\ntrip_01M363PWTW8M0EMQ0QV6NBAM9H\tBOS → SEA →",
+  "detail": {
+   "injectedImg": 0,
+   "dialogs": 0,
+   "h1": "qa-20260923-cda5ccb <img src=x onerror=alert(1)><script>alert('qa')</script> \n✓\n"
+  }
+ },
+ "contrast": [
+  {
+   "id": "color-contrast",
+   "impact": "serious",
+   "nodes": [
+    {
+     "target": [
+      "li[data-state=\"skipped\"]"
+     ],
+     "html": "<li data-state=\"skipped\">Approval (not needed)</li>",
+     "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.26 (foreground color: #6b7280, background color: #eef1f5, font size: 9.2pt (12.3px), font weight: normal). Expected contrast ra"
+    }
+   ]
+  }
+ ],
+ "engines": {
+  "chromium": "153.0.8010.12",
+  "webkit": "26.6",
+  "webkitSmoke": {
+   "tripsHeading": false,
+   "rows": 0
+  },
+  "firefox": "not installed (needs a browser download): BLOCKED"
+ }
+}

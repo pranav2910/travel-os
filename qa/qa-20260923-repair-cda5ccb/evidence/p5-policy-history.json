@@ -1,0 +1,62 @@
+{
+ "before": [
+  {
+   "decisionId": "pd_01M36A32G0KXMG5K5HSQBZ2PNT",
+   "evaluationId": "dec_01M36A32FXZK06KTHSCZ3MKVXQ",
+   "tripId": "trip_01M36A323E0B8MPSPW8GHCVMJ9",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A32F870CBHDEN5MAX4MCB",
+   "action": null,
+   "policyId": "US_STANDARD_TRAVEL",
+   "policyVersion": 85,
+   "outcome": "ALLOW",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T04:58:53.821157Z",
+   "decision": {
+    "outcome": "ALLOW",
+    "policyId": "US_STANDARD_TRAVEL",
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD",
+      "amountMinor": "37095"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD",
+      "amountMinor": "52095"
+     },
+     "travelerIncentive": {
+      "currency": "USD",
+      "amountMinor": "2331"
+     }
+    },
+    "decisionId": "pd_01M36A32G0KXMG5K5HSQBZ2PNT",
+    "evaluatedAt": "2026-09-23T04:58:53.821157Z",
+    "policyVersion": 85,
+    "rulesEvaluated": [
+     "CURRENCY",
+     "CABIN_PERMITTED",
+     "MAX_STOPS",
+     "LOWEST_LOGICAL_FARE",
+     "HOTEL_NIGHTLY_LIMIT",
+     "GROUND_TRANSFER_LIMIT",
+     "TRIP_BUDGET",
+     "MANAGER_APPROVAL_THRESHOLD",
+     "INCENTIVE_SHARE"
+    ]
+   }
+  }
+ ],
+ "current": [
+  {
+   "policyId": "US_STANDARD_TRAVEL",
+   "name": "US standard travel policy",
+   "currentVersion": 91,
+   "isDefault": true,
+   "publishedAt": "2026-09-23T04:59:02.710463Z"
+  }
+ ]
+}

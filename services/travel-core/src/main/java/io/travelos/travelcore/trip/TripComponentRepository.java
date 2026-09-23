@@ -44,8 +44,10 @@ public class TripComponentRepository {
         .param("externalRef", c.externalRef())
         .param("currency", c.total() == null ? null : c.total().currency())
         .param("minor", c.total() == null ? null : c.total().amountMinor())
-        .param("failureCode", c.failureCode())
-        .param("summary", c.summary())
+        // the columns are bounded (80 / 500); a long supplier or optimizer reason is cut, never a
+        // 500
+        .param("failureCode", clamp(c.failureCode(), 80))
+        .param("summary", clamp(c.summary(), 500))
         .param("position", c.position())
         .param("updatedAt", OffsetDateTime.ofInstant(c.updatedAt(), ZoneOffset.UTC))
         .update();
@@ -80,5 +82,10 @@ public class TripComponentRepository {
   private static Instant instant(ResultSet rs, String column) throws SQLException {
     OffsetDateTime t = rs.getObject(column, OffsetDateTime.class);
     return t.toInstant();
+  }
+
+  private static @org.jspecify.annotations.Nullable String clamp(
+      @org.jspecify.annotations.Nullable String value, int max) {
+    return value == null || value.length() <= max ? value : value.substring(0, max);
   }
 }

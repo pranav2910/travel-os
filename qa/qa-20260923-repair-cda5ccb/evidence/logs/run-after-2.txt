@@ -1,0 +1,20 @@
+== 05:23:31 p02-session-2
+   ok
+== 05:23:50 p10-frontend-2
+   exit 1 (see evidence/logs/p10-frontend-2.log)
+== 05:26:46 p10b-keyboard-2
+   ok
+== 05:26:55 p11-security-2
+   ok
+== 05:26:56 p04-R04
+   ok
+== 05:26:58 p06-ML04
+   ok
+== 05:27:01 repair-extra
+   ok
+== 05:27:15 reeval
+   ok
+== 05:27:15 report-2
+   ok
+== done rc=1
+RUN_AFTER_2_EXIT=1

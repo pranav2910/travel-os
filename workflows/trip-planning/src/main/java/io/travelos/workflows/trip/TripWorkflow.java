@@ -27,6 +27,9 @@ public interface TripWorkflow {
   @SignalMethod(name = TripPlanning.SIGNAL_APPROVAL_DECIDED)
   void approvalDecided(TripPlanning.ApprovalDecision decision);
 
+  @SignalMethod(name = TripPlanning.SIGNAL_CANCELLED)
+  void cancelled(String reason);
+
   @QueryMethod(name = TripPlanning.QUERY_STAGE)
   TripPlanning.Stage stage();
 }

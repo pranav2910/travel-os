@@ -1,0 +1,28 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb origin two letters 'BO'",
+   "origin": "BO",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T10:00:00Z",
+   "latestReturn": "2026-10-25T23:00:00Z",
+   "hotelRequired": false
+  }
+ },
+ "status": 400,
+ "response": {
+  "detail": "request validation failed",
+  "instance": "/api/v1/trips",
+  "status": 400,
+  "title": "VALIDATION_FAILED",
+  "type": "https://contracts.travelos.io/problems/validation-failed",
+  "code": "VALIDATION_FAILED",
+  "fields": {
+   "intent.origin": "must be an IATA airport code"
+  }
+ },
+ "stored": null
+}

@@ -1,0 +1,43 @@
+{
+ "alice": {
+  "status": 403,
+  "body": {
+   "detail": "only TRAVEL_ADMIN or FINANCE may resolve exposures",
+   "instance": "/api/v1/orders/ord_01M36A3MT25Y4A48903RZSS96M/exposures/exp_01M36A3MVCNRV8E344GW9PMSXF/resolution",
+   "status": 403,
+   "title": "NOT_AN_EXPOSURE_RESOLVER",
+   "type": "https://contracts.travelos.io/problems/not-an-exposure-resolver",
+   "code": "NOT_AN_EXPOSURE_RESOLVER"
+  }
+ },
+ "carol": {
+  "exposureId": "exp_01M36A3MVCNRV8E344GW9PMSXF",
+  "itemId": "itm_01M36A3MT1K0P37Q7K4BSADWK8",
+  "componentId": "cmp_01M36A3JZA5DDWZ27S6MY0DFJZ",
+  "provider": "sandbox-hotel",
+  "externalRef": "SBH-01M36A3MTNS6S9QDQ0C4D3P1DA",
+  "amount": {
+   "currency": "USD",
+   "amountMinor": 27800,
+   "display": "USD 278.00"
+  },
+  "reason": "COMPENSATION_FAILED",
+  "detail": "CANCELLATION_REFUSED: CANCELLATION_REFUSED: Wilshire Non-Refundable does not accept cancellations on this rate",
+  "status": "RESOLVED",
+  "resolvedBy": "human/carol",
+  "resolution": "WRITTEN_OFF",
+  "createdAt": "2026-09-23T04:59:12.620286Z",
+  "resolvedAt": "2026-09-23T04:59:13.892141Z"
+ },
+ "again": {
+  "status": 409,
+  "body": {
+   "detail": "EXPOSURE_ALREADY_RESOLVED: by human/carol",
+   "instance": "/api/v1/orders/ord_01M36A3MT25Y4A48903RZSS96M/exposures/exp_01M36A3MVCNRV8E344GW9PMSXF/resolution",
+   "status": 409,
+   "title": "EXPOSURE_ALREADY_RESOLVED",
+   "type": "https://contracts.travelos.io/problems/exposure-already-resolved",
+   "code": "EXPOSURE_ALREADY_RESOLVED"
+  }
+ }
+}

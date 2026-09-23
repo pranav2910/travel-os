@@ -38,9 +38,12 @@ public class TripRepository {
     this.jdbc = jdbc;
   }
 
-  public void insert(Trip trip) {
+  /**
+   * 1 when inserted; 0 when another request with the same (tenant, Idempotency-Key) won the race.
+   */
+  public int insert(Trip trip) {
     TravelIntent intent = trip.intent();
-    jdbc.sql(
+    return jdbc.sql(
             """
             INSERT INTO trip (trip_id, tenant_id, traveler_id, status, source, request_text,
               origin, destination, earliest_departure, arrival_deadline, return_after, latest_return,
@@ -52,6 +55,7 @@ public class TripRepository {
               :purpose, :hotelRequired, :travelers,
               :createdBy, :idempotencyKey, :requestFingerprint, :version, :createdAt, :updatedAt,
               :givenName, :familyName, :email, CAST(:itinerary AS jsonb), :sourceReference)
+            ON CONFLICT ON CONSTRAINT trip_idempotency DO NOTHING
             """)
         .param("sourceReference", trip.sourceReference())
         .param(

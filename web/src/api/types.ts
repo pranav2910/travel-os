@@ -13,6 +13,8 @@ export type TripStatus =
   | 'BOOKING'
   | 'BOOKED'
   | 'COMPLETED'
+  /** Booked, and the reservation is being released at the suppliers; CANCELLED only once it is. */
+  | 'CANCELLING'
   | 'CANCELLED'
   | 'FAILED';
 export const TERMINAL_TRIP: ReadonlySet<TripStatus> = new Set([
@@ -73,6 +75,8 @@ export interface CreateTripRequest {
   request?: string;
   intent?: IntentRequest;
   source?: 'WEB' | 'API';
+  /** Required when travelerId is someone else: the reservation is made in their name. */
+  traveler?: { givenName: string; familyName: string; email: string };
 }
 
 export interface ComponentView {

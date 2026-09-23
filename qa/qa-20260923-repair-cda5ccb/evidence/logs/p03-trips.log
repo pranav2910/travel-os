@@ -1,0 +1,41 @@
+[PASS   ] P3-VAL-01: 202  
+[PASS   ] P3-VAL-02: 202  ; stored verbatim=True
+[FAIL   ] P3-VAL-03: 400 VALIDATION_FAILED request validation failed
+[PASS   ] P3-VAL-04: 202  ; stored verbatim=True
+[PASS   ] P3-VAL-05: 202  ; stored verbatim=True
+[PASS   ] P3-VAL-06: 202  ; stored verbatim=True
+[PASS   ] P3-VAL-07: 202  ; stored verbatim=True
+[FAIL   ] P3-VAL-08: 400 VALIDATION_FAILED request validation failed
+[FAIL   ] P3-VAL-09: 400 VALIDATION_FAILED request validation failed
+[FAIL   ] P3-VAL-10: 400 VALIDATION_FAILED request validation failed
+[FAIL   ] P3-VAL-11: 400 VALIDATION_FAILED request validation failed
+[PASS   ] P3-VAL-12: 422 INTENT_INVALID origin and destination must differ
+[PASS   ] P3-VAL-13: 422 INTENT_INVALID earliestDeparture must be before arrivalDeadline
+[PASS   ] P3-VAL-14: 422 DEPARTURE_IN_PAST the outbound window closed at 2025-01-10 18:00 America/New_York (2025-01-10T23:0
+[PASS   ] P3-VAL-15: 400  Failed to read request
+[PASS   ] P3-VAL-16: 422 INTENT_INVALID origin, destination, earliestDeparture and arrivalDeadline are required (or an i
+[PASS   ] P3-VAL-17: 202  
+[PASS   ] P3-VAL-18: 200, 5
+[FAIL   ] P3-ITN-01: 400 VALIDATION_FAILED; final=None None/None
+[PASS   ] P3-ITN-02: 422 INTENT_INVALID; final=None None/None
+[PASS   ] P3-ITN-03: 422 CURRENCY_UNSUPPORTED; final=None None/None
+[PASS   ] P3-ITN-04: 422 INTENT_INVALID; final=None None/None
+[PASS   ] P3-ITN-05: 202 ; final=AWAITING_APPROVAL /
+[PASS   ] P3-LIST-01: 422 LIMIT_OUT_OF_RANGE 
+[PASS   ] P3-LIST-02: 422 LIMIT_OUT_OF_RANGE 
+[PASS   ] P3-LIST-03: 422 LIMIT_OUT_OF_RANGE 
+[PASS   ] P3-LIST-04: 400  
+[PASS   ] P3-LIST-05: 422 STATUS_UNKNOWN 
+[PASS   ] P3-LIST-06: 422 SCOPE_UNKNOWN 
+[PASS   ] P3-LIST-07: 200  50
+[PASS   ] P3-DET-01: 404 NOT_FOUND
+[PASS   ] P3-DET-02: 404 NOT_FOUND
+[PASS   ] P3-DET-03: 404 NOT_FOUND
+[N/I    ] P3-EDIT-01: PUT 405, PATCH 405, DELETE 405; no edit/delete route exists in TripController or the web app
+[N/I    ] P3-TRAV-01: no traveler entity: one trip = one traveler (the principal, or a tenant employee id chosen by MANAGER/TRAVEL_A
+[PASS   ] P3-MUT-01: 202 trip_01M36A1KEG27ZY6MMRVAWTMHH0; 202 trip_01M36A1KEG27ZY6MMRVAWTMHH0 same=True; changed payload 422 IDEMPO
+[PASS   ] P3-MUT-02: statuses=[202, 202, 202, 202, 202] distinct ids=1
+[PASS   ] P3-MUT-03: statuses=[202, 202, 202, 202, 202]; listed with that name=5
+[PASS   ] P3-LIFE-01: first 200 -> CANCELLING; final=CANCELLED; second 200 ; order status=['CANCELLED']
+[PASS   ] P3-LIFE-02: alice 409 TRIP_NOT_OVER; carol 200 -> COMPLETED; again 200
+{'FAIL': 28, 'PASS': 78, 'NOT_IMPLEMENTED': 2}

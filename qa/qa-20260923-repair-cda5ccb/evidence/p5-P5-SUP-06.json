@@ -1,0 +1,314 @@
+{
+ "final": {
+  "tripId": "trip_01M36A2W0N9J7ZF30GPJAYDS4Z",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "MIA",
+   "earliestDeparture": "2026-10-23T05:00:00Z",
+   "arrivalDeadline": "2026-10-23T23:59:00Z",
+   "returnAfter": "2026-10-25T05:00:00Z",
+   "latestReturn": "2026-10-25T23:59:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb SUP inject MIA",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY2",
+      "origin": "BOS",
+      "destination": "MIA",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY3",
+      "origin": "MIA",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY4",
+      "city": "MIA",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36A2WM5CXCFHFN2PP37X2WB",
+   "optimizationRunId": "opt_01M36A2WM5TTA6VG58Y9XF2K55",
+   "policyDecisionId": "pd_01M36A2WN53EQ3X477W5AHMT14",
+   "approvalId": null,
+   "orderId": "ord_01M36A2XME2GNK45QAXBB82HAN"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:58:47.189523Z",
+  "updatedAt": "2026-09-23T04:58:49.048007Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 75490,
+   "display": "USD 754.90"
+  },
+  "explanation": "For the BOS to MIA to BOS we chose DL196 BOS-MIA via sandbox-air; DL644 MIA-BOS via sandbox-air; hotel Bayside Bargain in MIA (2 nights, 2026-10-23) at USD 754.90 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v84. It ranked first with a score of 96.1 (cost 90, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY2",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2WGX9X8TEY6G8QFAK9PZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A2XMK9VA9WBNWSF9WR5Q7",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 22911,
+     "display": "USD 229.11"
+    },
+    "failureCode": null,
+    "summary": "DL196 BOS-MIA 2026-10-23T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:48.945603Z"
+   },
+   {
+    "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY3",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2WH9AG4G4MN9A8HHKPCR",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36A2XMRRHBBE1X5JTAQAQM1",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 26779,
+     "display": "USD 267.79"
+    },
+    "failureCode": null,
+    "summary": "DL644 MIA-BOS 2026-10-25T17:45:00Z",
+    "updatedAt": "2026-09-23T04:58:48.945603Z"
+   },
+   {
+    "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY4",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36A2WHNJAZTS9Z2FVN7QSGQ",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M36A2XMXT5FHE7P9HSD0CBFE",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 25800,
+     "display": "USD 258.00"
+    },
+    "failureCode": null,
+    "summary": "Bayside Bargain MIA 2026-10-23 to 2026-10-25 (2 nights)",
+    "updatedAt": "2026-09-23T04:58:48.945603Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY2",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2WGX9X8TEY6G8QFAK9PZ",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A2XMK9VA9WBNWSF9WR5Q7",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 22911,
+    "display": "USD 229.11"
+   },
+   "failureCode": null,
+   "summary": "DL196 BOS-MIA 2026-10-23T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:48.945603Z"
+  },
+  {
+   "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY3",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2WH9AG4G4MN9A8HHKPCR",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36A2XMRRHBBE1X5JTAQAQM1",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 26779,
+    "display": "USD 267.79"
+   },
+   "failureCode": null,
+   "summary": "DL644 MIA-BOS 2026-10-25T17:45:00Z",
+   "updatedAt": "2026-09-23T04:58:48.945603Z"
+  },
+  {
+   "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY4",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36A2WHNJAZTS9Z2FVN7QSGQ",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36A2XMXT5FHE7P9HSD0CBFE",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 25800,
+    "display": "USD 258.00"
+   },
+   "failureCode": null,
+   "summary": "Bayside Bargain MIA 2026-10-23 to 2026-10-25 (2 nights)",
+   "updatedAt": "2026-09-23T04:58:48.945603Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M36A2XME2GNK45QAXBB82HAN",
+   "tripId": "trip_01M36A2W0N9J7ZF30GPJAYDS4Z",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36A2WM5CXCFHFN2PP37X2WB",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36A2XMK9VA9WBNWSF9WR5Q7",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 75490,
+    "display": "USD 754.90"
+   },
+   "policyDecisionId": "pd_01M36A2WN53EQ3X477W5AHMT14",
+   "optimizationRunId": "opt_01M36A2WM5TTA6VG58Y9XF2K55",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36A2XMD5Z3XZN6HZFYV0P01",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8TUlBfDIwMjYtMTAtMjN8LXwyfEVDT05PTVl8MTc5MDEzOTUyNw",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A2XMK9VA9WBNWSF9WR5Q7",
+     "recordLocator": "7CZG53",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 22911,
+      "display": "USD 229.11"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL196",
+       "origin": "BOS",
+       "destination": "MIA",
+       "departure": "2026-10-23T17:45:00Z",
+       "arrival": "2026-10-23T20:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY2"
+    },
+    {
+     "itemId": "itm_01M36A2XME2GNK45QAXBB82HAK",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxNSUF8Qk9TfDIwMjYtMTAtMjV8LXwyfEVDT05PTVl8MTc5MDEzOTUyNw",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36A2XMRRHBBE1X5JTAQAQM1",
+     "recordLocator": "Q4CEUA",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 26779,
+      "display": "USD 267.79"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL644",
+       "origin": "MIA",
+       "destination": "BOS",
+       "departure": "2026-10-25T17:45:00Z",
+       "arrival": "2026-10-25T21:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY3"
+    },
+    {
+     "itemId": "itm_01M36A2XME2GNK45QAXBB82HAM",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxNSUF8MjAyNi0xMC0yM3wyMDI2LTEwLTI1fElOSkVDVHwxNzkwMTM5NTI3",
+     "status": "CONFIRMED",
+     "externalRef": "SBH-01M36A2XMXT5FHE7P9HSD0CBFE",
+     "recordLocator": "RMWZLC",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 25800,
+      "display": "USD 258.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M36A2W0M2HYZ0CA26VN19PY4",
+     "hotel": {
+      "propertyId": "HTL-MIA-INJECT",
+      "name": "Bayside Bargain",
+      "city": "MIA",
+      "checkInDate": "2026-10-23",
+      "checkOutDate": "2026-10-25",
+      "nights": 2,
+      "timeZone": "America/New_York",
+      "refundable": true
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:58:48.845791Z",
+   "updatedAt": "2026-09-23T04:58:48.863748Z"
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:58:47.189523Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:47.681508Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:48.147683Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:48.649188Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:58:49.048007Z"
+  }
+ ]
+}

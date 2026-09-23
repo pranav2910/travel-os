@@ -1,0 +1,77 @@
+{
+ "alice": {
+  "tripId": "trip_01M36461GCZ6X7P2GJCFZ38FMX",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-26T05:00:00Z",
+   "arrivalDeadline": "2026-10-26T23:59:00Z",
+   "returnAfter": "2026-10-28T10:00:00Z",
+   "latestReturn": "2026-10-28T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb key across tenants (alice)",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T03:15:39.660951Z",
+  "updatedAt": "2026-09-23T03:15:39.660951Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "zoe": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M36461HJG13YP92SBTM81EX5",
+   "tenantId": "globex",
+   "travelerId": "emp_2001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-26T05:00:00Z",
+    "arrivalDeadline": "2026-10-26T23:59:00Z",
+    "returnAfter": "2026-10-28T10:00:00Z",
+    "latestReturn": "2026-10-28T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb key across tenants (zoe)",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/zoe",
+   "version": 0,
+   "createdAt": "2026-09-23T03:15:39.698487Z",
+   "updatedAt": "2026-09-23T03:15:39.698487Z",
+   "traveler": {
+    "travelerId": "emp_2001",
+    "givenName": "Zoe",
+    "familyName": "Park",
+    "email": "zoe@globex.example"
+   }
+  }
+ }
+}

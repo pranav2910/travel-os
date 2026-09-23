@@ -1,0 +1,40 @@
+{
+ "describe": "Execution Info:\n  WorkflowId            trip_01M36A4CY2Y33ZB5G4FXCQ5632\n  RunId                 01a0cca2-3476-7322-bc9f-b3761457dda3\n  Type                  TripWorkflow\n  Namespace             travelos\n  TaskQueue             trip-planning\n  AssignedBuildId        \n  StartTime             1 second ago\n  CloseTime             1 second ago\n  ExecutionTime         1 second ago\n  SearchAttributes      map[BuildIds:metadata:{key:\"encoding\" value:\"json/plain\"} metadata:{key:\"type\" value:\"KeywordList\"} data:\"[\\\"unversioned\\\"]\"]\n  StateTransitionCount  47\n  HistoryLength         72\n  HistorySize           376288\n  RootWorkflowId        trip_01M36A4CY2Y33ZB5G4FXCQ5632\n  RootRunId             01a0cca2-3476-7322-bc9f-b3761457dda3\nExtended Execution Info:\n  CancelRequested    false\n  OriginalStartTime  1 second ago\n\nResults:\n  RunTime         190ms\n  Status          COMPLETED\n  Result          {\"failureCode\":null,\"failureStage\":null,\"finalStatus\":\"BOOKED\",\"orderId\":\"ord_01M36A4D8WB0FFY4VK5RZJ7G2W\",\"tripId\":\"trip_01M36A4CY2Y33ZB5G4FXCQ5632\"}\n  ResultEncoding  json/plain\n",
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:59:37.282782Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:37.494398Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:37.608196Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:37.617893Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:37.647433Z"
+  }
+ ]
+}

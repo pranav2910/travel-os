@@ -1,0 +1,221 @@
+[
+ {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M369EWAPB54ZFJGHX1AM82PK",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "BOOKED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-31T05:00:00Z",
+    "arrivalDeadline": "2026-10-31T23:59:00Z",
+    "returnAfter": "2026-11-02T10:00:00Z",
+    "latestReturn": "2026-11-02T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb before BUG-07 concurrent same key (retry)",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M369EWKMRY52ZW8P9HQHPQA3",
+    "optimizationRunId": "opt_01M369EWQ8SD1G27W5PBHJC76K",
+    "policyDecisionId": "pd_01M369EWMY7TR2AX3F6BWDP1F1",
+    "approvalId": null,
+    "orderId": "ord_01M369EWS5WHTSA9T7B8FX3QQR"
+   },
+   "createdBy": "human/alice",
+   "version": 4,
+   "createdAt": "2026-09-23T04:47:52.150158Z",
+   "updatedAt": "2026-09-23T04:47:52.643881Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v76. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  }
+ },
+ {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M369EWAPB54ZFJGHX1AM82PK",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-31T05:00:00Z",
+    "arrivalDeadline": "2026-10-31T23:59:00Z",
+    "returnAfter": "2026-11-02T10:00:00Z",
+    "latestReturn": "2026-11-02T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb before BUG-07 concurrent same key (retry)",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T04:47:52.150158Z",
+   "updatedAt": "2026-09-23T04:47:52.150158Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M369EWAPB54ZFJGHX1AM82PK",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "BOOKED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-31T05:00:00Z",
+    "arrivalDeadline": "2026-10-31T23:59:00Z",
+    "returnAfter": "2026-11-02T10:00:00Z",
+    "latestReturn": "2026-11-02T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb before BUG-07 concurrent same key (retry)",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M369EWKMRY52ZW8P9HQHPQA3",
+    "optimizationRunId": "opt_01M369EWQ8SD1G27W5PBHJC76K",
+    "policyDecisionId": "pd_01M369EWMY7TR2AX3F6BWDP1F1",
+    "approvalId": null,
+    "orderId": "ord_01M369EWS5WHTSA9T7B8FX3QQR"
+   },
+   "createdBy": "human/alice",
+   "version": 4,
+   "createdAt": "2026-09-23T04:47:52.150158Z",
+   "updatedAt": "2026-09-23T04:47:52.643881Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v76. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  }
+ },
+ {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M369EWAPB54ZFJGHX1AM82PK",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "BOOKED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-31T05:00:00Z",
+    "arrivalDeadline": "2026-10-31T23:59:00Z",
+    "returnAfter": "2026-11-02T10:00:00Z",
+    "latestReturn": "2026-11-02T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb before BUG-07 concurrent same key (retry)",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M369EWKMRY52ZW8P9HQHPQA3",
+    "optimizationRunId": "opt_01M369EWQ8SD1G27W5PBHJC76K",
+    "policyDecisionId": "pd_01M369EWMY7TR2AX3F6BWDP1F1",
+    "approvalId": null,
+    "orderId": "ord_01M369EWS5WHTSA9T7B8FX3QQR"
+   },
+   "createdBy": "human/alice",
+   "version": 4,
+   "createdAt": "2026-09-23T04:47:52.150158Z",
+   "updatedAt": "2026-09-23T04:47:52.643881Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v76. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  }
+ },
+ {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M369EWAPB54ZFJGHX1AM82PK",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "BOOKED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-10-31T05:00:00Z",
+    "arrivalDeadline": "2026-10-31T23:59:00Z",
+    "returnAfter": "2026-11-02T10:00:00Z",
+    "latestReturn": "2026-11-02T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb before BUG-07 concurrent same key (retry)",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M369EWKMRY52ZW8P9HQHPQA3",
+    "optimizationRunId": "opt_01M369EWQ8SD1G27W5PBHJC76K",
+    "policyDecisionId": "pd_01M369EWMY7TR2AX3F6BWDP1F1",
+    "approvalId": null,
+    "orderId": "ord_01M369EWS5WHTSA9T7B8FX3QQR"
+   },
+   "createdBy": "human/alice",
+   "version": 4,
+   "createdAt": "2026-09-23T04:47:52.150158Z",
+   "updatedAt": "2026-09-23T04:47:52.643881Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v76. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  }
+ }
+]

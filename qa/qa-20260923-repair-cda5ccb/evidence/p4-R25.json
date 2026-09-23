@@ -1,0 +1,23 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb R25",
+   "origin": "JFK",
+   "destination": "LHR"
+  }
+ },
+ "create": {
+  "status": 422,
+  "body": {
+   "detail": "origin, destination, earliestDeparture and arrivalDeadline are required (or an itinerary)",
+   "instance": "/api/v1/trips",
+   "status": 422,
+   "title": "INTENT_INVALID",
+   "type": "https://contracts.travelos.io/problems/intent-invalid",
+   "code": "INTENT_INVALID"
+  }
+ },
+ "final": null,
+ "components": []
+}

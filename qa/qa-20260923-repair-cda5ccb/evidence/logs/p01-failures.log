@@ -1,0 +1,12 @@
+[PASS   ] P1-FAIL-01: after 90 s status=FAILED failure=SEARCH/NO_OFFERS (retrying activity; no booking); see history
+[FAIL   ] P1-FAIL-01b: 409 -> FAILED
+[PASS   ] P1-FAIL-02: during outage: PLANNING; final: BOOKED; orders=1
+[PASS   ] P1-FAIL-03: status=BOOKED; hotel component=CONFIRMED ref=SBH-01M369XAZNSYCXBERQP61N2T07; orders=1; supplier-side bookings 
+[PASS   ] P1-FAIL-04: status=FAILED BOOKING/ROOM_NO_LONGER_AVAILABLE; components={'AIR:0': 'CANCELLED', 'AIR:1': 'CANCELLED', 'HOTEL
+[PASS   ] P1-FAIL-05: final=BOOKED; orders=1
+[FAIL   ] P1-FAIL-06: status=AWAITING_APPROVAL None/None; 69 decisions, first outcome ALLOW_WITH_APPROVAL policy v81
+[PASS   ] P1-FAIL-07: awaiting=AWAITING_APPROVAL; self=403 NOT_AN_APPROVER; dan=404 NOT_FOUND; reject=200; final=CANCELLED; orders=0
+[PASS   ] P1-PERSONA-01: carol=202 traveler=emp_1001 snapshot=Alice; dan=403 NOT_AN_ARRANGER
+[PASS   ] P1-PERSONA-02: return-before-departure=422 INTENT_INVALID 'returnAfter must not be before arrivalDeadline'; no-dates=422 INTE
+[PASS   ] P1-PERSONA-03: status=FAILED POLICY/ALL_CANDIDATES_DENIED; first reason=NO_POLICY
+{'FAIL': 22, 'PASS': 46}

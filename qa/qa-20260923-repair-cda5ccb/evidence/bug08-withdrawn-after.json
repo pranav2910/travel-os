@@ -1,0 +1,109 @@
+{
+ "cancel": {
+  "tripId": "trip_01M369R24TAASY6319FV0MRSAD",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-29T05:00:00Z",
+   "arrivalDeadline": "2026-10-29T23:59:00Z",
+   "returnAfter": "2026-10-31T10:00:00Z",
+   "latestReturn": "2026-10-31T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-08 withdrawn while awaiting approval",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M369R28QTS5SV3DYXQPYKD9P",
+   "optimizationRunId": "opt_01M369R2C8R1T5WYTXR4BM8VRJ",
+   "policyDecisionId": "pd_01M369R2A2Q1R19Y3YGP371R3Q",
+   "approvalId": "apr_01M369R2DCFNRT126ZMNN8XBCJ",
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 3,
+  "createdAt": "2026-09-23T04:52:53.018555Z",
+  "updatedAt": "2026-09-23T04:52:54.542435Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v77. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 435.07 exceeds the USD 0.01 auto-approve limit. A manager's approval is required before booking."
+ },
+ "late": {
+  "status": 409,
+  "body": {
+   "detail": "trip trip_01M369R24TAASY6319FV0MRSAD is CANCELLED; its approval can no longer be decided",
+   "instance": "/api/v1/trips/trip_01M369R24TAASY6319FV0MRSAD/approval",
+   "status": 409,
+   "title": "TRIP_NOT_AWAITING_APPROVAL",
+   "type": "https://contracts.travelos.io/problems/trip-not-awaiting-approval",
+   "code": "TRIP_NOT_AWAITING_APPROVAL"
+  }
+ },
+ "final": {
+  "tripId": "trip_01M369R24TAASY6319FV0MRSAD",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "CANCELLED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-29T05:00:00Z",
+   "arrivalDeadline": "2026-10-29T23:59:00Z",
+   "returnAfter": "2026-10-31T10:00:00Z",
+   "latestReturn": "2026-10-31T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb after BUG-08 withdrawn while awaiting approval",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M369R28QTS5SV3DYXQPYKD9P",
+   "optimizationRunId": "opt_01M369R2C8R1T5WYTXR4BM8VRJ",
+   "policyDecisionId": "pd_01M369R2A2Q1R19Y3YGP371R3Q",
+   "approvalId": "apr_01M369R2DCFNRT126ZMNN8XBCJ",
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 3,
+  "createdAt": "2026-09-23T04:52:53.018555Z",
+  "updatedAt": "2026-09-23T04:52:54.542435Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "approval": {
+   "approvalId": "apr_01M369R2DCFNRT126ZMNN8XBCJ",
+   "tripId": "trip_01M369R24TAASY6319FV0MRSAD",
+   "requiredRole": "MANAGER",
+   "status": "PENDING",
+   "policyDecisionId": "pd_01M369R2A2Q1R19Y3YGP371R3Q",
+   "requestedAt": "2026-09-23T04:52:53.291764Z",
+   "decidedBy": null,
+   "decidedAt": null,
+   "comment": null
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v77. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW_WITH_APPROVAL; TOTAL_ABOVE_APPROVAL_THRESHOLD: trip total USD 435.07 exceeds the USD 0.01 auto-approve limit. A manager's approval is required before booking."
+ },
+ "orders": []
+}

@@ -1,0 +1,50 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-03 later today",
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-09-23T00:42:02Z",
+   "arrivalDeadline": "2026-09-23T10:42:02Z"
+  }
+ },
+ "status": 202,
+ "body": {
+  "tripId": "trip_01M36946VWJVRJMYK3SHXAVPNA",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "SUBMITTED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-09-23T00:42:02Z",
+   "arrivalDeadline": "2026-09-23T10:42:02Z",
+   "returnAfter": null,
+   "latestReturn": null,
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-03 later today",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 0,
+  "createdAt": "2026-09-23T04:42:02.492773Z",
+  "updatedAt": "2026-09-23T04:42:02.492773Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  }
+ },
+ "now_utc": "2026-09-23T04:42:02+00:00"
+}

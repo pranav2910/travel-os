@@ -1,0 +1,5 @@
+p10 failed: page.waitForURL: Timeout 30000ms exceeded.
+=========================== logs ===========================
+waiting for navigation until "load"
+============================================================
+P10_EXIT=1

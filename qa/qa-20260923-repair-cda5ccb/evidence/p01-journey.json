@@ -1,0 +1,13 @@
+{
+ "run": "qa-20260923-repair-cda5ccb",
+ "steps": [
+  "2026-09-23T04:53:28.273Z 1 login as alice (fresh context)",
+  "2026-09-23T04:53:39.192Z 2 trips list",
+  "2026-09-23T04:54:09.241Z screenshot p01-error.png"
+ ],
+ "checks": {
+  "identityHeader": "travel-os\n⚠\nSandbox — simulated bookings\nAlice Nguyen · acme · TRAVELER\nSign out"
+ },
+ "error": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('heading', { name: 'Trips' }) to be visible\n",
+ "result": "FAIL"
+}

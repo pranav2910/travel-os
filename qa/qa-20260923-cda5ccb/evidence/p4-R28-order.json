@@ -1,0 +1,59 @@
+{
+ "orderId": "ord_01M3643Q7ZYPSG8VD5K12PYKDY",
+ "tripId": "trip_01M3643P4QN2ZK941KPYP7TY7C",
+ "travelerId": "emp_1001",
+ "bundleId": "bdl_01M3643PJ3Y2312915YTXV47AN",
+ "supplier": "sandbox-air",
+ "externalOrderId": "SBX-01M3643Q85Y2BWJFN3FFB789FN",
+ "status": "CONFIRMED",
+ "total": {
+  "currency": "USD",
+  "amountMinor": 48436,
+  "display": "USD 484.36"
+ },
+ "policyDecisionId": "pd_01M3643PN8YBWJZ29MSTMF3DT3",
+ "optimizationRunId": "opt_01M3643PVJWNCCK2176C7Q9ZJ7",
+ "compensated": false,
+ "items": [
+  {
+   "itemId": "itm_01M3643Q7ZYPSG8VD5K12PYKDX",
+   "type": "AIR",
+   "provider": "sandbox-air",
+   "providerOfferId": "SBX-MXxITkx8QUtMfDIwMjYtMTItMzB8MjAyNy0wMS0wNXw1fEVDT05PTVl8MTc5MDEzMzI2Mg",
+   "status": "CONFIRMED",
+   "externalRef": "SBX-01M3643Q85Y2BWJFN3FFB789FN",
+   "recordLocator": "TJN2RF",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 48436,
+    "display": "USD 484.36"
+   },
+   "flights": [
+    {
+     "direction": "OUTBOUND",
+     "carrier": "DL",
+     "flightNumber": "DL131",
+     "origin": "HNL",
+     "destination": "AKL",
+     "departure": "2026-12-30T17:45:00Z",
+     "arrival": "2026-12-30T23:15:00Z",
+     "cabin": "ECONOMY"
+    },
+    {
+     "direction": "INBOUND",
+     "carrier": "DL",
+     "flightNumber": "DL331",
+     "origin": "AKL",
+     "destination": "HNL",
+     "departure": "2027-01-05T17:45:00Z",
+     "arrival": "2027-01-05T23:15:00Z",
+     "cabin": "ECONOMY"
+    }
+   ]
+  }
+ ],
+ "changes": [],
+ "version": 1,
+ "createdAt": "2026-09-23T03:14:23.615562Z",
+ "updatedAt": "2026-09-23T03:14:23.624527Z"
+}

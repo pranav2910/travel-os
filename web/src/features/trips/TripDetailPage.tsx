@@ -33,7 +33,14 @@ import {
 } from '@/ui';
 import { NotFound } from '@/shell/guards';
 import { useCancelTrip, useCompleteTrip, useDecideTrip, useFollowTrip, useTrip } from './hooks';
-import { STEPS, denyReasons, explainFailure, isTerminal, stepState } from './status';
+import {
+  STEPS,
+  canRequestCancellation,
+  denyReasons,
+  explainCancelling,
+  explainFailure,
+  stepState,
+} from './status';
 import { route } from './OverviewPage';
 import { FeedbackPanel } from './FeedbackPanel';
 
@@ -117,6 +124,14 @@ export function TripDetailPage() {
               {t.failureCode === 'ALL_CANDIDATES_DENIED' && <DenyReasons tripId={t.tripId} />}
             </Alert>
           )}
+          {t.status === 'CANCELLING' && (
+            <Alert
+              tone={t.failureCode ? 'danger' : 'warn'}
+              title={t.failureCode ? 'Cancellation incomplete.' : 'Cancelling.'}
+            >
+              {explainCancelling(t)}
+            </Alert>
+          )}
           {t.explanation && (
             <p style={{ marginTop: 10 }}>
               <em>{t.explanation}</em>
@@ -150,6 +165,11 @@ function Progress({ trip }: { trip: TripResponse }) {
           </li>
         );
       })}
+      {trip.status === 'CANCELLING' && (
+        <li data-state="current" aria-current="step">
+          {trip.failureCode ? 'Cancelling (needs a person)' : 'Cancelling'}
+        </li>
+      )}
       {trip.status === 'CANCELLED' && <li data-state="failed">Cancelled</li>}
     </ol>
   );
@@ -228,8 +248,9 @@ function TripActions({ trip, mine }: { trip: TripResponse; mine: boolean }) {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [comment, setComment] = useState('');
-  const canCancel = (mine || hasRole(session, 'TRAVEL_ADMIN')) && !isTerminal(trip.status);
-  const canCancelBooked = (mine || hasRole(session, 'TRAVEL_ADMIN')) && trip.status === 'BOOKED';
+  const canCancel =
+    (mine || hasRole(session, 'TRAVEL_ADMIN')) && canRequestCancellation(trip.status);
+  const canCancelBooked = canCancel && trip.status === 'BOOKED';
   const canAttest = trip.status === 'BOOKED' && (mine || hasRole(session, 'TRAVEL_ADMIN'));
   const isApprover = hasRole(session, 'MANAGER', 'TRAVEL_ADMIN');
   const awaiting = trip.status === 'AWAITING_APPROVAL' && trip.approval?.status === 'PENDING';
@@ -336,7 +357,7 @@ function TripActions({ trip, mine }: { trip: TripResponse; mine: boolean }) {
       >
         <p>
           {trip.status === 'BOOKED'
-            ? 'The booked components are cancelled with the suppliers; a refund is not assumed until Finance records it.'
+            ? 'The reservation is released at the suppliers first: the trip shows “Cancelling” until every component is released, and “Cancelled” only then. If a supplier refuses (a non-refundable rate), the trip stays “Cancelling” and a person resolves it. A refund is not assumed until Finance records it.'
             : 'The planning stops; nothing is booked.'}
         </p>
         <Field label="Reason">

@@ -1,0 +1,30 @@
+{
+ "final": {
+  "tripId": "trip_01M3645Y3WV1DWPF21DTASFB3G",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "request": "Book me a train from Boston to New York next week and arrange a visa for me. [qa-20260923-cda5ccb FAB]",
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 1,
+  "createdAt": "2026-09-23T03:15:36.188492Z",
+  "updatedAt": "2026-09-23T03:15:36.419476Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "failureStage": "INTENT",
+  "failureCode": "NEEDS_CLARIFICATION"
+ },
+ "orders": []
+}

@@ -1,0 +1,143 @@
+{
+ "during_outage": "PLANNING",
+ "final": {
+  "tripId": "trip_01M369W9MWQGCN13JEKMYC3QM1",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-10-26T05:00:00Z",
+   "arrivalDeadline": "2026-10-26T23:59:00Z",
+   "returnAfter": "2026-10-28T10:00:00Z",
+   "latestReturn": "2026-10-28T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb F2 supplier outage then recovery",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M369X87DHQZHFDBTNG4GSFZY",
+   "optimizationRunId": "opt_01M369X8BSP65BT0GH6S19JPZK",
+   "policyDecisionId": "pd_01M369X89HFSD2QF3X0XQ3E5NJ",
+   "approvalId": null,
+   "orderId": "ord_01M369X8DKFYT7M215C0QY7ATP"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T04:55:11.772013Z",
+  "updatedAt": "2026-09-23T04:55:43.337349Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 43507,
+   "display": "USD 435.07"
+  },
+  "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v80. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "orders": [
+  {
+   "orderId": "ord_01M369X8DKFYT7M215C0QY7ATP",
+   "tripId": "trip_01M369W9MWQGCN13JEKMYC3QM1",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M369X87DHQZHFDBTNG4GSFZY",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M369X8EGRVB4R6697C6S61Y5",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "policyDecisionId": "pd_01M369X89HFSD2QF3X0XQ3E5NJ",
+   "optimizationRunId": "opt_01M369X8BSP65BT0GH6S19JPZK",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M369X8DJX82K54ZRY6DZ75D0",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTAtMjZ8MjAyNi0xMC0yOHw3fEVDT05PTVl8MTc5MDEzOTM0Mw",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M369X8EGRVB4R6697C6S61Y5",
+     "recordLocator": "PQE3CY",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 43507,
+      "display": "USD 435.07"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA243",
+       "origin": "BOS",
+       "destination": "SEA",
+       "departure": "2026-10-26T08:30:00Z",
+       "arrival": "2026-10-26T15:00:00Z",
+       "cabin": "ECONOMY"
+      },
+      {
+       "direction": "INBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA343",
+       "origin": "SEA",
+       "destination": "BOS",
+       "departure": "2026-10-28T11:15:00Z",
+       "arrival": "2026-10-28T17:45:00Z",
+       "cabin": "ECONOMY"
+      }
+     ]
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T04:55:43.282528Z",
+   "updatedAt": "2026-09-23T04:55:43.318639Z"
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:55:11.772013Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:55:11.941662Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:55:43.255375Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:55:43.267867Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:55:43.337349Z"
+  }
+ ]
+}

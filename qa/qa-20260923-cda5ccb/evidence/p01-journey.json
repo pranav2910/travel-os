@@ -1,0 +1,207 @@
+{
+ "run": "qa-20260923-cda5ccb",
+ "steps": [
+  "2026-09-23T02:58:30.607Z 1 login as alice (fresh context)",
+  "2026-09-23T02:58:31.116Z 2 trips list",
+  "2026-09-23T02:58:31.493Z screenshot p01-02-trips.png",
+  "2026-09-23T02:58:31.493Z 3 new trip form",
+  "2026-09-23T02:58:31.649Z screenshot p01-03-form-filled.png",
+  "2026-09-23T02:58:31.649Z 4 review",
+  "2026-09-23T02:58:31.734Z screenshot p01-04-review.png",
+  "2026-09-23T02:58:31.734Z 5 confirm",
+  "2026-09-23T02:58:31.791Z trip trip_01M3636NQ4KQDEEVYJP1583ZD0",
+  "2026-09-23T02:58:31.842Z screenshot p01-05-submitted.png",
+  "2026-09-23T02:58:31.842Z 6 wait for Booked (bounded 180 s)",
+  "2026-09-23T02:58:38.451Z screenshot p01-06-booked.png",
+  "2026-09-23T02:58:38.464Z 7 refresh",
+  "2026-09-23T02:58:38.641Z screenshot p01-07-after-reload.png",
+  "2026-09-23T02:58:38.641Z 8 logout",
+  "2026-09-23T02:58:38.872Z screenshot p01-08-signed-out.png",
+  "2026-09-23T02:58:38.887Z 9 login again and open the same trip",
+  "2026-09-23T02:58:39.186Z screenshot p01-09-after-relogin.png",
+  "2026-09-23T02:58:39.186Z 10 authoritative API verification"
+ ],
+ "checks": {
+  "identityHeader": "travel-os\n⚠\nSandbox — simulated bookings\nAlice Nguyen · acme · TRAVELER\nSign out",
+  "reviewBannerSaysBooks": true,
+  "sandboxChipAtSelection": true,
+  "headingAfterWait": "qa-20260923-cda5ccb Bangor to Boston critical journey ✓Booked",
+  "bookingHeading": true,
+  "supplierRef": true,
+  "sandboxSupplierNamed": true,
+  "whyThisOption": true,
+  "totalShown": "USD 598.16",
+  "afterReload": "qa-20260923-cda5ccb Bangor to Boston critical journey ✓Booked",
+  "protectedAfterLogout": false,
+  "afterRelogin": "qa-20260923-cda5ccb Bangor to Boston critical journey ✓Booked",
+  "verify": {
+   "identity": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "tenantScoped": true,
+   "route": "BGR->BOS",
+   "dates": [
+    "2026-10-14T05:00:00Z",
+    "2026-10-17T23:00:00Z"
+   ],
+   "currency": "USD",
+   "total": 59816,
+   "status": "BOOKED",
+   "selectedBundle": "bdl_01M3636NZR42M2P82GCBCMSKT1",
+   "policyDecisionId": "pd_01M3636P29VSRWRPAGEG7ZBW2D",
+   "orderId": "ord_01M3636P99N21FJ8NVPQP12YFV",
+   "workflowId": "trip_01M3636NQ4KQDEEVYJP1583ZD0",
+   "reservationCount": 1,
+   "supplierReference": "SBX-01M3636PA5BQHG59FVP7A7AZV4",
+   "orderStatus": "CONFIRMED"
+  }
+ },
+ "tripId": "trip_01M3636NQ4KQDEEVYJP1583ZD0",
+ "api": {
+  "trip": {
+   "tripId": "trip_01M3636NQ4KQDEEVYJP1583ZD0",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "BOOKED",
+   "source": "WEB",
+   "intent": {
+    "origin": "BGR",
+    "destination": "BOS",
+    "earliestDeparture": "2026-10-14T05:00:00Z",
+    "arrivalDeadline": "2026-10-14T23:59:00Z",
+    "returnAfter": "2026-10-17T10:00:00Z",
+    "latestReturn": "2026-10-17T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb Bangor to Boston critical journey",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M3636NZR42M2P82GCBCMSKT1",
+    "optimizationRunId": "opt_01M3636P6RENYKE4M2G4G2MCYY",
+    "policyDecisionId": "pd_01M3636P29VSRWRPAGEG7ZBW2D",
+    "approvalId": null,
+    "orderId": "ord_01M3636P99N21FJ8NVPQP12YFV"
+   },
+   "createdBy": "human/alice",
+   "version": 4,
+   "createdAt": "2026-09-23T02:58:31.779929Z",
+   "updatedAt": "2026-09-23T02:58:32.417252Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 59816,
+    "display": "USD 598.16"
+   },
+   "explanation": "For the BGR to BOS we chose DL302 BGR-BOS / return DL502 BOS-BGR via sandbox-air at USD 598.16. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v56. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  },
+  "orders": [
+   {
+    "orderId": "ord_01M3636P99N21FJ8NVPQP12YFV",
+    "tripId": "trip_01M3636NQ4KQDEEVYJP1583ZD0",
+    "travelerId": "emp_1001",
+    "bundleId": "bdl_01M3636NZR42M2P82GCBCMSKT1",
+    "supplier": "sandbox-air",
+    "externalOrderId": "SBX-01M3636PA5BQHG59FVP7A7AZV4",
+    "status": "CONFIRMED",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 59816,
+     "display": "USD 598.16"
+    },
+    "policyDecisionId": "pd_01M3636P29VSRWRPAGEG7ZBW2D",
+    "optimizationRunId": "opt_01M3636P6RENYKE4M2G4G2MCYY",
+    "compensated": false,
+    "items": [
+     {
+      "itemId": "itm_01M3636P97TNA1PH0SACAPNRR5",
+      "type": "AIR",
+      "provider": "sandbox-air",
+      "providerOfferId": "SBX-MXxCR1J8Qk9TfDIwMjYtMTAtMTR8MjAyNi0xMC0xN3w1fEVDT05PTVl8MTc5MDEzMjMxMg",
+      "status": "CONFIRMED",
+      "externalRef": "SBX-01M3636PA5BQHG59FVP7A7AZV4",
+      "recordLocator": "NDFPM5",
+      "total": {
+       "currency": "USD",
+       "amountMinor": 59816,
+       "display": "USD 598.16"
+      },
+      "flights": [
+       {
+        "direction": "OUTBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL302",
+        "origin": "BGR",
+        "destination": "BOS",
+        "departure": "2026-10-14T17:45:00Z",
+        "arrival": "2026-10-14T21:45:00Z",
+        "cabin": "ECONOMY"
+       },
+       {
+        "direction": "INBOUND",
+        "carrier": "DL",
+        "flightNumber": "DL502",
+        "origin": "BOS",
+        "destination": "BGR",
+        "departure": "2026-10-17T17:45:00Z",
+        "arrival": "2026-10-17T21:45:00Z",
+        "cabin": "ECONOMY"
+       }
+      ]
+     }
+    ],
+    "changes": [],
+    "version": 1,
+    "createdAt": "2026-09-23T02:58:32.359287Z",
+    "updatedAt": "2026-09-23T02:58:32.397072Z"
+   }
+  ],
+  "history": [
+   {
+    "from": null,
+    "to": "SUBMITTED",
+    "reason": null,
+    "actor": "human/alice",
+    "occurredAt": "2026-09-23T02:58:31.779929Z"
+   },
+   {
+    "from": "SUBMITTED",
+    "to": "PLANNING",
+    "reason": "planning started",
+    "actor": "agent/trip-planner/v1",
+    "occurredAt": "2026-09-23T02:58:32.025041Z"
+   },
+   {
+    "from": "PLANNING",
+    "to": "APPROVED",
+    "reason": "in policy, no approval required",
+    "actor": "agent/trip-planner/v1",
+    "occurredAt": "2026-09-23T02:58:32.317907Z"
+   },
+   {
+    "from": "APPROVED",
+    "to": "BOOKING",
+    "reason": "booking",
+    "actor": "agent/trip-planner/v1",
+    "occurredAt": "2026-09-23T02:58:32.334525Z"
+   },
+   {
+    "from": "BOOKING",
+    "to": "BOOKED",
+    "reason": "order confirmed",
+    "actor": "agent/trip-planner/v1",
+    "occurredAt": "2026-09-23T02:58:32.417252Z"
+   }
+  ],
+  "policyDecisions": 69
+ },
+ "result": "PASS"
+}

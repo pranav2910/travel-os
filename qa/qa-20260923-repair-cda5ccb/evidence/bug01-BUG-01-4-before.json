@@ -1,0 +1,36 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-repair-cda5ccb before BUG-01 itinerary LON",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "BOS",
+      "destination": "JFK",
+      "earliestDeparture": "2026-10-23T05:00:00Z",
+      "arrivalDeadline": "2026-10-23T23:59:00Z"
+     },
+     {
+      "origin": "JFK",
+      "destination": "LON",
+      "earliestDeparture": "2026-10-25T05:00:00Z",
+      "arrivalDeadline": "2026-10-25T23:59:00Z"
+     }
+    ],
+    "stays": [],
+    "transfers": []
+   }
+  }
+ },
+ "status": 422,
+ "body": {
+  "detail": "unknown location LON: the platform does not know its clock",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "INTENT_INVALID",
+  "type": "https://contracts.travelos.io/problems/intent-invalid",
+  "code": "INTENT_INVALID"
+ }
+}

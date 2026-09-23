@@ -1,0 +1,78 @@
+{
+ "cancel": {
+  "status": 200,
+  "body": {
+   "tripId": "trip_01M36A4KAXNX7PKKFHFCHNFV3F",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "CANCELLED",
+   "source": "API",
+   "intent": {
+    "origin": "BOS",
+    "destination": "SEA",
+    "earliestDeparture": "2026-11-04T05:00:00Z",
+    "arrivalDeadline": "2026-11-04T23:59:00Z",
+    "returnAfter": "2026-11-06T10:00:00Z",
+    "latestReturn": "2026-11-06T23:00:00Z",
+    "purpose": "qa-20260923-repair-cda5ccb cancel vs booking race",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": "bdl_01M36A4KN88D532Z898E5VE5YS",
+    "optimizationRunId": "opt_01M36A4KQB6S0PJDC6H75PFY1H",
+    "policyDecisionId": "pd_01M36A4KP34554GW0KA7RY3D6J",
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 3,
+   "createdAt": "2026-09-23T04:59:43.837002Z",
+   "updatedAt": "2026-09-23T04:59:44.260344Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   },
+   "total": {
+    "currency": "USD",
+    "amountMinor": 43507,
+    "display": "USD 435.07"
+   },
+   "explanation": "For the BOS to SEA we chose UA243 BOS-SEA / return UA343 SEA-BOS via sandbox-air at USD 435.07. 69 options were searched and 23 were permitted by policy US_STANDARD_TRAVEL v93. It ranked first with a score of 87.7 (cost 69, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+  }
+ },
+ "orders": [],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:59:43.837002Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:44.153999Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:44.253570Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "CANCELLED",
+   "reason": "qa-20260923-repair-cda5ccb race cancel",
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:59:44.260344Z"
+  }
+ ]
+}

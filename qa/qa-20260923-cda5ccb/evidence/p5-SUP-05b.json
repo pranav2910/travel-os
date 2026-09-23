@@ -1,0 +1,389 @@
+{
+ "final": {
+  "tripId": "trip_01M364AFJ0VVZHAX4CZCZ0TB5H",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-24T05:00:00Z",
+   "latestReturn": "2026-10-24T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb SUP LAX refused ground + exposure",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5D",
+      "origin": "BOS",
+      "destination": "LAX",
+      "earliestDeparture": "2026-10-22T05:00:00Z",
+      "arrivalDeadline": "2026-10-22T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5E",
+      "origin": "LAX",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-24T05:00:00Z",
+      "arrivalDeadline": "2026-10-24T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+      "city": "LAX",
+      "checkInDate": "2026-10-22",
+      "checkOutDate": "2026-10-24",
+      "required": true
+     }
+    ],
+    "transfers": [
+     {
+      "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5G",
+      "kind": "AIRPORT_TO_HOTEL",
+      "city": "LAX",
+      "fromLocation": "LAX airport",
+      "toLocation": "hotel",
+      "pickup": null,
+      "required": true
+     }
+    ],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M364AG60P249AFJK53HG3M08",
+   "optimizationRunId": "opt_01M364AG60WSK95STRY238Z290",
+   "policyDecisionId": "pd_01M364AG8Q5M57RAD0QT1EFVG8",
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:18:05.120653Z",
+  "updatedAt": "2026-09-23T03:18:07.148218Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 99407,
+   "display": "USD 994.07"
+  },
+  "failureStage": "COMPENSATION",
+  "failureCode": "COMPENSATION_INCOMPLETE",
+  "explanation": "For the BOS to LAX to BOS we chose UA612 BOS-LAX via sandbox-air; UA740 LAX-BOS via sandbox-air; hotel Wilshire Non-Refundable in LAX (2 nights, 2026-10-22); shuttle transfer LAX airport to hotel by Coastal Rides at USD 994.07 (2 legs, 1 stays, 1 transfers). 242 options were searched and 174 were permitted by policy US_STANDARD_TRAVEL v71. It ranked first with a score of 92.7 (cost 85, time 100, risk 92, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5D",
+    "type": "AIR",
+    "status": "CANCELLED",
+    "offerId": "off_01M364AFY1PZ3HWH8YD43MNCQR",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M364AHB91KMKC5K1XSXFHPPS",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 32116,
+     "display": "USD 321.16"
+    },
+    "failureCode": null,
+    "summary": "UA612 BOS-LAX 2026-10-22T08:30:00Z",
+    "updatedAt": "2026-09-23T03:18:07.047190Z"
+   },
+   {
+    "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5E",
+    "type": "AIR",
+    "status": "CANCELLED",
+    "offerId": "off_01M364AFYETEG38KZ6HRN0MP0T",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M364AHBDK5ECSD5BCA5WG1RX",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 35991,
+     "display": "USD 359.91"
+    },
+    "failureCode": null,
+    "summary": "UA740 LAX-BOS 2026-10-24T08:30:00Z",
+    "updatedAt": "2026-09-23T03:18:07.047190Z"
+   },
+   {
+    "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+    "type": "HOTEL",
+    "status": "CANCEL_FAILED",
+    "offerId": "off_01M364AFYSK4PCR1937RG4CKFX",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M364AHBG11E8ETR1B1JRFK06",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 27800,
+     "display": "USD 278.00"
+    },
+    "failureCode": "CANCELLATION_REFUSED",
+    "summary": "Wilshire Non-Refundable LAX 2026-10-22 to 2026-10-24 (2 nights)",
+    "updatedAt": "2026-09-23T03:18:07.047190Z"
+   },
+   {
+    "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5G",
+    "type": "GROUND",
+    "status": "FAILED",
+    "offerId": "off_01M364AFZ2T8Z7CGD7911M3YXH",
+    "provider": "sandbox-ground",
+    "externalRef": null,
+    "total": {
+     "currency": "USD",
+     "amountMinor": 3500,
+     "display": "USD 35.00"
+    },
+    "failureCode": "VEHICLE_NO_LONGER_AVAILABLE",
+    "summary": "Coastal Rides LAX airport to hotel 2026-10-22T16:00:00Z",
+    "updatedAt": "2026-09-23T03:18:07.047190Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5D",
+   "type": "AIR",
+   "status": "CANCELLED",
+   "offerId": "off_01M364AFY1PZ3HWH8YD43MNCQR",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M364AHB91KMKC5K1XSXFHPPS",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 32116,
+    "display": "USD 321.16"
+   },
+   "failureCode": null,
+   "summary": "UA612 BOS-LAX 2026-10-22T08:30:00Z",
+   "updatedAt": "2026-09-23T03:18:07.047190Z"
+  },
+  {
+   "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5E",
+   "type": "AIR",
+   "status": "CANCELLED",
+   "offerId": "off_01M364AFYETEG38KZ6HRN0MP0T",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M364AHBDK5ECSD5BCA5WG1RX",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 35991,
+    "display": "USD 359.91"
+   },
+   "failureCode": null,
+   "summary": "UA740 LAX-BOS 2026-10-24T08:30:00Z",
+   "updatedAt": "2026-09-23T03:18:07.047190Z"
+  },
+  {
+   "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+   "type": "HOTEL",
+   "status": "CANCEL_FAILED",
+   "offerId": "off_01M364AFYSK4PCR1937RG4CKFX",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M364AHBG11E8ETR1B1JRFK06",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 27800,
+    "display": "USD 278.00"
+   },
+   "failureCode": "CANCELLATION_REFUSED",
+   "summary": "Wilshire Non-Refundable LAX 2026-10-22 to 2026-10-24 (2 nights)",
+   "updatedAt": "2026-09-23T03:18:07.047190Z"
+  },
+  {
+   "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5G",
+   "type": "GROUND",
+   "status": "FAILED",
+   "offerId": "off_01M364AFZ2T8Z7CGD7911M3YXH",
+   "provider": "sandbox-ground",
+   "externalRef": null,
+   "total": {
+    "currency": "USD",
+    "amountMinor": 3500,
+    "display": "USD 35.00"
+   },
+   "failureCode": "VEHICLE_NO_LONGER_AVAILABLE",
+   "summary": "Coastal Rides LAX airport to hotel 2026-10-22T16:00:00Z",
+   "updatedAt": "2026-09-23T03:18:07.047190Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M364AHB4AGY0M77Y7W8910T7",
+   "tripId": "trip_01M364AFJ0VVZHAX4CZCZ0TB5H",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M364AG60P249AFJK53HG3M08",
+   "supplier": "sandbox-air",
+   "status": "PARTIALLY_FAILED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 99407,
+    "display": "USD 994.07"
+   },
+   "policyDecisionId": "pd_01M364AG8Q5M57RAD0QT1EFVG8",
+   "optimizationRunId": "opt_01M364AG60WSK95STRY238Z290",
+   "failureCode": "VEHICLE_NO_LONGER_AVAILABLE",
+   "failureMessage": "VEHICLE_NO_LONGER_AVAILABLE: Coastal Rides has no vehicle at that time",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M364AHB4AGY0M77Y7W8910T3",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8TEFYfDIwMjYtMTAtMjJ8LXw0fEVDT05PTVl8MTc5MDEzMzQ4NQ",
+     "status": "CANCELLED",
+     "externalRef": "SBX-01M364AHB91KMKC5K1XSXFHPPS",
+     "recordLocator": "MHCJM9",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 32116,
+      "display": "USD 321.16"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA612",
+       "origin": "BOS",
+       "destination": "LAX",
+       "departure": "2026-10-22T08:30:00Z",
+       "arrival": "2026-10-22T15:00:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5D"
+    },
+    {
+     "itemId": "itm_01M364AHB4AGY0M77Y7W8910T4",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxMQVh8Qk9TfDIwMjYtMTAtMjR8LXw0fEVDT05PTVl8MTc5MDEzMzQ4NQ",
+     "status": "CANCELLED",
+     "externalRef": "SBX-01M364AHBDK5ECSD5BCA5WG1RX",
+     "recordLocator": "J3HSV6",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 35991,
+      "display": "USD 359.91"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA740",
+       "origin": "LAX",
+       "destination": "BOS",
+       "departure": "2026-10-24T08:30:00Z",
+       "arrival": "2026-10-24T16:00:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5E"
+    },
+    {
+     "itemId": "itm_01M364AHB4AGY0M77Y7W8910T5",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxMQVh8MjAyNi0xMC0yMnwyMDI2LTEwLTI0fE5PQ0FOQ0VMfDE3OTAxMzM0ODU",
+     "status": "CANCEL_FAILED",
+     "externalRef": "SBH-01M364AHBG11E8ETR1B1JRFK06",
+     "recordLocator": "PJF5X8",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 27800,
+      "display": "USD 278.00"
+     },
+     "failureCode": "CANCELLATION_REFUSED",
+     "flights": [],
+     "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+     "hotel": {
+      "propertyId": "HTL-LAX-NOCANCEL",
+      "name": "Wilshire Non-Refundable",
+      "city": "LAX",
+      "checkInDate": "2026-10-22",
+      "checkOutDate": "2026-10-24",
+      "nights": 2,
+      "timeZone": "America/Los_Angeles",
+      "refundable": false
+     }
+    },
+    {
+     "itemId": "itm_01M364AHB4AGY0M77Y7W8910T6",
+     "type": "GROUND",
+     "provider": "sandbox-ground",
+     "providerOfferId": "SBG-MXxMQVh8QUlSUE9SVF9UT19IT1RFTHxMQVggYWlycG9ydHxob3RlbHwxNzkyNjg0ODAwfEZBSUx8MTc5MDEzMzQ4NQ",
+     "status": "FAILED",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 3500,
+      "display": "USD 35.00"
+     },
+     "failureCode": "VEHICLE_NO_LONGER_AVAILABLE",
+     "flights": [],
+     "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5G",
+     "ground": {
+      "vendorId": "GRD-LAX-FAIL",
+      "vendorName": "Coastal Rides",
+      "vehicleClass": "SHUTTLE",
+      "pickupLocation": "LAX airport",
+      "dropoffLocation": "hotel",
+      "pickup": "2026-10-22T16:00:00Z",
+      "dropoff": "2026-10-22T16:35:00Z",
+      "timeZone": "America/Los_Angeles"
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T03:18:06.948264Z",
+   "updatedAt": "2026-09-23T03:18:06.995297Z",
+   "exposures": [
+    {
+     "exposureId": "exp_01M364AHC60904500D3RCHDWWS",
+     "itemId": "itm_01M364AHB4AGY0M77Y7W8910T5",
+     "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+     "provider": "sandbox-hotel",
+     "externalRef": "SBH-01M364AHBG11E8ETR1B1JRFK06",
+     "amount": {
+      "currency": "USD",
+      "amountMinor": 27800,
+      "display": "USD 278.00"
+     },
+     "reason": "COMPENSATION_FAILED",
+     "detail": "CANCELLATION_REFUSED: CANCELLATION_REFUSED: Wilshire Non-Refundable does not accept cancellations on this rate",
+     "status": "OPEN",
+     "createdAt": "2026-09-23T03:18:06.982507Z"
+    }
+   ]
+  }
+ ],
+ "exposures": [
+  {
+   "orderId": "ord_01M364AHB4AGY0M77Y7W8910T7",
+   "tripId": "trip_01M364AFJ0VVZHAX4CZCZ0TB5H",
+   "travelerId": "emp_1001",
+   "exposure": {
+    "exposureId": "exp_01M364AHC60904500D3RCHDWWS",
+    "itemId": "itm_01M364AHB4AGY0M77Y7W8910T5",
+    "componentId": "cmp_01M364AFJ0VVZHAX4CZCZ0TB5F",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M364AHBG11E8ETR1B1JRFK06",
+    "amount": {
+     "currency": "USD",
+     "amountMinor": 27800,
+     "display": "USD 278.00"
+    },
+    "reason": "COMPENSATION_FAILED",
+    "detail": "CANCELLATION_REFUSED: CANCELLATION_REFUSED: Wilshire Non-Refundable does not accept cancellations on this rate",
+    "status": "OPEN",
+    "createdAt": "2026-09-23T03:18:06.982507Z"
+   }
+  }
+ ]
+}

@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R13",
+   "origin": "JFK",
+   "destination": "NRT",
+   "earliestDeparture": "2027-08-23T05:00:00Z",
+   "arrivalDeadline": "2027-08-23T23:59:00Z",
+   "returnAfter": "2027-09-02T10:00:00Z",
+   "latestReturn": "2027-09-02T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643E91K0Q3ZBY2BSTBP6F8",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "JFK",
+    "destination": "NRT",
+    "earliestDeparture": "2027-08-23T05:00:00Z",
+    "arrivalDeadline": "2027-08-23T23:59:00Z",
+    "returnAfter": "2027-09-02T10:00:00Z",
+    "latestReturn": "2027-09-02T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb R13",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:14.433209Z",
+   "updatedAt": "2026-09-23T03:14:14.433209Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643E91K0Q3ZBY2BSTBP6F8",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "NRT",
+   "earliestDeparture": "2027-08-23T05:00:00Z",
+   "arrivalDeadline": "2027-08-23T23:59:00Z",
+   "returnAfter": "2027-09-02T10:00:00Z",
+   "latestReturn": "2027-09-02T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb R13",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643EB8CP62B254P91KTWAN",
+   "optimizationRunId": "opt_01M3643EDAG89A30ZBT7V8DY0H",
+   "policyDecisionId": "pd_01M3643EC19BKNVQ4EW96ZKJN7",
+   "approvalId": null,
+   "orderId": "ord_01M3643EEXM19EV4AMWAP5SYFH"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:14.433209Z",
+  "updatedAt": "2026-09-23T03:14:14.723073Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 27446,
+   "display": "USD 274.46"
+  },
+  "explanation": "For the JFK to NRT we chose DL186 JFK-NRT / return DL386 NRT-JFK via sandbox-air at USD 274.46. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

@@ -50,6 +50,15 @@ public class OrderMetrics {
         .increment();
   }
 
+  /** Component releases during a cancellation a person asked for, by outcome. */
+  public void cancelled(String offerType, String outcome) {
+    Counter.builder("travelos.order.component.cancellations")
+        .description("component releases during cancellation, by outcome (RELEASED | REFUSED)")
+        .tags(Tags.of("type", type(offerType), "outcome", outcome))
+        .register(registry)
+        .increment();
+  }
+
   public void exposureResolved() {
     Counter.builder("travelos.order.exposures.resolved")
         .description("exposures closed by a person")

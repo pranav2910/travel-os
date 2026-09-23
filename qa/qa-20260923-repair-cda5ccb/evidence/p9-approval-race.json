@@ -1,0 +1,59 @@
+{
+ "responses": [
+  {
+   "status": 409,
+   "body": {
+    "detail": "decided concurrently; re-read",
+    "instance": "/api/v1/trips/trip_01M36A4G9MGH593SZRKAWKZK85/approval",
+    "status": 409,
+    "title": "APPROVAL_ALREADY_DECIDED",
+    "type": "https://contracts.travelos.io/problems/approval-already-decided",
+    "code": "APPROVAL_ALREADY_DECIDED"
+   }
+  },
+  {
+   "status": 200,
+   "body": {
+    "approvalId": "apr_01M36A4GRG79P36WQ382PFTPNZ",
+    "tripId": "trip_01M36A4G9MGH593SZRKAWKZK85",
+    "requiredRole": "MANAGER",
+    "status": "REJECTED",
+    "policyDecisionId": "pd_01M36A4GP7SZ20QZQAT0JZ0NKQ",
+    "requestedAt": "2026-09-23T04:59:41.200072Z",
+    "decidedBy": "human/carol",
+    "decidedAt": "2026-09-23T04:59:42.263462Z",
+    "comment": "qa-20260923-repair-cda5ccb race carol"
+   }
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T04:59:40.724431Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:41.085841Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "AWAITING_APPROVAL",
+   "reason": "trip total USD 435.07 exceeds the USD 0.01 auto-approve limit",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:41.200072Z"
+  },
+  {
+   "from": "AWAITING_APPROVAL",
+   "to": "CANCELLED",
+   "reason": "rejected by human/carol",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T04:59:42.297580Z"
+  }
+ ]
+}

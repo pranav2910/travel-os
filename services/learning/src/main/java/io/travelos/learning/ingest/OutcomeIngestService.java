@@ -92,6 +92,12 @@ public class OutcomeIngestService {
             yield false;
           }
           case "travel.trip.completed" -> tripCompleted(tenant, event, now);
+          case "travel.trip.cancellation-requested" -> {
+            // the reservation is being released: not cancelled yet, no longer a trip to rate
+            trips.upsert(
+                tenant, str(d, "tripId"), null, str(d, "orderId"), "CANCELLING", null, null, now);
+            yield false;
+          }
           case "travel.trip.cancelled" -> {
             trips.upsert(tenant, str(d, "tripId"), null, null, "CANCELLED", null, null, now);
             yield record(
@@ -209,8 +215,12 @@ public class OutcomeIngestService {
     String orderId = str(d, "orderId");
     String tripId = str(d, "tripId");
     boolean any = false;
+    String orderCurrency =
+        d.get("total") instanceof Map<?, ?> total
+            ? blank(String.valueOf(total.get("currency")))
+            : null;
     for (Map<String, Object> item : items(d)) {
-      OrderItemRef ref = itemRef(orderId, tripId, item);
+      OrderItemRef ref = itemRef(orderId, tripId, item, orderCurrency);
       trips.upsertItem(tenant, ref, now);
       if (!"CONFIRMED".equals(ref.status())) {
         continue;
@@ -249,7 +259,7 @@ public class OutcomeIngestService {
     String tripId = str(d, "tripId");
     boolean any = false;
     for (Map<String, Object> item : items(d)) {
-      OrderItemRef ref = itemRef(orderId, tripId, item);
+      OrderItemRef ref = itemRef(orderId, tripId, item, null);
       trips.upsertItem(tenant, ref, now);
       String code = str(item, "failureCode");
       switch (ref.status()) {
@@ -588,8 +598,13 @@ public class OutcomeIngestService {
     return properties.deploymentClass();
   }
 
-  private static OrderItemRef itemRef(String orderId, String tripId, Map<String, Object> item) {
+  private static OrderItemRef itemRef(
+      String orderId, String tripId, Map<String, Object> item, @Nullable String orderCurrency) {
     String itemId = str(item, "itemId");
+    String currency =
+        item.get("total") instanceof Map<?, ?> total
+            ? blank(String.valueOf(total.get("currency")))
+            : null;
     return new OrderItemRef(
         orderId,
         itemId,
@@ -598,7 +613,8 @@ public class OutcomeIngestService {
         str(item, "type").isBlank() ? "AIR" : str(item, "type"),
         blank(str(item, "provider")),
         blank(str(item, "supplierKey")),
-        str(item, "status").isBlank() ? "PENDING" : str(item, "status"));
+        str(item, "status").isBlank() ? "PENDING" : str(item, "status"),
+        currency == null ? orderCurrency : currency);
   }
 
   static Map<String, Object> provenance(Object... kv) {

@@ -1,0 +1,96 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R11",
+   "origin": "BGR",
+   "destination": "PWM",
+   "earliestDeparture": "2026-09-23T05:00:00Z",
+   "arrivalDeadline": "2026-09-23T23:59:00Z",
+   "returnAfter": "2026-09-25T10:00:00Z",
+   "latestReturn": "2026-09-25T23:00:00Z"
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643CS6BZ1CKVVYYG1WH09H",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "BGR",
+    "destination": "PWM",
+    "earliestDeparture": "2026-09-23T05:00:00Z",
+    "arrivalDeadline": "2026-09-23T23:59:00Z",
+    "returnAfter": "2026-09-25T10:00:00Z",
+    "latestReturn": "2026-09-25T23:00:00Z",
+    "purpose": "qa-20260923-cda5ccb R11",
+    "hotelRequired": false,
+    "travelers": 1,
+    "itinerary": null
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:12.902719Z",
+   "updatedAt": "2026-09-23T03:14:12.902719Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643CS6BZ1CKVVYYG1WH09H",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BGR",
+   "destination": "PWM",
+   "earliestDeparture": "2026-09-23T05:00:00Z",
+   "arrivalDeadline": "2026-09-23T23:59:00Z",
+   "returnAfter": "2026-09-25T10:00:00Z",
+   "latestReturn": "2026-09-25T23:00:00Z",
+   "purpose": "qa-20260923-cda5ccb R11",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643DAPHGY8Z531CW7717HM",
+   "optimizationRunId": "opt_01M3643DDDBMYKQ6EB01ZA0W7N",
+   "policyDecisionId": "pd_01M3643DBWFH6J5WJ2HBT35DY3",
+   "approvalId": null,
+   "orderId": "ord_01M3643DF0R8BV651MYXCT4F2N"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:12.902719Z",
+  "updatedAt": "2026-09-23T03:14:13.624044Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 38424,
+   "display": "USD 384.24"
+  },
+  "explanation": "For the BGR to PWM we chose DL398 BGR-PWM / return DL598 PWM-BGR via sandbox-air at USD 384.24. 69 options were searched and 46 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 99.3 (cost 98, time 100, risk 100, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically."
+ },
+ "components": []
+}

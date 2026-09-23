@@ -19,7 +19,7 @@ topics:
 
   - name: travel.trip
     slice: 1
-    events: [travel.trip.created, travel.trip.planned, travel.trip.replanned, travel.trip.booked, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
+    events: [travel.trip.created, travel.trip.planned, travel.trip.replanned, travel.trip.booked, travel.trip.cancellation-requested, travel.trip.cancellation-incomplete, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
 
   - name: travel.search
     slice: 1

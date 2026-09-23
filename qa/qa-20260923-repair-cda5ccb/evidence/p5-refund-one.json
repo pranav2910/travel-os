@@ -1,0 +1,35 @@
+{
+ "request": {
+  "tripId": "trip_01M36A3B76FAZG21M1K21YJDHV",
+  "orderId": "ord_01M36A3CJP9016EY5TD19YFND0",
+  "amountMinor": 1,
+  "currency": "USD",
+  "reference": "qa-20260923-repair-cda5ccb-one cent"
+ },
+ "status": 200,
+ "body": {
+  "outcomeId": "out_01M36A3E87RZMTWYJ3EVCHMG73",
+  "logicalKey": "refund:ord_01M36A3CJP9016EY5TD19YFND0:order",
+  "revision": 2,
+  "kind": "REFUND_SETTLED",
+  "quality": "NEUTRAL",
+  "supplierKey": null,
+  "provider": null,
+  "evidenceClass": "SANDBOX",
+  "tripId": "trip_01M36A3B76FAZG21M1K21YJDHV",
+  "orderId": "ord_01M36A3CJP9016EY5TD19YFND0",
+  "itemId": null,
+  "componentId": null,
+  "disruptionId": null,
+  "observedAt": "2026-09-23T04:59:05.863857Z",
+  "recordedAt": "2026-09-23T04:59:05.863857Z",
+  "source": "API",
+  "sourceRef": "human/carol",
+  "provenance": {
+   "amountMinor": 1,
+   "currency": "USD",
+   "reference": "qa-20260923-repair-cda5ccb-one cent",
+   "recordedBy": "human/carol"
+  }
+ }
+}

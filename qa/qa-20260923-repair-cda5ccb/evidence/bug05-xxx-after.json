@@ -1,0 +1,11 @@
+{
+ "status": 422,
+ "body": {
+  "detail": "currency XXX is not supported: trips are priced in USD (the platform does not convert currencies)",
+  "instance": "/api/v1/trips",
+  "status": 422,
+  "title": "CURRENCY_UNSUPPORTED",
+  "type": "https://contracts.travelos.io/problems/currency-unsupported",
+  "code": "CURRENCY_UNSUPPORTED"
+ }
+}

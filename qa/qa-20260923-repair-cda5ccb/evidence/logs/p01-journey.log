@@ -1,0 +1,4 @@
+1 login as alice (fresh context)
+2 trips list
+screenshot p01-error.png
+RESULT FAIL 

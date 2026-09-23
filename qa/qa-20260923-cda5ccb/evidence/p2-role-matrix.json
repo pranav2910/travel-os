@@ -1,0 +1,47 @@
+{
+ "actual": {
+  "zoe reads alice's order by id": 404,
+  "dan reads alice's order by id": 404,
+  "alice lists tenant trips": 403,
+  "bob lists tenant trips": 200,
+  "alice lists exposures": 403,
+  "carol lists exposures": 200,
+  "alice reads learning config": 403,
+  "bob changes learning mode": 403,
+  "alice lists connectors": 403,
+  "alice publishes a policy": 403,
+  "zoe reads acme policies": 403,
+  "alice records a refund": 403,
+  "zoe lists disruptions": 200
+ },
+ "expected": {
+  "zoe reads alice's order by id": 404,
+  "dan reads alice's order by id": 404,
+  "alice lists tenant trips": 403,
+  "bob lists tenant trips": 200,
+  "alice lists exposures": 403,
+  "carol lists exposures": 200,
+  "alice reads learning config": 403,
+  "bob changes learning mode": 403,
+  "alice lists connectors": 403,
+  "alice publishes a policy": 403,
+  "zoe reads acme policies": [
+   200,
+   403,
+   404
+  ],
+  "alice records a refund": 403,
+  "zoe lists disruptions": [
+   200,
+   403
+  ]
+ },
+ "zoe_policies": {
+  "detail": "you do not have permission to do this",
+  "instance": "/api/v1/policies",
+  "status": 403,
+  "title": "FORBIDDEN",
+  "type": "https://contracts.travelos.io/problems/forbidden",
+  "code": "FORBIDDEN"
+ }
+}

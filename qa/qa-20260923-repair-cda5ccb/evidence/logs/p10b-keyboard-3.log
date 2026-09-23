@@ -1,0 +1,47 @@
+{
+ "keyboard": {
+  "tabStopsToSignIn": [
+   "Sign in"
+  ],
+  "signInReachable": true,
+  "firstTabStopAfterLogin": "Skip to content",
+  "newTripLinkReachable": true,
+  "onNewTrip": true,
+  "focusRing": {
+   "outlineStyle": "solid",
+   "outlineWidth": "3px",
+   "boxShadow": "none"
+  },
+  "submitted": true,
+  "dialog": {
+   "opened": true,
+   "focusInsideOnOpen": true,
+   "closedByEscape": true,
+   "focusRestored": true
+  },
+  "errors": {
+   "invalidFields": 3,
+   "withDescribedBy": 3,
+   "liveRegions": 3,
+   "firstErrorText": "Say what the trip is for; approvers read it."
+  }
+ },
+ "xss": {
+  "rowVisible": false,
+  "injectedImg": 0,
+  "scripts": 0,
+  "dialogs": 0,
+  "rowText": ""
+ },
+ "contrast": [],
+ "engines": {
+  "chromium": "153.0.8010.12",
+  "webkit": "26.6",
+  "webkitSmoke": {
+   "tripsHeading": false,
+   "rows": 0
+  },
+  "firefox": "not installed (needs a browser download): BLOCKED"
+ }
+}
+P10B_EXIT=0

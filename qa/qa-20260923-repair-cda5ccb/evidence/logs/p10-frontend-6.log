@@ -1,0 +1,334 @@
+{
+ "engines": {
+  "chromium": "153.0.8010.12",
+  "webkit": "26.6",
+  "webkitSmoke": {
+   "tripsHeading": true
+  },
+  "firefox": "not installed (would require a browser download); BLOCKED"
+ },
+ "responsive": {
+  "320": {
+   "/trips": {
+    "overflow": false,
+    "docW": 320,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 320,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 320,
+    "smallTargets": 2
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 320,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 320,
+    "smallTargets": 1
+   }
+  },
+  "375": {
+   "/trips": {
+    "overflow": false,
+    "docW": 375,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 375,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 375,
+    "smallTargets": 2
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 375,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 375,
+    "smallTargets": 1
+   }
+  },
+  "390": {
+   "/trips": {
+    "overflow": false,
+    "docW": 390,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 390,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 390,
+    "smallTargets": 2
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 390,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 390,
+    "smallTargets": 1
+   }
+  },
+  "412": {
+   "/trips": {
+    "overflow": false,
+    "docW": 412,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 412,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 412,
+    "smallTargets": 2
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 412,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 412,
+    "smallTargets": 1
+   }
+  },
+  "768": {
+   "/trips": {
+    "overflow": false,
+    "docW": 768,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 768,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 768,
+    "smallTargets": 2
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 768,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 768,
+    "smallTargets": 1
+   }
+  },
+  "1024": {
+   "/trips": {
+    "overflow": false,
+    "docW": 1024,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 1024,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 1024,
+    "smallTargets": 2
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 1024,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 1024,
+    "smallTargets": 1
+   }
+  },
+  "1280": {
+   "/trips": {
+    "overflow": false,
+    "docW": 1280,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 1280,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 1280,
+    "smallTargets": 4
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 1280,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 1280,
+    "smallTargets": 1
+   }
+  },
+  "1440": {
+   "/trips": {
+    "overflow": false,
+    "docW": 1440,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 1440,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 1440,
+    "smallTargets": 7
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 1440,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 1440,
+    "smallTargets": 1
+   }
+  },
+  "1920": {
+   "/trips": {
+    "overflow": false,
+    "docW": 1920,
+    "smallTargets": 24
+   },
+   "/trips/new": {
+    "overflow": false,
+    "docW": 1920,
+    "smallTargets": 6
+   },
+   "/approvals": {
+    "overflow": false,
+    "docW": 1920,
+    "smallTargets": 8
+   },
+   "/finance": {
+    "overflow": false,
+    "docW": 1920,
+    "smallTargets": 4
+   },
+   "/learning": {
+    "overflow": false,
+    "docW": 1920,
+    "smallTargets": 1
+   }
+  },
+  "zoom200": {
+   "overflow": false
+  },
+  "tabletLandscape": {
+   "overflow": false,
+   "width": 1024
+  }
+ },
+ "a11y": {
+  "/": {
+   "violations": []
+  },
+  "/trips": {
+   "violations": []
+  },
+  "/trips/new": {
+   "violations": []
+  },
+  "/approvals": {
+   "violations": []
+  },
+  "/operations": {
+   "violations": []
+  },
+  "/finance": {
+   "violations": []
+  },
+  "/demand": {
+   "violations": []
+  },
+  "/connectors": {
+   "violations": []
+  },
+  "/learning": {
+   "violations": []
+  },
+  "/trips/:id": {
+   "violations": []
+  }
+ },
+ "keyboard": {
+  "signInReachable": true,
+  "firstTabStop": "\n    Loading\n  \n\n",
+  "focusAfterReview": {
+   "tag": "BUTTON",
+   "outline": "solid",
+   "outlineWidth": "3px"
+  },
+  "submitted": true,
+  "dialogOpen": true,
+  "dialog": {
+   "opened": true,
+   "focusTrappedInside": true,
+   "closedByEscape": true,
+   "focusRestored": true
+  },
+  "errors": {
+   "invalidFields": 3,
+   "withDescribedBy": 3,
+   "alerts": 3
+  }
+ },
+ "recovery": {
+  "offlineSubmit": {
+   "text": "New trip\n\nTell the platform what you need. It searches the simulated suppliers, applies your company's policy, optimizes, asks for approval when policy says so, and books.\n\nWhat kind of trip\nRound trip\nOne way\nMulti-city itinerary (hotels, transfers)\nDescribe it in words\nPurpose\nPurpose of travel\nShown to approvers and kept with the trip.\nFlights\nFrom (airport code)\nTo (airport code)\nOutbound\nDate",
+   "stillOnForm": true,
+   "phantomSuccess": false
+  },
+  "retryAfterOnline": {
+   "url": "/trips/trip_01M36CKHYWQNCDZQGZW5HXE2VE",
+   "inputRetained": true
+  },
+  "slowLoading": {
+   "loadingVisible": true
+  },
+  "rapidConfirm": {
+   "tripUrl": "/trips/trip_01M36CMK75PT5BK8H17TNN0MC7"
+  },
+  "backForward": {
+   "afterBack": "/trips"
+P10_EXIT=0

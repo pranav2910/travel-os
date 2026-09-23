@@ -1,0 +1,128 @@
+{
+ "final": {
+  "tripId": "trip_01M36A1BJFCTSWCX1HNFW0XDWV",
+  "tenantId": "globex",
+  "travelerId": "emp_2001",
+  "status": "FAILED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SEA",
+   "earliestDeparture": "2026-11-24T05:00:00Z",
+   "arrivalDeadline": "2026-11-24T23:59:00Z",
+   "returnAfter": "2026-11-26T10:00:00Z",
+   "latestReturn": "2026-11-26T23:00:00Z",
+   "purpose": "qa-20260923-repair-cda5ccb persona: zoe first trip",
+   "hotelRequired": false,
+   "travelers": 1,
+   "itinerary": null
+  },
+  "evidence": {
+   "selectedBundleId": null,
+   "optimizationRunId": null,
+   "policyDecisionId": null,
+   "approvalId": null,
+   "orderId": null
+  },
+  "createdBy": "human/zoe",
+  "version": 2,
+  "createdAt": "2026-09-23T04:57:57.583796Z",
+  "updatedAt": "2026-09-23T04:57:57.922397Z",
+  "traveler": {
+   "travelerId": "emp_2001",
+   "givenName": "Zoe",
+   "familyName": "Park",
+   "email": "zoe@globex.example"
+  },
+  "failureStage": "POLICY",
+  "failureCode": "ALL_CANDIDATES_DENIED"
+ },
+ "decisions": [
+  {
+   "decisionId": "pd_01M36A1BVF8C9PMYW3W4FQCQMD",
+   "evaluationId": "dec_01M36A1BVESWDB65XDE8Y3KJR1",
+   "tripId": "trip_01M36A1BJFCTSWCX1HNFW0XDWV",
+   "travelerId": "emp_2001",
+   "bundleId": "bdl_01M36A1BT5TPR19DTNPHPGZA6V",
+   "action": null,
+   "policyId": "",
+   "policyVersion": 0,
+   "outcome": "DENY",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T04:57:57.870444Z",
+   "decision": {
+    "outcome": "DENY",
+    "reasons": [
+     {
+      "code": "NO_POLICY",
+      "ruleId": "POLICY_ASSIGNMENT",
+      "message": "tenant globex has no default travel policy; nothing can be booked until one is published"
+     }
+    ],
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD"
+     },
+     "travelerIncentive": {
+      "currency": "USD"
+     }
+    },
+    "decisionId": "pd_01M36A1BVF8C9PMYW3W4FQCQMD",
+    "evaluatedAt": "2026-09-23T04:57:57.870444Z",
+    "rulesEvaluated": [
+     "POLICY_ASSIGNMENT"
+    ]
+   }
+  },
+  {
+   "decisionId": "pd_01M36A1BVH5YEM7S6MZX9JZ35J",
+   "evaluationId": "dec_01M36A1BVESWDB65XDE8Y3KJR1",
+   "tripId": "trip_01M36A1BJFCTSWCX1HNFW0XDWV",
+   "travelerId": "emp_2001",
+   "bundleId": "bdl_01M36A1BT5TPR19DTNPHPGZA6W",
+   "action": null,
+   "policyId": "",
+   "policyVersion": 0,
+   "outcome": "DENY",
+   "requiresApproval": false,
+   "evaluatedFor": "agent/trip-planner/v1",
+   "evaluatedAt": "2026-09-23T04:57:57.870444Z",
+   "decision": {
+    "outcome": "DENY",
+    "reasons": [
+     {
+      "code": "NO_POLICY",
+      "ruleId": "POLICY_ASSIGNMENT",
+      "message": "tenant globex has no default travel policy; nothing can be booked until one is published"
+     }
+    ],
+    "economics": {
+     "travelerPays": {
+      "currency": "USD"
+     },
+     "referenceFare": {
+      "currency": "USD"
+     },
+     "inPolicyCeiling": {
+      "currency": "USD"
+     },
+     "travelerIncentive": {
+      "currency": "USD"
+     }
+    },
+    "decisionId": "pd_01M36A1BVH5YEM7S6MZX9JZ35J",
+    "evaluatedAt": "2026-09-23T04:57:57.870444Z",
+    "rulesEvaluated": [
+     "POLICY_ASSIGNMENT"
+    ]
+   }
+  }
+ ]
+}

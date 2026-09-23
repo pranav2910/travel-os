@@ -1,0 +1,110 @@
+{
+ "order": {
+  "orderId": "ord_01M3644SZSAGBZFJ8MS39E9FXM",
+  "tripId": "trip_01M3644R4WFA86B7BAQJ7VP82M",
+  "travelerId": "emp_1001",
+  "bundleId": "bdl_01M3644RXGZQPY3QSBBE83VK3K",
+  "supplier": "sandbox-air",
+  "externalOrderId": "SBX-01M3644SZZEY81WPRM03K8F1JW",
+  "status": "CONFIRMED",
+  "total": {
+   "currency": "USD",
+   "amountMinor": 92145,
+   "display": "USD 921.45"
+  },
+  "policyDecisionId": "pd_01M3644S0KN6HX1PXT5N15JX80",
+  "optimizationRunId": "opt_01M3644RXGHRBPZTQM8WMW6QMJ",
+  "compensated": false,
+  "items": [
+   {
+    "itemId": "itm_01M3644SZR1D1VN88YMMSDA31V",
+    "type": "AIR",
+    "provider": "sandbox-air",
+    "providerOfferId": "SBX-MXxCT1N8U0VBfDIwMjYtMTEtMjV8LXw0fEVDT05PTVl8MTc5MDEzMzI5Nw",
+    "status": "CONFIRMED",
+    "externalRef": "SBX-01M3644SZZEY81WPRM03K8F1JW",
+    "recordLocator": "TADSP3",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 24499,
+     "display": "USD 244.99"
+    },
+    "flights": [
+     {
+      "direction": "OUTBOUND",
+      "carrier": "UA",
+      "flightNumber": "UA240",
+      "origin": "BOS",
+      "destination": "SEA",
+      "departure": "2026-11-25T08:30:00Z",
+      "arrival": "2026-11-25T15:00:00Z",
+      "cabin": "ECONOMY"
+     }
+    ],
+    "componentId": "cmp_01M3644R4WFA86B7BAQJ7VP82H"
+   },
+   {
+    "itemId": "itm_01M3644SZSAGBZFJ8MS39E9FXJ",
+    "type": "AIR",
+    "provider": "sandbox-air",
+    "providerOfferId": "SBX-MXxTRUF8Qk9TfDIwMjYtMTEtMjh8LXwwfEVDT05PTVl8MTc5MDEzMzI5Nw",
+    "status": "CONFIRMED",
+    "externalRef": "SBX-01M3644T071PMF86NW3BXE8M9P",
+    "recordLocator": "ZQGVRQ",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 31946,
+     "display": "USD 319.46"
+    },
+    "flights": [
+     {
+      "direction": "OUTBOUND",
+      "carrier": "DL",
+      "flightNumber": "DL332",
+      "origin": "SEA",
+      "destination": "BOS",
+      "departure": "2026-11-28T06:00:00Z",
+      "arrival": "2026-11-28T13:30:00Z",
+      "cabin": "ECONOMY"
+     }
+    ],
+    "componentId": "cmp_01M3644R4WFA86B7BAQJ7VP82J"
+   },
+   {
+    "itemId": "itm_01M3644SZSAGBZFJ8MS39E9FXK",
+    "type": "HOTEL",
+    "provider": "sandbox-hotel",
+    "providerOfferId": "SBH-MXxTRUF8MjAyNi0xMS0yNXwyMDI2LTExLTI4fDJ8MTc5MDEzMzI5Nw",
+    "status": "CONFIRMED",
+    "externalRef": "SBH-01M3644T0D9YS90D7RSWPQT8W5",
+    "recordLocator": "QXZVQY",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 35700,
+     "display": "USD 357.00"
+    },
+    "flights": [],
+    "componentId": "cmp_01M3644R4WFA86B7BAQJ7VP82K",
+    "hotel": {
+     "propertyId": "HTL-SEA-2",
+     "name": "Budget Inn",
+     "city": "SEA",
+     "checkInDate": "2026-11-25",
+     "checkOutDate": "2026-11-28",
+     "nights": 3,
+     "timeZone": "America/Los_Angeles",
+     "refundable": true
+    }
+   }
+  ],
+  "changes": [],
+  "version": 1,
+  "createdAt": "2026-09-23T03:14:59.192730Z",
+  "updatedAt": "2026-09-23T03:14:59.216964Z"
+ },
+ "trip_total": {
+  "currency": "USD",
+  "amountMinor": 92145,
+  "display": "USD 921.45"
+ }
+}

@@ -1,0 +1,3 @@
+{
+ "actual": "travelos-web refuses the password grant (400 {\"error\":\"unauthorized_client\",\"error_description\":\"Client not allowed for direc): the browser client cannot be used as a wrong-environment token source"
+}

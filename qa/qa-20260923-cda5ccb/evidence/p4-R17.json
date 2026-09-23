@@ -1,0 +1,271 @@
+{
+ "request": {
+  "source": "API",
+  "intent": {
+   "purpose": "qa-20260923-cda5ccb R17",
+   "itinerary": {
+    "currency": "USD",
+    "legs": [
+     {
+      "origin": "JFK",
+      "destination": "LAX",
+      "earliestDeparture": "2026-10-31T05:00:00Z",
+      "arrivalDeadline": "2026-10-31T23:59:00Z"
+     },
+     {
+      "origin": "LAX",
+      "destination": "JFK",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "city": "LAX",
+      "checkInDate": "2026-10-31",
+      "checkOutDate": "2026-11-02",
+      "required": true
+     }
+    ],
+    "transfers": []
+   }
+  }
+ },
+ "create": {
+  "status": 202,
+  "body": {
+   "tripId": "trip_01M3643H89766R0B42CF2WWS4X",
+   "tenantId": "acme",
+   "travelerId": "emp_1001",
+   "status": "SUBMITTED",
+   "source": "API",
+   "intent": {
+    "origin": "JFK",
+    "destination": "LAX",
+    "earliestDeparture": "2026-10-31T05:00:00Z",
+    "arrivalDeadline": "2026-10-31T23:59:00Z",
+    "returnAfter": "2026-11-02T05:00:00Z",
+    "latestReturn": "2026-11-02T23:59:00Z",
+    "purpose": "qa-20260923-cda5ccb R17",
+    "hotelRequired": true,
+    "travelers": 1,
+    "itinerary": {
+     "legs": [
+      {
+       "componentId": "cmp_01M3643H89766R0B42CF2WWS4T",
+       "origin": "JFK",
+       "destination": "LAX",
+       "earliestDeparture": "2026-10-31T05:00:00Z",
+       "arrivalDeadline": "2026-10-31T23:59:00Z"
+      },
+      {
+       "componentId": "cmp_01M3643H89766R0B42CF2WWS4V",
+       "origin": "LAX",
+       "destination": "JFK",
+       "earliestDeparture": "2026-11-02T05:00:00Z",
+       "arrivalDeadline": "2026-11-02T23:59:00Z"
+      }
+     ],
+     "stays": [
+      {
+       "componentId": "cmp_01M3643H89766R0B42CF2WWS4W",
+       "city": "LAX",
+       "checkInDate": "2026-10-31",
+       "checkOutDate": "2026-11-02",
+       "required": true
+      }
+     ],
+     "transfers": [],
+     "currency": "USD"
+    }
+   },
+   "evidence": {
+    "selectedBundleId": null,
+    "optimizationRunId": null,
+    "policyDecisionId": null,
+    "approvalId": null,
+    "orderId": null
+   },
+   "createdBy": "human/alice",
+   "version": 0,
+   "createdAt": "2026-09-23T03:14:17.481943Z",
+   "updatedAt": "2026-09-23T03:14:17.481943Z",
+   "traveler": {
+    "travelerId": "emp_1001",
+    "givenName": "Alice",
+    "familyName": "Nguyen",
+    "email": "alice@acme.example"
+   }
+  }
+ },
+ "final": {
+  "tripId": "trip_01M3643H89766R0B42CF2WWS4X",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "JFK",
+   "destination": "LAX",
+   "earliestDeparture": "2026-10-31T05:00:00Z",
+   "arrivalDeadline": "2026-10-31T23:59:00Z",
+   "returnAfter": "2026-11-02T05:00:00Z",
+   "latestReturn": "2026-11-02T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb R17",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M3643H89766R0B42CF2WWS4T",
+      "origin": "JFK",
+      "destination": "LAX",
+      "earliestDeparture": "2026-10-31T05:00:00Z",
+      "arrivalDeadline": "2026-10-31T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M3643H89766R0B42CF2WWS4V",
+      "origin": "LAX",
+      "destination": "JFK",
+      "earliestDeparture": "2026-11-02T05:00:00Z",
+      "arrivalDeadline": "2026-11-02T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M3643H89766R0B42CF2WWS4W",
+      "city": "LAX",
+      "checkInDate": "2026-10-31",
+      "checkOutDate": "2026-11-02",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M3643JCMWY6GP7HTBD9H77RJ",
+   "optimizationRunId": "opt_01M3643JCM2YNYAH89EFH1MBW2",
+   "policyDecisionId": "pd_01M3643JFQQAFAN3WDD3TMNE62",
+   "approvalId": null,
+   "orderId": "ord_01M3643KF6AMZER0BA2WCSJ8ST"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:17.481943Z",
+  "updatedAt": "2026-09-23T03:14:19.990841Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 99890,
+   "display": "USD 998.90"
+  },
+  "explanation": "For the JFK to LAX to JFK we chose UA141 JFK-LAX via sandbox-air; DL139 LAX-JFK via sandbox-air; hotel Wilshire Non-Refundable in LAX (2 nights, 2026-10-31) at USD 998.90 (2 legs, 1 stays). 104 options were searched and 36 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 93.7 (cost 88, time 100, risk 90, preference 100, experience 100). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M3643H89766R0B42CF2WWS4T",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3643HPPNV9DK4TWPSCNEXBZ",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3643KFNY8279H1SPG1YPD4A",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 37278,
+     "display": "USD 372.78"
+    },
+    "failureCode": null,
+    "summary": "UA141 JFK-LAX 2026-10-31T08:30:00Z",
+    "updatedAt": "2026-09-23T03:14:19.890104Z"
+   },
+   {
+    "componentId": "cmp_01M3643H89766R0B42CF2WWS4V",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3643HSS3BPKBZTNNC9MJEAP",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M3643KFZS64FV08XQ558VPG6",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 34812,
+     "display": "USD 348.12"
+    },
+    "failureCode": null,
+    "summary": "DL139 LAX-JFK 2026-11-02T17:45:00Z",
+    "updatedAt": "2026-09-23T03:14:19.890104Z"
+   },
+   {
+    "componentId": "cmp_01M3643H89766R0B42CF2WWS4W",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M3643HWWMQ13BKAVZH5673TP",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M3643KG88PHT7V5B5QM5R5Y1",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 27800,
+     "display": "USD 278.00"
+    },
+    "failureCode": null,
+    "summary": "Wilshire Non-Refundable LAX 2026-10-31 to 2026-11-02 (2 nights)",
+    "updatedAt": "2026-09-23T03:14:19.890104Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M3643H89766R0B42CF2WWS4T",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M3643HPPNV9DK4TWPSCNEXBZ",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M3643KFNY8279H1SPG1YPD4A",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 37278,
+    "display": "USD 372.78"
+   },
+   "failureCode": null,
+   "summary": "UA141 JFK-LAX 2026-10-31T08:30:00Z",
+   "updatedAt": "2026-09-23T03:14:19.890104Z"
+  },
+  {
+   "componentId": "cmp_01M3643H89766R0B42CF2WWS4V",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M3643HSS3BPKBZTNNC9MJEAP",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M3643KFZS64FV08XQ558VPG6",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 34812,
+    "display": "USD 348.12"
+   },
+   "failureCode": null,
+   "summary": "DL139 LAX-JFK 2026-11-02T17:45:00Z",
+   "updatedAt": "2026-09-23T03:14:19.890104Z"
+  },
+  {
+   "componentId": "cmp_01M3643H89766R0B42CF2WWS4W",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M3643HWWMQ13BKAVZH5673TP",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M3643KG88PHT7V5B5QM5R5Y1",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 27800,
+    "display": "USD 278.00"
+   },
+   "failureCode": null,
+   "summary": "Wilshire Non-Refundable LAX 2026-10-31 to 2026-11-02 (2 nights)",
+   "updatedAt": "2026-09-23T03:14:19.890104Z"
+  }
+ ]
+}

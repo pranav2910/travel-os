@@ -1,0 +1,314 @@
+{
+ "final": {
+  "tripId": "trip_01M36442ZJ9QXV9NTQ6BZ9PGVC",
+  "tenantId": "acme",
+  "travelerId": "emp_1001",
+  "status": "BOOKED",
+  "source": "API",
+  "intent": {
+   "origin": "BOS",
+   "destination": "SFO",
+   "earliestDeparture": "2026-10-22T05:00:00Z",
+   "arrivalDeadline": "2026-10-22T23:59:00Z",
+   "returnAfter": "2026-10-24T05:00:00Z",
+   "latestReturn": "2026-10-24T23:59:00Z",
+   "purpose": "qa-20260923-cda5ccb SUP reprice SFO",
+   "hotelRequired": true,
+   "travelers": 1,
+   "itinerary": {
+    "legs": [
+     {
+      "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGV9",
+      "origin": "BOS",
+      "destination": "SFO",
+      "earliestDeparture": "2026-10-22T05:00:00Z",
+      "arrivalDeadline": "2026-10-22T23:59:00Z"
+     },
+     {
+      "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVA",
+      "origin": "SFO",
+      "destination": "BOS",
+      "earliestDeparture": "2026-10-24T05:00:00Z",
+      "arrivalDeadline": "2026-10-24T23:59:00Z"
+     }
+    ],
+    "stays": [
+     {
+      "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVB",
+      "city": "SFO",
+      "checkInDate": "2026-10-22",
+      "checkOutDate": "2026-10-24",
+      "required": true
+     }
+    ],
+    "transfers": [],
+    "currency": "USD"
+   }
+  },
+  "evidence": {
+   "selectedBundleId": "bdl_01M36443MKHGDJTAYJ2FBFSP4N",
+   "optimizationRunId": "opt_01M36443MKK0GZW1SDNXXNZFJR",
+   "policyDecisionId": "pd_01M36444DKNCD4E5YPHN2B9N2Z",
+   "approvalId": null,
+   "orderId": "ord_01M36444TJ6M5P69ASC9E5H11W"
+  },
+  "createdBy": "human/alice",
+  "version": 4,
+  "createdAt": "2026-09-23T03:14:35.634949Z",
+  "updatedAt": "2026-09-23T03:14:37.704421Z",
+  "traveler": {
+   "travelerId": "emp_1001",
+   "givenName": "Alice",
+   "familyName": "Nguyen",
+   "email": "alice@acme.example"
+  },
+  "total": {
+   "currency": "USD",
+   "amountMinor": 100643,
+   "display": "USD 1006.43"
+  },
+  "explanation": "For the BOS to SFO to BOS we chose UA285 BOS-SFO via sandbox-air; DL377 SFO-BOS via sandbox-air; hotel Union Square Saver in SFO (2 nights, 2026-10-22) at USD 926.43 (2 legs, 1 stays). 105 options were searched and 37 were permitted by policy US_STANDARD_TRAVEL v62. It ranked first with a score of 92.8 (cost 86, time 100, risk 100, preference 100, experience 83). Policy outcome: ALLOW. No approval is required; it books automatically.",
+  "components": [
+   {
+    "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGV9",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36443GB6K1DJTN1VQ4CP2A4",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36444V82RN484N3AMPAPQ7P",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 27556,
+     "display": "USD 275.56"
+    },
+    "failureCode": null,
+    "summary": "UA285 BOS-SFO 2026-10-22T08:30:00Z",
+    "updatedAt": "2026-09-23T03:14:37.604010Z"
+   },
+   {
+    "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVA",
+    "type": "AIR",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36443GWSB2JCSX49373NMNF",
+    "provider": "sandbox-air",
+    "externalRef": "SBX-01M36444VF2QYKGNK3DHV00EEJ",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 35287,
+     "display": "USD 352.87"
+    },
+    "failureCode": null,
+    "summary": "DL377 SFO-BOS 2026-10-24T06:00:00Z",
+    "updatedAt": "2026-09-23T03:14:37.604010Z"
+   },
+   {
+    "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVB",
+    "type": "HOTEL",
+    "status": "CONFIRMED",
+    "offerId": "off_01M36443HCTDTF3SHC2M5DSFZX",
+    "provider": "sandbox-hotel",
+    "externalRef": "SBH-01M36444VNGBGR81953FG5K98P",
+    "total": {
+     "currency": "USD",
+     "amountMinor": 37800,
+     "display": "USD 378.00"
+    },
+    "failureCode": null,
+    "summary": "Union Square Saver SFO 2026-10-22 to 2026-10-24 (2 nights)",
+    "updatedAt": "2026-09-23T03:14:37.604010Z"
+   }
+  ]
+ },
+ "components": [
+  {
+   "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGV9",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36443GB6K1DJTN1VQ4CP2A4",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36444V82RN484N3AMPAPQ7P",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 27556,
+    "display": "USD 275.56"
+   },
+   "failureCode": null,
+   "summary": "UA285 BOS-SFO 2026-10-22T08:30:00Z",
+   "updatedAt": "2026-09-23T03:14:37.604010Z"
+  },
+  {
+   "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVA",
+   "type": "AIR",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36443GWSB2JCSX49373NMNF",
+   "provider": "sandbox-air",
+   "externalRef": "SBX-01M36444VF2QYKGNK3DHV00EEJ",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 35287,
+    "display": "USD 352.87"
+   },
+   "failureCode": null,
+   "summary": "DL377 SFO-BOS 2026-10-24T06:00:00Z",
+   "updatedAt": "2026-09-23T03:14:37.604010Z"
+  },
+  {
+   "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVB",
+   "type": "HOTEL",
+   "status": "CONFIRMED",
+   "offerId": "off_01M36443HCTDTF3SHC2M5DSFZX",
+   "provider": "sandbox-hotel",
+   "externalRef": "SBH-01M36444VNGBGR81953FG5K98P",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 37800,
+    "display": "USD 378.00"
+   },
+   "failureCode": null,
+   "summary": "Union Square Saver SFO 2026-10-22 to 2026-10-24 (2 nights)",
+   "updatedAt": "2026-09-23T03:14:37.604010Z"
+  }
+ ],
+ "orders": [
+  {
+   "orderId": "ord_01M36444TJ6M5P69ASC9E5H11W",
+   "tripId": "trip_01M36442ZJ9QXV9NTQ6BZ9PGVC",
+   "travelerId": "emp_1001",
+   "bundleId": "bdl_01M36443MKHGDJTAYJ2FBFSP4N",
+   "supplier": "sandbox-air",
+   "externalOrderId": "SBX-01M36444V82RN484N3AMPAPQ7P",
+   "status": "CONFIRMED",
+   "total": {
+    "currency": "USD",
+    "amountMinor": 100643,
+    "display": "USD 1006.43"
+   },
+   "policyDecisionId": "pd_01M36444DKNCD4E5YPHN2B9N2Z",
+   "optimizationRunId": "opt_01M36443MKK0GZW1SDNXXNZFJR",
+   "compensated": false,
+   "items": [
+    {
+     "itemId": "itm_01M36444TDK88C6CC5C8Y1HX8A",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxCT1N8U0ZPfDIwMjYtMTAtMjJ8LXw0fEVDT05PTVl8MTc5MDEzMzI3Ng",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36444V82RN484N3AMPAPQ7P",
+     "recordLocator": "KULPQ7",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 27556,
+      "display": "USD 275.56"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "UA",
+       "flightNumber": "UA285",
+       "origin": "BOS",
+       "destination": "SFO",
+       "departure": "2026-10-22T08:30:00Z",
+       "arrival": "2026-10-22T16:30:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGV9"
+    },
+    {
+     "itemId": "itm_01M36444TFSBSD0HRSB1AF2H15",
+     "type": "AIR",
+     "provider": "sandbox-air",
+     "providerOfferId": "SBX-MXxTRk98Qk9TfDIwMjYtMTAtMjR8LXwwfEVDT05PTVl8MTc5MDEzMzI3Ng",
+     "status": "CONFIRMED",
+     "externalRef": "SBX-01M36444VF2QYKGNK3DHV00EEJ",
+     "recordLocator": "T6W2NP",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 35287,
+      "display": "USD 352.87"
+     },
+     "flights": [
+      {
+       "direction": "OUTBOUND",
+       "carrier": "DL",
+       "flightNumber": "DL377",
+       "origin": "SFO",
+       "destination": "BOS",
+       "departure": "2026-10-24T06:00:00Z",
+       "arrival": "2026-10-24T13:00:00Z",
+       "cabin": "ECONOMY"
+      }
+     ],
+     "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVA"
+    },
+    {
+     "itemId": "itm_01M36444THXV28ZK6Q278EK0HH",
+     "type": "HOTEL",
+     "provider": "sandbox-hotel",
+     "providerOfferId": "SBH-MXxTRk98MjAyNi0xMC0yMnwyMDI2LTEwLTI0fFJFUFJJQ0V8MTc5MDEzMzI3Ng",
+     "status": "CONFIRMED",
+     "externalRef": "SBH-01M36444VNGBGR81953FG5K98P",
+     "recordLocator": "2CD6KA",
+     "total": {
+      "currency": "USD",
+      "amountMinor": 37800,
+      "display": "USD 378.00"
+     },
+     "flights": [],
+     "componentId": "cmp_01M36442ZJ9QXV9NTQ6BZ9PGVB",
+     "hotel": {
+      "propertyId": "HTL-SFO-REPRICE",
+      "name": "Union Square Saver",
+      "city": "SFO",
+      "checkInDate": "2026-10-22",
+      "checkOutDate": "2026-10-24",
+      "nights": 2,
+      "timeZone": "America/Los_Angeles",
+      "refundable": true
+     }
+    }
+   ],
+   "changes": [],
+   "version": 1,
+   "createdAt": "2026-09-23T03:14:37.517722Z",
+   "updatedAt": "2026-09-23T03:14:37.561202Z"
+  }
+ ],
+ "history": [
+  {
+   "from": null,
+   "to": "SUBMITTED",
+   "reason": null,
+   "actor": "human/alice",
+   "occurredAt": "2026-09-23T03:14:35.634949Z"
+  },
+  {
+   "from": "SUBMITTED",
+   "to": "PLANNING",
+   "reason": "planning started",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:14:36.142673Z"
+  },
+  {
+   "from": "PLANNING",
+   "to": "APPROVED",
+   "reason": "in policy, no approval required",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:14:36.606138Z"
+  },
+  {
+   "from": "APPROVED",
+   "to": "BOOKING",
+   "reason": "booking",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:14:37.305903Z"
+  },
+  {
+   "from": "BOOKING",
+   "to": "BOOKED",
+   "reason": "order confirmed",
+   "actor": "agent/trip-planner/v1",
+   "occurredAt": "2026-09-23T03:14:37.704421Z"
+  }
+ ]
+}
