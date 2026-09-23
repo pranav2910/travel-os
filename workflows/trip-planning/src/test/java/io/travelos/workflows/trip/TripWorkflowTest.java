@@ -700,6 +700,122 @@ class TripWorkflowTest {
   }
 
   @Test
+  void aQuoteThatExpiredDuringApprovalIsPlannedAgainAndThePersonDecidesAgain() {
+    itineraryStubs(23800, Outcome.ALLOW_WITH_APPROVAL, false, false);
+    hotelQuoteGoneTimes(1);
+    TripWorkflow workflow = start();
+    env.sleep(Duration.ofMinutes(1));
+    workflow.approvalDecided(
+        new TripPlanning.ApprovalDecision("apr_2", "APPROVED", "human/bob", null));
+    env.sleep(Duration.ofMinutes(1));
+    workflow.approvalDecided(
+        new TripPlanning.ApprovalDecision("apr_5", "APPROVED", "human/bob", null));
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING,
+            TripStatus.AWAITING_APPROVAL,
+            TripStatus.APPROVED,
+            TripStatus.PLANNING,
+            TripStatus.AWAITING_APPROVAL,
+            TripStatus.APPROVED,
+            TripStatus.BOOKING,
+            TripStatus.BOOKED);
+    assertThat(transitions.get(3).getReplanReason()).isEqualTo("QUOTE_EXPIRED");
+    assertThat(transitions.get(3).getReason()).contains("re-planning");
+    assertThat(transitions.get(4).getReplanReason()).isEqualTo("QUOTE_EXPIRED");
+    // a fresh search and a fresh optimisation, not the stale bundle
+    verify(activities, times(2)).optimizeItinerary(any());
+    verify(activities, times(7)).quote(any()); // 3 before the hotel quote died, 4 the second time
+    ArgumentCaptor<CreateOrderCommand> order = ArgumentCaptor.forClass(CreateOrderCommand.class);
+    verify(activities).createOrder(order.capture());
+    // the second approval (transition 5) is the one the order carries, never the expired one
+    assertThat(order.getValue().getApprovalId()).isEqualTo("apr_5");
+    List<String> stayStates =
+        reports.stream()
+            .flatMap(r -> r.getComponentsList().stream())
+            .filter(c -> c.getComponentId().equals(STAY))
+            .map(ComponentState::getStatus)
+            .toList();
+    assertThat(stayStates)
+        .containsExactly(
+            "PLANNED",
+            "QUOTED",
+            "REVALIDATING",
+            "PLANNED",
+            "QUOTED",
+            "REVALIDATING",
+            "BOOKING",
+            "CONFIRMED");
+  }
+
+  @Test
+  void aQuoteGoneOnEveryPlanFailsTheTripAfterApprovalAndRecordsIt() {
+    itineraryStubs(23800, Outcome.ALLOW_WITH_APPROVAL, false, false);
+    hotelQuoteGoneTimes(Integer.MAX_VALUE);
+    TripWorkflow workflow = start();
+    env.sleep(Duration.ofMinutes(1));
+    workflow.approvalDecided(
+        new TripPlanning.ApprovalDecision("apr_2", "APPROVED", "human/bob", null));
+    env.sleep(Duration.ofMinutes(1));
+    workflow.approvalDecided(
+        new TripPlanning.ApprovalDecision("apr_4", "APPROVED", "human/bob", null));
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("FAILED");
+    assertThat(outcome.failureStage()).isEqualTo("REVALIDATION");
+    assertThat(outcome.failureCode()).isEqualTo("OFFER_GONE");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING,
+            TripStatus.AWAITING_APPROVAL,
+            TripStatus.APPROVED,
+            TripStatus.PLANNING,
+            TripStatus.AWAITING_APPROVAL,
+            TripStatus.APPROVED,
+            TripStatus.FAILED);
+    // the failure is recorded on the trip (Travel Core accepts APPROVED -> FAILED), not only logged
+    assertThat(transitions.getLast().getTo()).isEqualTo(TripStatus.FAILED);
+    assertThat(transitions.getLast().getFailureCode()).isEqualTo("OFFER_GONE");
+    verify(activities, never()).createOrder(any());
+    ComponentState stay =
+        reports.getLast().getComponentsList().stream()
+            .filter(c -> c.getComponentId().equals(STAY))
+            .findFirst()
+            .orElseThrow();
+    assertThat(stay.getStatus()).isEqualTo("FAILED");
+  }
+
+  /** The hotel's quote is gone (a final supplier answer) the first {@code times} it is asked. */
+  private void hotelQuoteGoneTimes(int times) {
+    java.util.concurrent.atomic.AtomicInteger gone =
+        new java.util.concurrent.atomic.AtomicInteger();
+    doAnswer(
+            inv -> {
+              QuoteOfferRequest r = inv.getArgument(0);
+              if (r.getProvider().equals("sandbox-hotel") && gone.getAndIncrement() < times) {
+                throw ApplicationFailure.newNonRetryableFailure(
+                    "offer expired 20 minutes after search", "OFFER_EXPIRED");
+              }
+              long cents =
+                  r.getProvider().equals("sandbox-hotel")
+                      ? 23800
+                      : r.getProvider().equals("sandbox-ground")
+                          ? 3900
+                          : r.getProviderOfferId().endsWith("FA1") ? 38000 : 16000;
+              return QuoteOfferResponse.newBuilder()
+                  .setOffer(
+                      Offer.newBuilder()
+                          .setProvider(r.getProvider())
+                          .setProviderOfferId(r.getProviderOfferId())
+                          .setTotal(usd(cents)))
+                  .build();
+            })
+        .when(activities)
+        .quote(any());
+  }
+
+  @Test
   void anInfeasibleItineraryFailsWithNamedReasonsAndBooksNothing() {
     itineraryStubs(23800, Outcome.ALLOW, true, false);
     TripWorkflow.Outcome outcome = result(start());

@@ -320,6 +320,40 @@ class TripLifecycleIntegrationTest {
             transition(rejected, TripStatus.CANCELLED, b -> b.setReason("rejected by human/bob"))
                 .getStatus())
         .isEqualTo(TripStatus.CANCELLED);
+
+    // an approved plan whose quote expired is planned again (replanned event), and a supplier gone
+    // for good after approval ends the trip as FAILED instead of leaving it looking approved
+    String expired = createAsAlice();
+    transition(expired, TripStatus.PLANNING, b -> {});
+    transition(
+        expired,
+        TripStatus.APPROVED,
+        b ->
+            b.setSelectedBundleId(BUNDLE)
+                .setOptimizationRunId(OPT_RUN)
+                .setPolicyDecisionId(DECISION)
+                .setTotal(usd(99000)));
+    assertThat(
+            transition(
+                    expired,
+                    TripStatus.PLANNING,
+                    b ->
+                        b.setReason("the hotel quote expired; re-planning")
+                            .setReplanReason("QUOTE_EXPIRED"))
+                .getStatus())
+        .isEqualTo(TripStatus.PLANNING);
+    transition(
+        expired, TripStatus.APPROVED, b -> b.setOptimizationRunId(OPT_RUN).setTotal(usd(99000)));
+    Trip gone =
+        transition(
+            expired,
+            TripStatus.FAILED,
+            b -> b.setFailureStage("REVALIDATION").setFailureCode("OFFER_GONE").setReason("gone"));
+    assertThat(gone.getStatus()).isEqualTo(TripStatus.FAILED);
+    JsonNode goneView =
+        json.readTree(get("/api/v1/trips/" + expired, TestTokens.alice()).getBody());
+    assertThat(goneView.get("status").asString()).isEqualTo("FAILED");
+    assertThat(goneView.get("failureCode").asString()).isEqualTo("OFFER_GONE");
   }
 
   @Test
@@ -338,6 +372,7 @@ class TripLifecycleIntegrationTest {
                   .contains(
                       "travel.trip.created",
                       "travel.trip.planned",
+                      "travel.trip.replanned",
                       "travel.trip.booked",
                       "travel.trip.failed",
                       "travel.trip.cancelled",

@@ -36,6 +36,17 @@ class TripStatusTest {
   }
 
   @Test
+  void anApprovedTripWhoseQuoteExpiredIsPlannedAgainOrFailsHonestly() {
+    assertThat(TripStatus.APPROVED.canTransitionTo(TripStatus.PLANNING))
+        .as("a quote that died during a long approval means a fresh search, not a dead trip")
+        .isTrue();
+    assertThat(TripStatus.APPROVED.canTransitionTo(TripStatus.FAILED))
+        .as("a supplier gone for good after approval is recorded, never left looking approved")
+        .isTrue();
+    assertThat(TripStatus.BOOKING.canTransitionTo(TripStatus.PLANNING)).isFalse();
+  }
+
+  @Test
   void aStaleApprovalGoesBackToAPersonOnlyFromApproved() {
     assertThat(TripStatus.APPROVED.canTransitionTo(TripStatus.AWAITING_APPROVAL))
         .as("revalidation before booking found a material change")

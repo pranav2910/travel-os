@@ -23,9 +23,11 @@ public enum TripStatus {
           SUBMITTED, EnumSet.of(PLANNING, CANCELLED, FAILED),
           PLANNING, EnumSet.of(AWAITING_APPROVAL, APPROVED, CANCELLED, FAILED),
           AWAITING_APPROVAL, EnumSet.of(APPROVED, CANCELLED, FAILED),
-          // Slice 3: revalidation before booking found a material change (price up, quote gone):
-          // the approved plan is stale and a person decides again.
-          APPROVED, EnumSet.of(BOOKING, AWAITING_APPROVAL, CANCELLED),
+          // Slice 3: revalidation before booking found a material change (price up): the approved
+          // plan is stale and a person decides again. A quote that expired while the trip waited
+          // sends it back to PLANNING (a fresh search), and a supplier gone for good after approval
+          // is a FAILED trip, recorded as such rather than left looking approved.
+          APPROVED, EnumSet.of(BOOKING, AWAITING_APPROVAL, PLANNING, CANCELLED, FAILED),
           BOOKING, EnumSet.of(BOOKED, FAILED),
           // Slice 5: completion is attested by a person (the traveler after the last arrival, or a
           // travel admin), never inferred from a booking.

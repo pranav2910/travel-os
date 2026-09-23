@@ -135,7 +135,26 @@ final class ItineraryFlow {
       @Nullable Stay stay,
       @Nullable Transfer transfer) {}
 
+  /** Plans per run: the first, and one more when a quote expired while a person was deciding. */
+  static final int MAX_PLANS = 2;
+
+  private static final TripWorkflow.Outcome REPLAN =
+      new TripWorkflow.Outcome("", "REPLAN", null, null, null);
+
+  /** True once a plan a person had approved was abandoned: the next plan asks a person again. */
+  private boolean decidedBefore;
+
   TripWorkflow.Outcome run(String tenant, String tripId, Trip trip) {
+    for (int attempt = 1; ; attempt++) {
+      TripWorkflow.Outcome outcome = plan(tenant, tripId, trip, attempt);
+      if (outcome != REPLAN) {
+        return outcome;
+      }
+    }
+  }
+
+  /** One plan-and-book pass; REPLAN when a quote expired after approval and a pass is left. */
+  private TripWorkflow.Outcome plan(String tenant, String tripId, Trip trip, int attempt) {
     TravelIntent intent = trip.getIntent();
     Itinerary itinerary = intent.getItinerary();
     List<Component> components = components(itinerary);
@@ -291,7 +310,7 @@ final class ItineraryFlow {
     // ---- approval
     String approvalId = null;
     String approvedBy = null;
-    if (selectedDecision.getRequiresApproval()) {
+    if (selectedDecision.getRequiresApproval() || decidedBefore) {
       host.stage(TripPlanning.Stage.AWAITING_APPROVAL);
       String role =
           selectedDecision.getApproversCount() > 0
@@ -308,7 +327,14 @@ final class ItineraryFlow {
                     .setPolicyDecisionId(selectedDecision.getDecisionId())
                     .setTotal(total)
                     .setApproverRole(role)
-                    .setReason(reasonSummary(selectedDecision));
+                    .setReason(
+                        decidedBefore
+                            ? "the quote behind the earlier approval expired; the re-planned"
+                                + " itinerary needs a decision again"
+                            : reasonSummary(selectedDecision));
+                if (decidedBefore) {
+                  b.setReplanReason("QUOTE_EXPIRED");
+                }
                 if (explanation != null) {
                   b.setExplanation(explanation);
                 }
@@ -368,13 +394,23 @@ final class ItineraryFlow {
       } catch (ActivityFailure e) {
         if (isFinal(e)) {
           Component c = componentOf(components, o.getComponentId());
+          String why = describe(c) + " can no longer be quoted: " + e.getCause().getMessage();
+          if (attempt < MAX_PLANS) {
+            // The quote died while the trip waited: a long approval outlives a supplier's hold.
+            // That is not a failure of the request. Plan again from a fresh search, and a person
+            // decides again if a person had decided on the plan that expired.
+            log.warn("trip {}: {}; re-planning ({} of {})", tripId, why, attempt + 1, MAX_PLANS);
+            decidedBefore = decidedBefore || approvalId != null;
+            host.forgetDecision();
+            host.transition(
+                tenant,
+                tripId,
+                TripStatus.PLANNING,
+                b -> b.setReason(why + "; re-planning").setReplanReason("QUOTE_EXPIRED"));
+            return REPLAN;
+          }
           report(tenant, tripId, List.of(c), x -> state(x, "FAILED", o, "OFFER_GONE"));
-          return host.fail(
-              tenant,
-              tripId,
-              "REVALIDATION",
-              "OFFER_GONE",
-              describe(c) + " can no longer be quoted: " + e.getCause().getMessage());
+          return host.fail(tenant, tripId, "REVALIDATION", "OFFER_GONE", why);
         }
         throw e;
       }

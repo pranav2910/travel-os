@@ -47,6 +47,11 @@ Roles come from the token (`roles` claim); the server decides on every request. 
 
 - Trip: DRAFT · SUBMITTED · PLANNING · AWAITING_APPROVAL · APPROVED · BOOKING · BOOKED · COMPLETED · CANCELLED · FAILED
   (terminal: BOOKED, COMPLETED, CANCELLED, FAILED; the app stops polling there and at AWAITING_APPROVAL).
+  An approved trip can go back to PLANNING: sandbox quotes live 20 minutes, so a plan approved after
+  a longer wait is searched again from scratch (history reason "re-planning", replan reason
+  QUOTE_EXPIRED) and the manager decides again on the new plan. If the quote is gone twice the trip
+  ends FAILED at REVALIDATION with OFFER_GONE. The page shows both from the trip itself: the stepper
+  moves back, the timeline names the reason, the failure alert quotes the code.
 - Component / order item: PLANNED · QUOTED · REVALIDATING · BOOKING · CONFIRMED · FAILED · CANCELLED · CANCEL_FAILED · CHANGED · SKIPPED.
 - Disruption: DETECTED · IMPACT_CONFIRMED · SEARCHING_ALTERNATIVES · OPTIMIZING · DECISION_READY · AUTO_ALLOWED · HUMAN_REQUIRED · CHANGING · RESOLVED · NO_ALTERNATIVE · FAILED · MANUAL_INTERVENTION_REQUIRED.
 - Demand: NEEDS_REVIEW · ACTIONABLE · DISMISSED · WITHDRAWN · CONVERTED. Connector: ENABLED · DISABLED.

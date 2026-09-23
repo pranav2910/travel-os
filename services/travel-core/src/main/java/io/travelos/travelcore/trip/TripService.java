@@ -343,6 +343,20 @@ public class TripService {
           outbox.append(TripEvents.planned(next, false, t.causationId(), clock));
         }
       }
+      case PLANNING -> {
+        if (trip.status() == TripStatus.APPROVED) {
+          // the approved plan's quote expired: the trip is planned again from a fresh search
+          outbox.append(
+              TripEvents.replanned(
+                  next,
+                  t.replanReason() == null ? "QUOTE_EXPIRED" : t.replanReason(),
+                  trip.total(),
+                  false,
+                  trip.evidence().approvalId(),
+                  t.causationId(),
+                  clock));
+        }
+      }
       case BOOKED ->
           outbox.append(
               TripEvents.booked(

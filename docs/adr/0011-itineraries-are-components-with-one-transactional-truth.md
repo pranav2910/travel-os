@@ -49,8 +49,16 @@ ADR-0002 keeps transactional truth in the Order service ("the workflow asks, it 
 6. **Revalidation before the only mutation.** Every selected quote is checked again right before
    `CreateOrder`. An unchanged price (even after a re-quote) books as re-quoted. A higher total is
    a material change: policy judges the new plan, and when a person had approved the old one, or
-   policy now asks for one, the trip goes back to `AWAITING_APPROVAL` (from `APPROVED`, the only
-   new transition) with `travel.trip.replanned` naming the reason.
+   policy now asks for one, the trip goes back to `AWAITING_APPROVAL` (from `APPROVED`) with
+   `travel.trip.replanned` naming the reason. A quote that cannot be re-quoted at all (the
+   supplier's hold outlived the approval: sandbox offers live 20 minutes, approvals take as long as
+   people take) is not a failure of the request: the trip goes from `APPROVED` back to `PLANNING`
+   (`travel.trip.replanned`, reason `QUOTE_EXPIRED`), is searched, judged and composed again, and a
+   person decides again whenever a person had decided on the plan that expired. One such re-plan is
+   allowed per run; a second gone quote ends the trip `FAILED` at `REVALIDATION` with `OFFER_GONE`,
+   and `APPROVED -> FAILED` is a legal transition so that outcome is recorded on the trip instead of
+   only in the workflow's log (the defect that motivated this paragraph left a trip "Approved"
+   with a failed component forever).
 7. **Exposure is a record, not a log line.** A confirmed component whose cancellation is refused
    becomes `CANCEL_FAILED` with an `order_exposure` row (amount, reason, supplier reference); the
    order is `PARTIALLY_FAILED`, `travel.order.compensation-failed` escalates, and a TRAVEL_ADMIN or
