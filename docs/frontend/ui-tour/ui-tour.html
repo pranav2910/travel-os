@@ -1,0 +1,295 @@
+<title>travel-os UI tour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{--bg:#f6f7f4;--surface:#ffffff;--ink:#1b2420;--muted:#5b665f;--line:#d9ded8;--accent:#1f4d2e;--accent-soft:#e3efe6;--accent-ink:#163a22;--warn:#8a5a10;--warn-soft:#fbf1dc;--frame:#c9d1cb;--radius:8px;--display:"Fraunces",Georgia,"Times New Roman",serif;--body:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141916;--surface:#1b211d;--ink:#e8ece7;--muted:#9fa9a2;--line:#2c352f;--accent:#7cc493;--accent-soft:#1e2c23;--accent-ink:#bfe4ca;--warn:#e0b160;--warn-soft:#2b2417;--frame:#3a453e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141916;--surface:#1b211d;--ink:#e8ece7;--muted:#9fa9a2;--line:#2c352f;--accent:#7cc493;--accent-soft:#1e2c23;--accent-ink:#bfe4ca;--warn:#e0b160;--warn-soft:#2b2417;--frame:#3a453e;color-scheme:dark}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;padding-block:0 48px;padding-inline:16px}
+a{color:var(--accent);text-underline-offset:2px} a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hero{max-width:1180px;margin:0 auto;padding:40px 0 24px;border-bottom:1px solid var(--line)}
+.hero h1{font-family:var(--display);font-weight:600;font-size:clamp(30px,4.2vw,46px);line-height:1.08;margin:0 0 10px;letter-spacing:-.01em;text-wrap:balance}
+.hero p{max-width:66ch;margin:0 0 14px;color:var(--muted);font-size:17px}
+.chips{display:flex;flex-wrap:wrap;gap:8px} .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;font-size:13px;color:var(--muted)} .chip--warn{background:var(--warn-soft);color:var(--warn);border-color:transparent} .chip code{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.layout{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:230px minmax(0,1fr);gap:40px;align-items:start}
+.toc{position:sticky;top:20px;padding-top:28px} .toc h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+.toc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px} .toc a{display:flex;gap:10px;align-items:baseline;text-decoration:none;color:var(--ink);padding:6px 8px;border-radius:6px;font-size:14.5px} .toc a:hover{background:var(--accent-soft)} .toc .n{font-family:var(--mono);font-size:12px;color:var(--muted);min-width:1.4em}
+.content{min-width:0;max-width:880px}
+.chapter{padding-top:36px} .chapter header{margin-bottom:8px} .kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.chapter h2{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.15;margin:4px 0 6px;letter-spacing:-.01em;text-wrap:balance} .lede{margin:0;color:var(--muted);max-width:66ch}
+.screen{margin-top:30px;padding-top:22px;border-top:1px solid var(--line)} .screen h3{font-family:var(--display);font-weight:500;font-size:22px;margin:0 0 6px;display:flex;gap:12px;align-items:baseline} .num{font-family:var(--mono);font-size:13px;color:var(--muted);font-weight:400}
+.who{margin:0 0 12px;font-size:14px;color:var(--muted)} .who__label{display:inline-block;background:var(--accent-soft);color:var(--accent-ink);border-radius:4px;padding:1px 7px;font-size:12px;font-weight:600;margin-right:6px;letter-spacing:.02em}
+figure{margin:0 0 14px} figure a{display:block} figure img{display:block;width:100%;max-width:100%;height:auto;border:1px solid var(--frame);border-radius:var(--radius);background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.06)} figcaption{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:6px}
+.screen--phone figure{max-width:390px}
+.what{max-width:68ch;margin:0 0 12px}
+.controls{margin:0;display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface)} .controls .ctl{display:contents} .controls dt{padding:9px 12px;font-weight:600;font-size:14px;border-top:1px solid var(--line);background:var(--accent-soft);color:var(--accent-ink)} .controls dd{margin:0;padding:9px 12px;font-size:14.5px;border-top:1px solid var(--line)} .controls .ctl:first-child dt,.controls .ctl:first-child dd{border-top:0}
+@media (max-width:900px){.layout{grid-template-columns:1fr;gap:12px} .toc{position:static;padding-top:16px} .toc ol{flex-direction:row;flex-wrap:wrap} .controls{grid-template-columns:1fr} .controls dd{border-top:0;padding-top:0}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+</style>
+<header class="hero">
+  <h1>travel-os UI tour</h1>
+  <p>Every screen of the web app, as a traveler, a manager, a travel admin and Finance see it — captured from the running sandbox stack, one section per screen: what it shows, who sees it, what each control does.</p>
+  <div class="chips"><span class="chip chip--warn">Sandbox — simulated suppliers, simulated enterprise sources</span><span class="chip">captured 2026-09-23</span><span class="chip">commit <code>b4e2fe1</code>+</span><span class="chip">43 screens · 10 chapters</span></div>
+</header>
+<div class="layout">
+  <nav class="toc" aria-label="Chapters"><h2>Chapters</h2><ol><li><a href="#c1"><span class="n">1</span>Signing in</a></li><li><a href="#c2"><span class="n">2</span>Your trips</a></li><li><a href="#c3"><span class="n">3</span>Asking for a trip</a></li><li><a href="#c4"><span class="n">4</span>Watching it get booked</a></li><li><a href="#c5"><span class="n">5</span>When policy needs a person</a></li><li><a href="#c6"><span class="n">6</span>Cancelling</a></li><li><a href="#c7"><span class="n">7</span>When the airline cancels</a></li><li><a href="#c8"><span class="n">8</span>Demand detected from the calendar</a></li><li><a href="#c9"><span class="n">9</span>Learning and money</a></li><li><a href="#c10"><span class="n">10</span>Edges</a></li></ol></nav>
+  <main class="content"><section class="chapter" id="c1"><header><span class="kicker">Chapter 1</span><h2>Signing in</h2><p class="lede">Every screen sits behind the company identity provider; the sandbox chip is on every page.</p></header><article class="screen" id="s1-1">
+  <h3><span class="num">1.1</span> The front door</h3>
+  <p class="who"><span class="who__label">Who sees it</span> anyone</p>
+  <figure><a href="01-sign-in-page.png" target="_blank" rel="noopener"><img src="01-sign-in-page.png" alt="The front door" loading="lazy"></a><figcaption>01-sign-in-page.png</figcaption></figure>
+  <p class="what">Before anything else the app shows one button. There is no local password form: the button starts the OIDC (PKCE) sign-in with Keycloak, which stands in for the company&#x27;s identity provider.</p>
+  <dl class="controls"><div class="ctl"><dt>Sign in</dt><dd>starts the redirect to the identity provider; nothing else is reachable without it</dd></div></dl>
+</article><article class="screen" id="s1-2">
+  <h3><span class="num">1.2</span> The identity provider&#x27;s login</h3>
+  <p class="who"><span class="who__label">Who sees it</span> anyone</p>
+  <figure><a href="02-keycloak-login.png" target="_blank" rel="noopener"><img src="02-keycloak-login.png" alt="The identity provider&#x27;s login" loading="lazy"></a><figcaption>02-keycloak-login.png</figcaption></figure>
+  <p class="what">Credentials are typed on the identity provider&#x27;s own page, never in the app. The sandbox realm seeds five users: alice (traveler), bob (manager), carol (travel admin + Finance), dan (traveler), zoe (another tenant).</p>
+  <dl class="controls"><div class="ctl"><dt>Username / Password</dt><dd>the realm&#x27;s seeded dev users</dd></div><div class="ctl"><dt>Sign in</dt><dd>returns to the app with an authorization code; tokens stay in memory (no cookies, no local storage)</dd></div></dl>
+</article><article class="screen" id="s1-3">
+  <h3><span class="num">1.3</span> Overview</h3>
+  <p class="who"><span class="who__label">Who sees it</span> every signed-in user</p>
+  <figure><a href="03-overview-alice.png" target="_blank" rel="noopener"><img src="03-overview-alice.png" alt="Overview" loading="lazy"></a><figcaption>03-overview-alice.png</figcaption></figure>
+  <p class="what">The landing page after sign-in: who you are (name, tenant, roles in the banner), how many trips are in progress or booked, whether detected travel demand is waiting for you, and your most recent trips with their live status and exact totals.</p>
+  <dl class="controls"><div class="ctl"><dt>Sandbox — simulated bookings</dt><dd>the chip says which environment this is; it never leaves the header</dd></div><div class="ctl"><dt>New trip</dt><dd>the primary action, always one click away</dd></div><div class="ctl"><dt>Recent trips</dt><dd>each row links to the trip; totals show the currency explicitly</dd></div><div class="ctl"><dt>Navigation</dt><dd>shows only the areas your roles allow: a traveler sees My travel and Demand; managers add Approvals; travel admins and Finance add Disruptions, Finance, Connectors and Learning</dd></div></dl>
+</article><article class="screen" id="s1-4">
+  <h3><span class="num">1.4</span> Signed out</h3>
+  <p class="who"><span class="who__label">Who sees it</span> anyone</p>
+  <figure><a href="42-signed-out.png" target="_blank" rel="noopener"><img src="42-signed-out.png" alt="Signed out" loading="lazy"></a><figcaption>42-signed-out.png</figcaption></figure>
+  <p class="what">Sign out ends the session at the identity provider too and returns to the front door; cached data belongs to the account that loaded it and is cleared when the account changes.</p>
+  <dl class="controls"><div class="ctl"><dt>Sign in</dt><dd>a different user can sign in without seeing the previous user&#x27;s data</dd></div></dl>
+</article></section><section class="chapter" id="c2"><header><span class="kicker">Chapter 2</span><h2>Your trips</h2><p class="lede">Everything you asked for, newest first, with the truth about where each one stands.</p></header><article class="screen" id="s2-1">
+  <h3><span class="num">2.1</span> Trips</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler (own trips); managers, travel admins and Finance see the tenant&#x27;s trips in their inboxes</p>
+  <figure><a href="04-trips-list.png" target="_blank" rel="noopener"><img src="04-trips-list.png" alt="Trips" loading="lazy"></a><figcaption>04-trips-list.png</figcaption></figure>
+  <p class="what">One row per request: the purpose you typed, the route, the status badge (Submitted, Planning, Awaiting approval, Approved, Booking, Booked, Cancelling, Cancelled, Failed, Completed), the total when there is one, and when it last changed. Other people&#x27;s trips are simply not here — the server answers 404 for anything you may not see.</p>
+  <dl class="controls"><div class="ctl"><dt>Row link</dt><dd>opens the trip</dd></div><div class="ctl"><dt>Status badge</dt><dd>the platform&#x27;s own state, never inferred by the browser</dd></div><div class="ctl"><dt>Total</dt><dd>exact minor units with the currency; a dash means nothing was booked</dd></div></dl>
+</article><article class="screen screen--phone" id="s2-2">
+  <h3><span class="num">2.2</span> Trips on a phone</h3>
+  <p class="who"><span class="who__label">Who sees it</span> everyone</p>
+  <figure><a href="40-phone-trips-list.png" target="_blank" rel="noopener"><img src="40-phone-trips-list.png" alt="Trips on a phone" loading="lazy"></a><figcaption>40-phone-trips-list.png</figcaption></figure>
+  <p class="what">The same list at 390 px: the navigation folds, rows stack, nothing scrolls sideways.</p>
+  <dl class="controls"><div class="ctl"><dt>Navigation</dt><dd>opens from the header at phone width</dd></div></dl>
+</article></section><section class="chapter" id="c3"><header><span class="kicker">Chapter 3</span><h2>Asking for a trip</h2><p class="lede">Tell the platform what you need; submitting books it.</p></header><article class="screen" id="s3-1">
+  <h3><span class="num">3.1</span> New trip</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler; managers and travel admins may arrange for others</p>
+  <figure><a href="05-new-trip-empty.png" target="_blank" rel="noopener"><img src="05-new-trip-empty.png" alt="New trip" loading="lazy"></a><figcaption>05-new-trip-empty.png</figcaption></figure>
+  <p class="what">Four ways to ask: a round trip, a one-way, a multi-city itinerary with hotels and transfers, or a description in words. The page says what submitting means before you type anything.</p>
+  <dl class="controls"><div class="ctl"><dt>What kind of trip</dt><dd>switches the form; nothing is lost when you switch back</dd></div><div class="ctl"><dt>Purpose of travel</dt><dd>shown to approvers and kept with the trip</dd></div><div class="ctl"><dt>Submitting books the trip</dt><dd>the honest warning: this is not a preview; the platform searches, applies policy, and books with the simulated suppliers, waiting for an approver only when policy says so</dd></div></dl>
+</article><article class="screen" id="s3-2">
+  <h3><span class="num">3.2</span> A round trip, filled in</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="06-new-trip-round-trip-filled.png" target="_blank" rel="noopener"><img src="06-new-trip-round-trip-filled.png" alt="A round trip, filled in" loading="lazy"></a><figcaption>06-new-trip-round-trip-filled.png</figcaption></figure>
+  <p class="what">Airports are three-letter codes from the platform&#x27;s catalog (about a hundred airports; a city code such as NYC is refused with the airports it stands for). Windows are given as a date plus earliest/latest times on the UTC clock the sandbox airline schedules on.</p>
+  <dl class="controls"><div class="ctl"><dt>From / To</dt><dd>airport codes; validated against the catalog when you submit</dd></div><div class="ctl"><dt>Outbound / Return</dt><dd>date and time window; the return must not be before the outbound</dd></div><div class="ctl"><dt>A hotel is required</dt><dd>asks for a stay on the nights between the flights</dd></div><div class="ctl"><dt>Review and submit</dt><dd>validates in the browser first, then shows the review step</dd></div></dl>
+</article><article class="screen" id="s3-3">
+  <h3><span class="num">3.3</span> Review before it books</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="07-new-trip-review.png" target="_blank" rel="noopener"><img src="07-new-trip-review.png" alt="Review before it books" loading="lazy"></a><figcaption>07-new-trip-review.png</figcaption></figure>
+  <p class="what">The review step repeats exactly what will be sent and repeats that confirming books. A double click or a lost answer cannot create two trips: the request carries a fixed idempotency key.</p>
+  <dl class="controls"><div class="ctl"><dt>Confirm and submit</dt><dd>creates the trip and opens it; the button disables while the answer is pending</dd></div><div class="ctl"><dt>Back</dt><dd>returns to the form with everything kept</dd></div></dl>
+</article><article class="screen" id="s3-4">
+  <h3><span class="num">3.4</span> Describe it in words</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="43-new-trip-free-text.png" target="_blank" rel="noopener"><img src="43-new-trip-free-text.png" alt="Describe it in words" loading="lazy"></a><figcaption>43-new-trip-free-text.png</figcaption></figure>
+  <p class="what">Free text is understood into a structured intent. In the sandbox the understanding is a deterministic offline extractor: it needs airport codes and YYYY-MM-DD dates (&quot;Fly BOS to SEA on 2026-10-06, back 2026-10-08, hotel&quot;). With a model key configured, the real model does this instead. What was concluded is always shown on the trip page, as data.</p>
+  <dl class="controls"><div class="ctl"><dt>Describe the trip</dt><dd>one message, one intent; there is no back-and-forth conversation (stated in the README&#x27;s pilot scope)</dd></div></dl>
+</article><article class="screen" id="s3-5">
+  <h3><span class="num">3.5</span> A multi-city itinerary</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="10-new-trip-multi-city.png" target="_blank" rel="noopener"><img src="10-new-trip-multi-city.png" alt="A multi-city itinerary" loading="lazy"></a><figcaption>10-new-trip-multi-city.png</figcaption></figure>
+  <p class="what">Ordered legs that must chain (each departs where the previous landed), stays in a city a leg lands in on the property&#x27;s local dates, and airport transfers hanging off a leg. Every component gets a stable id and is reported on the trip page as it is planned, quoted and booked.</p>
+  <dl class="controls"><div class="ctl"><dt>Add leg / Add stay / Add transfer</dt><dd>up to eight legs; stays need check-in/check-out local dates; a transfer names its city and kind</dd></div><div class="ctl"><dt>Remove …</dt><dd>each component can be dropped before submitting</dd></div></dl>
+</article><article class="screen" id="s3-6">
+  <h3><span class="num">3.6</span> Arranging for someone else</h3>
+  <p class="who"><span class="who__label">Who sees it</span> manager, travel admin</p>
+  <figure><a href="37-new-trip-arranging-for-someone.png" target="_blank" rel="noopener"><img src="37-new-trip-arranging-for-someone.png" alt="Arranging for someone else" loading="lazy"></a><figcaption>37-new-trip-arranging-for-someone.png</figcaption></figure>
+  <p class="what">A manager or travel admin may request a trip for another employee. Because the reservation is made in the traveler&#x27;s name, the form asks for that person&#x27;s name and email; the platform refuses an anonymous arranged trip.</p>
+  <dl class="controls"><div class="ctl"><dt>Traveler employee id</dt><dd>who travels; leave empty to travel yourself</dd></div><div class="ctl"><dt>Traveler first name / last name / email</dt><dd>required as soon as an employee id is given; stored with the trip and used for the booking</dd></div></dl>
+</article><article class="screen" id="s3-7">
+  <h3><span class="num">3.7</span> Validation before anything leaves the browser</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="12-new-trip-validation-errors.png" target="_blank" rel="noopener"><img src="12-new-trip-validation-errors.png" alt="Validation before anything leaves the browser" loading="lazy"></a><figcaption>12-new-trip-validation-errors.png</figcaption></figure>
+  <p class="what">Missing or inconsistent fields are marked on the field itself and announced to assistive technology; nothing is sent until they are fixed.</p>
+  <dl class="controls"><div class="ctl"><dt>Field errors</dt><dd>associated with their inputs (aria-describedby) and read by screen readers</dd></div></dl>
+</article><article class="screen" id="s3-8">
+  <h3><span class="num">3.8</span> The server refuses what the browser cannot know</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="13-new-trip-unknown-airport-refused.png" target="_blank" rel="noopener"><img src="13-new-trip-unknown-airport-refused.png" alt="The server refuses what the browser cannot know" loading="lazy"></a><figcaption>13-new-trip-unknown-airport-refused.png</figcaption></figure>
+  <p class="what">Some rules live only on the server: an airport outside the catalog, a departure window that has already closed, a currency the suppliers do not quote. The refusal comes back as a problem document with a stable code and a sentence you can act on, shown in place; the form keeps your input.</p>
+  <dl class="controls"><div class="ctl"><dt>The request was refused</dt><dd>the server&#x27;s code and detail (here UNKNOWN_LOCATION); nothing was created</dd></div></dl>
+</article></section><section class="chapter" id="c4"><header><span class="kicker">Chapter 4</span><h2>Watching it get booked</h2><p class="lede">The trip page tells you where it is, what was chosen and why.</p></header><article class="screen" id="s4-1">
+  <h3><span class="num">4.1</span> Just submitted</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="08-trip-planning.png" target="_blank" rel="noopener"><img src="08-trip-planning.png" alt="Just submitted" loading="lazy"></a><figcaption>08-trip-planning.png</figcaption></figure>
+  <p class="what">Seconds after confirming: the progress strip shows Submitted done and Search, policy, optimizer current. The page polls with backoff until the platform reaches a resting state.</p>
+  <dl class="controls"><div class="ctl"><dt>Progress strip</dt><dd>Submitted → Search, policy, optimizer → Approval → Booking → Booked; each step is done, current, pending, skipped (not needed) or failed</dd></div><div class="ctl"><dt>Cancel trip</dt><dd>available while nothing is booked yet; stops the planning</dd></div></dl>
+</article><article class="screen" id="s4-2">
+  <h3><span class="num">4.2</span> Booked</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="09-trip-booked.png" target="_blank" rel="noopener"><img src="09-trip-booked.png" alt="Booked" loading="lazy"></a><figcaption>09-trip-booked.png</figcaption></figure>
+  <p class="what">The whole story on one page: the request as frozen, the outcome (total, whether approval was needed, the order and policy-decision ids), the narration of the choice, the booking with its supplier reference, record locator and each segment, Why this option (policy verdicts, the optimizer&#x27;s ranking, the order confirmation), the timeline of every status change with who or what caused it, and a feedback form once the trip exists.</p>
+  <dl class="controls"><div class="ctl"><dt>Cancel trip</dt><dd>releases the reservation at the suppliers first (see the cancellation chapter)</dd></div><div class="ctl"><dt>Confirm the trip happened</dt><dd>completion is attested by a person after the last arrival, never inferred from a timer</dd></div><div class="ctl"><dt>Policy decisions (n)</dt><dd>expands every candidate policy judged, with reason codes</dd></div><div class="ctl"><dt>What the model concluded</dt><dd>for free-text trips: the extraction, its confidence and assumptions</dd></div><div class="ctl"><dt>Your feedback</dt><dd>rating, tags and a comment read by people; it never influences rankings</dd></div></dl>
+</article><article class="screen" id="s4-3">
+  <h3><span class="num">4.3</span> A multi-city trip, booked</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="11-trip-multi-city-booked.png" target="_blank" rel="noopener"><img src="11-trip-multi-city-booked.png" alt="A multi-city trip, booked" loading="lazy"></a><figcaption>11-trip-multi-city-booked.png</figcaption></figure>
+  <p class="what">Each leg, stay and transfer is a component with its own status, supplier reference and price; the booking lists the flights in UTC and the hotel and transfer on their local clocks.</p>
+  <dl class="controls"><div class="ctl"><dt>Itinerary components</dt><dd>one line per component with its supplier and reference</dd></div><div class="ctl"><dt>Booking table</dt><dd>every item of the order, its status, reference and exact total</dd></div></dl>
+</article><article class="screen screen--phone" id="s4-4">
+  <h3><span class="num">4.4</span> The trip page on a phone</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="41-phone-trip-detail.png" target="_blank" rel="noopener"><img src="41-phone-trip-detail.png" alt="The trip page on a phone" loading="lazy"></a><figcaption>41-phone-trip-detail.png</figcaption></figure>
+  <p class="what">The same content stacked in one column; buttons stay reachable at 390 px.</p>
+  
+</article></section><section class="chapter" id="c5"><header><span class="kicker">Chapter 5</span><h2>When policy needs a person</h2><p class="lede">Policy decides deterministically; a person decides when policy says so.</p></header><article class="screen" id="s5-1">
+  <h3><span class="num">5.1</span> Awaiting approval, seen by the traveler</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="14-trip-awaiting-approval-traveler.png" target="_blank" rel="noopener"><img src="14-trip-awaiting-approval-traveler.png" alt="Awaiting approval, seen by the traveler" loading="lazy"></a><figcaption>14-trip-awaiting-approval-traveler.png</figcaption></figure>
+  <p class="what">The platform found an option, policy said it needs a manager, and the trip waits. The traveler sees the plan and the reason, and cannot approve their own trip — the server refuses self-approval even if the button were forged.</p>
+  <dl class="controls"><div class="ctl"><dt>You cannot approve your own trip</dt><dd>who decides is stated; the traveler can still cancel</dd></div></dl>
+</article><article class="screen" id="s5-2">
+  <h3><span class="num">5.2</span> Approvals inbox</h3>
+  <p class="who"><span class="who__label">Who sees it</span> manager, travel admin</p>
+  <figure><a href="15-approvals-inbox-bob.png" target="_blank" rel="noopener"><img src="15-approvals-inbox-bob.png" alt="Approvals inbox" loading="lazy"></a><figcaption>15-approvals-inbox-bob.png</figcaption></figure>
+  <p class="what">Every trip of the tenant that is waiting for a decision, and every disruption recovery that needs one (next chapter). Managers see this area; travelers do not have it in their navigation and get a refusal if they type the address.</p>
+  <dl class="controls"><div class="ctl"><dt>Trips awaiting approval</dt><dd>each row opens the trip</dd></div><div class="ctl"><dt>Recoveries needing a decision</dt><dd>disruption recoveries above the autonomy limit</dd></div></dl>
+</article><article class="screen" id="s5-3">
+  <h3><span class="num">5.3</span> The manager&#x27;s decision</h3>
+  <p class="who"><span class="who__label">Who sees it</span> manager, travel admin</p>
+  <figure><a href="16-trip-awaiting-approval-manager.png" target="_blank" rel="noopener"><img src="16-trip-awaiting-approval-manager.png" alt="The manager&#x27;s decision" loading="lazy"></a><figcaption>16-trip-awaiting-approval-manager.png</figcaption></figure>
+  <p class="what">The same trip page with the decision controls: the cost, the policy reasons, the optimizer&#x27;s ranking, and Approve / Reject with an optional comment for the traveler. A stale decision (the trip moved on) is refused with a conflict, never applied twice.</p>
+  <dl class="controls"><div class="ctl"><dt>Comment for the traveler (optional)</dt><dd>kept with the decision</dd></div><div class="ctl"><dt>Approve</dt><dd>the workflow continues to booking</dd></div><div class="ctl"><dt>Reject</dt><dd>the trip ends as Cancelled with the rejection recorded</dd></div></dl>
+</article><article class="screen" id="s5-4">
+  <h3><span class="num">5.4</span> Approved, then booked</h3>
+  <p class="who"><span class="who__label">Who sees it</span> manager</p>
+  <figure><a href="17-trip-approved-then-booked.png" target="_blank" rel="noopener"><img src="17-trip-approved-then-booked.png" alt="Approved, then booked" loading="lazy"></a><figcaption>17-trip-approved-then-booked.png</figcaption></figure>
+  <p class="what">After the decision the page follows the trip: Approved, Booking, Booked, with the approval (who, when, comment) in the outcome and the timeline.</p>
+  
+</article><article class="screen" id="s5-5">
+  <h3><span class="num">5.5</span> Denied by policy</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="24-trip-denied-by-policy.png" target="_blank" rel="noopener"><img src="24-trip-denied-by-policy.png" alt="Denied by policy" loading="lazy"></a><figcaption>24-trip-denied-by-policy.png</figcaption></figure>
+  <p class="what">When no candidate is permitted (here a trip budget of USD 1.00 with DENY), the trip ends Failed at the policy step, with the denial reasons policy gave — its own words, per candidate — and nothing booked.</p>
+  <dl class="controls"><div class="ctl"><dt>Not booked</dt><dd>the failure stage and code, and the distinct reasons policy gave, most frequent first</dd></div></dl>
+</article></section><section class="chapter" id="c6"><header><span class="kicker">Chapter 6</span><h2>Cancelling</h2><p class="lede">A booked trip is never shown as cancelled before the supplier has released it.</p></header><article class="screen" id="s6-1">
+  <h3><span class="num">6.1</span> Cancel a booked trip</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler, travel admin</p>
+  <figure><a href="18-cancel-dialog-booked.png" target="_blank" rel="noopener"><img src="18-cancel-dialog-booked.png" alt="Cancel a booked trip" loading="lazy"></a><figcaption>18-cancel-dialog-booked.png</figcaption></figure>
+  <p class="what">The dialog says what will happen: the reservation is released at the suppliers first, the trip reads Cancelling until every component is released, and Cancelled only then. A refund is not assumed until Finance records it.</p>
+  <dl class="controls"><div class="ctl"><dt>Reason</dt><dd>required; kept in the timeline</dd></div><div class="ctl"><dt>Cancel the trip</dt><dd>asks the platform to release the reservation</dd></div><div class="ctl"><dt>Keep it</dt><dd>closes the dialog; focus returns to the button</dd></div></dl>
+</article><article class="screen" id="s6-2">
+  <h3><span class="num">6.2</span> Cancelling</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="19-trip-cancelling.png" target="_blank" rel="noopener"><img src="19-trip-cancelling.png" alt="Cancelling" loading="lazy"></a><figcaption>19-trip-cancelling.png</figcaption></figure>
+  <p class="what">The moment after confirming: the trip is Cancelling and the Order service is releasing the components at the suppliers. The Cancel button is gone (a repeat would change nothing).</p>
+  <dl class="controls"><div class="ctl"><dt>Cancelling</dt><dd>an honest intermediate state; the page keeps polling</dd></div></dl>
+</article><article class="screen" id="s6-3">
+  <h3><span class="num">6.3</span> Cancelled</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="20-trip-cancelled.png" target="_blank" rel="noopener"><img src="20-trip-cancelled.png" alt="Cancelled" loading="lazy"></a><figcaption>20-trip-cancelled.png</figcaption></figure>
+  <p class="what">Every component was released: the order is Cancelled, the items are Cancelled, and only now does the trip read Cancelled. The timeline shows the request, the release and the completion, each with its actor.</p>
+  
+</article><article class="screen" id="s6-4">
+  <h3><span class="num">6.4</span> A supplier refused</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="21-trip-cancelling-needs-a-person.png" target="_blank" rel="noopener"><img src="21-trip-cancelling-needs-a-person.png" alt="A supplier refused" loading="lazy"></a><figcaption>21-trip-cancelling-needs-a-person.png</figcaption></figure>
+  <p class="what">The LAX hotel in the sandbox sells a non-refundable rate that refuses cancellation. The flights are released, the room is not: the trip stays Cancelling (needs a person), the order is cancellation pending with the room marked Cancel failed, and a Financial exposure is recorded. The trip does not claim to be cancelled while the room is still confirmed at the hotel.</p>
+  <dl class="controls"><div class="ctl"><dt>Cancellation incomplete</dt><dd>what was refused and what happens next</dd></div><div class="ctl"><dt>Financial exposure</dt><dd>the open liability, in the order card, with the supplier&#x27;s own reason</dd></div></dl>
+</article><article class="screen" id="s6-5">
+  <h3><span class="num">6.5</span> Finance: open exposures</h3>
+  <p class="who"><span class="who__label">Who sees it</span> travel admin, Finance</p>
+  <figure><a href="22-finance-open-exposure.png" target="_blank" rel="noopener"><img src="22-finance-open-exposure.png" alt="Finance: open exposures" loading="lazy"></a><figcaption>22-finance-open-exposure.png</figcaption></figure>
+  <p class="what">Money the company may still owe, one row per refused release, with the order, trip, supplier, amount and the supplier&#x27;s reason. A person deals with the supplier (a phone call, a written-off night) and closes the exposure here; the platform completes the cancellation from that.</p>
+  <dl class="controls"><div class="ctl"><dt>Show</dt><dd>open liabilities or resolved ones</dd></div><div class="ctl"><dt>Resolve</dt><dd>records how it was settled; idempotent, and a second different resolution is refused</dd></div><div class="ctl"><dt>Settled refunds</dt><dd>Finance records what a supplier actually refunded, in the order&#x27;s currency; zero is a legitimate settlement, a foreign currency is refused</dd></div></dl>
+</article><article class="screen" id="s6-6">
+  <h3><span class="num">6.6</span> Cancelled, once a person released it</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="23-trip-cancelled-after-resolution.png" target="_blank" rel="noopener"><img src="23-trip-cancelled-after-resolution.png" alt="Cancelled, once a person released it" loading="lazy"></a><figcaption>23-trip-cancelled-after-resolution.png</figcaption></figure>
+  <p class="what">After Finance resolved the exposure the order became Cancelled and the trip followed: Cancelled, with the refusal and the resolution both in the narration and the timeline.</p>
+  
+</article></section><section class="chapter" id="c7"><header><span class="kicker">Chapter 7</span><h2>When the airline cancels</h2><p class="lede">Disruptions are detected from supplier notices and recovered within policy.</p></header><article class="screen" id="s7-1">
+  <h3><span class="num">7.1</span> A cancelled flight</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="25-disruption-needs-a-person-traveler.png" target="_blank" rel="noopener"><img src="25-disruption-needs-a-person-traveler.png" alt="A cancelled flight" loading="lazy"></a><figcaption>25-disruption-needs-a-person-traveler.png</figcaption></figure>
+  <p class="what">The sandbox airline sent a signed FLIGHT_CANCELLED notice. The platform confirmed the impact on the booked trip, searched alternatives, let policy judge them and picked a replacement. Its incremental cost (USD 180) is above the USD 100 autonomy limit, so a person decides — and the traveler cannot approve a change to their own trip.</p>
+  <dl class="controls"><div class="ctl"><dt>What happened</dt><dd>the notice as received: flight, date, severity, supplier reference</dd></div><div class="ctl"><dt>Recovery</dt><dd>the replacement, its incremental cost, the policy decision and whose approval it needs</dd></div><div class="ctl"><dt>The decision record</dt><dd>candidates searched, permitted, feasible, and every rejected one with its reason</dd></div></dl>
+</article><article class="screen" id="s7-2">
+  <h3><span class="num">7.2</span> Recoveries in the manager&#x27;s inbox</h3>
+  <p class="who"><span class="who__label">Who sees it</span> manager, travel admin</p>
+  <figure><a href="26-approvals-inbox-recoveries.png" target="_blank" rel="noopener"><img src="26-approvals-inbox-recoveries.png" alt="Recoveries in the manager&#x27;s inbox" loading="lazy"></a><figcaption>26-approvals-inbox-recoveries.png</figcaption></figure>
+  <p class="what">Recovery decisions sit beside trip approvals.</p>
+  
+</article><article class="screen" id="s7-3">
+  <h3><span class="num">7.3</span> Approving the replacement</h3>
+  <p class="who"><span class="who__label">Who sees it</span> manager, travel admin</p>
+  <figure><a href="27-disruption-manager-decision.png" target="_blank" rel="noopener"><img src="27-disruption-manager-decision.png" alt="Approving the replacement" loading="lazy"></a><figcaption>27-disruption-manager-decision.png</figcaption></figure>
+  <p class="what">The manager sees the same evidence plus the buttons. Approving executes the change; rejecting leaves the booking as it is for a person to handle by hand.</p>
+  <dl class="controls"><div class="ctl"><dt>Approve the replacement</dt><dd>the Order service changes the booking at the supplier</dd></div><div class="ctl"><dt>Reject</dt><dd>no change is made</dd></div></dl>
+</article><article class="screen" id="s7-4">
+  <h3><span class="num">7.4</span> Resolved</h3>
+  <p class="who"><span class="who__label">Who sees it</span> everyone involved</p>
+  <figure><a href="28-disruption-resolved.png" target="_blank" rel="noopener"><img src="28-disruption-resolved.png" alt="Resolved" loading="lazy"></a><figcaption>28-disruption-resolved.png</figcaption></figure>
+  <p class="what">The change went through: the new flights are booked, the old ones replaced, the history shows every step with its timestamp.</p>
+  
+</article><article class="screen" id="s7-5">
+  <h3><span class="num">7.5</span> The trip after recovery</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="29-trip-after-recovery.png" target="_blank" rel="noopener"><img src="29-trip-after-recovery.png" alt="The trip after recovery" loading="lazy"></a><figcaption>29-trip-after-recovery.png</figcaption></figure>
+  <p class="what">The trip page shows the change with its incremental cost, distinct from the original booking, so the total the company paid is explained line by line.</p>
+  <dl class="controls"><div class="ctl"><dt>change(s) from disruption recovery</dt><dd>what was replaced, retimed or re-dated, and by how much the price moved</dd></div></dl>
+</article><article class="screen" id="s7-6">
+  <h3><span class="num">7.6</span> Disruptions</h3>
+  <p class="who"><span class="who__label">Who sees it</span> travel admin, Finance</p>
+  <figure><a href="30-operations-disruptions.png" target="_blank" rel="noopener"><img src="30-operations-disruptions.png" alt="Disruptions" loading="lazy"></a><figcaption>30-operations-disruptions.png</figcaption></figure>
+  <p class="what">Every disruption of the tenant with its state, for the people who run travel.</p>
+  
+</article></section><section class="chapter" id="c8"><header><span class="kicker">Chapter 8</span><h2>Demand detected from the calendar</h2><p class="lede">The platform notices travel before anyone asks.</p></header><article class="screen" id="s8-1">
+  <h3><span class="num">8.1</span> Demand inbox</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="31-demand-inbox.png" target="_blank" rel="noopener"><img src="31-demand-inbox.png" alt="Demand inbox" loading="lazy"></a><figcaption>31-demand-inbox.png</figcaption></figure>
+  <p class="what">Accepted in-person meetings away from your work location, seen in the (simulated) calendar and cross-checked with HRIS and CRM, become candidates: what, where, when, and why the platform thinks it is travel. Virtual, declined and local events never appear.</p>
+  <dl class="controls"><div class="ctl"><dt>Show</dt><dd>actionable, needs review, dismissed or converted</dd></div><div class="ctl"><dt>Row link</dt><dd>opens the candidate with its evidence</dd></div></dl>
+</article><article class="screen" id="s8-2">
+  <h3><span class="num">8.2</span> A candidate and its evidence</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="32-demand-candidate.png" target="_blank" rel="noopener"><img src="32-demand-candidate.png" alt="A candidate and its evidence" loading="lazy"></a><figcaption>32-demand-candidate.png</figcaption></figure>
+  <p class="what">Each source is shown as data — the calendar event, the HRIS identity, the CRM visit — with the rule that fired and what is missing. Injected text in an event title is quoted, never obeyed.</p>
+  <dl class="controls"><div class="ctl"><dt>Convert into a trip</dt><dd>one trip per candidate, however many times it is clicked; the trip records the candidate it came from</dd></div><div class="ctl"><dt>Dismiss</dt><dd>with a reason; no trip is ever created for it</dd></div><div class="ctl"><dt>Supply details</dt><dd>when the destination could not be resolved</dd></div></dl>
+</article><article class="screen" id="s8-3">
+  <h3><span class="num">8.3</span> The trip it became</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler</p>
+  <figure><a href="33-trip-from-demand.png" target="_blank" rel="noopener"><img src="33-trip-from-demand.png" alt="The trip it became" loading="lazy"></a><figcaption>33-trip-from-demand.png</figcaption></figure>
+  <p class="what">A trip like any other, whose source is DEMAND and whose ledger names the candidate; it goes through the same policy, approval and booking.</p>
+  
+</article><article class="screen" id="s8-4">
+  <h3><span class="num">8.4</span> Connectors</h3>
+  <p class="who"><span class="who__label">Who sees it</span> travel admin</p>
+  <figure><a href="34-connectors-admin.png" target="_blank" rel="noopener"><img src="34-connectors-admin.png" alt="Connectors" loading="lazy"></a><figcaption>34-connectors-admin.png</figcaption></figure>
+  <p class="what">The enterprise sources (calendar, CRM, HRIS, expense), each labelled simulated, with their sync runs, status and configuration.</p>
+  <dl class="controls"><div class="ctl"><dt>Sync now</dt><dd>runs one synchronization and shows its outcome</dd></div><div class="ctl"><dt>Runs</dt><dd>every run with items seen, candidates created, errors</dd></div></dl>
+</article></section><section class="chapter" id="c9"><header><span class="kicker">Chapter 9</span><h2>Learning and money</h2><p class="lede">Two admin areas that say exactly what they do.</p></header><article class="screen" id="s9-1">
+  <h3><span class="num">9.1</span> Learning</h3>
+  <p class="who"><span class="who__label">Who sees it</span> travel admin</p>
+  <figure><a href="35-learning-admin.png" target="_blank" rel="noopener"><img src="35-learning-admin.png" alt="Learning" loading="lazy"></a><figcaption>35-learning-admin.png</figcaption></figure>
+  <p class="what">The learned-preference loop: its mode (Off, Shadow, Active), the evidence it was built from, profiles with their bounded adjustments, and honest evaluation wording — in Shadow the learned pick is recorded, not applied. Activation and rollback are versioned; a stale change is refused with a conflict.</p>
+  <dl class="controls"><div class="ctl"><dt>Mode</dt><dd>changing it needs the current version</dd></div><div class="ctl"><dt>Build / Activate / Roll back</dt><dd>each recorded in the activation history</dd></div></dl>
+</article><article class="screen" id="s9-2">
+  <h3><span class="num">9.2</span> Finance</h3>
+  <p class="who"><span class="who__label">Who sees it</span> travel admin, Finance</p>
+  <figure><a href="36-finance-refunds-and-exposures.png" target="_blank" rel="noopener"><img src="36-finance-refunds-and-exposures.png" alt="Finance" loading="lazy"></a><figcaption>36-finance-refunds-and-exposures.png</figcaption></figure>
+  <p class="what">Exposures (above) and settled refunds: Finance records what a supplier actually refunded; a cancellation never implies a refund.</p>
+  <dl class="controls"><div class="ctl"><dt>Record settled refund</dt><dd>trip, order, optional item, amount in the order&#x27;s currency, and the supplier or bank reference</dd></div></dl>
+</article></section><section class="chapter" id="c10"><header><span class="kicker">Chapter 10</span><h2>Edges</h2><p class="lede">What the app does when something is not for you, or not there.</p></header><article class="screen" id="s10-1">
+  <h3><span class="num">10.1</span> Not available for your role</h3>
+  <p class="who"><span class="who__label">Who sees it</span> traveler at an admin address</p>
+  <figure><a href="38-not-available-for-role.png" target="_blank" rel="noopener"><img src="38-not-available-for-role.png" alt="Not available for your role" loading="lazy"></a><figcaption>38-not-available-for-role.png</figcaption></figure>
+  <p class="what">Typing /finance as a traveler shows a plain refusal, and the server would refuse the data anyway.</p>
+  
+</article><article class="screen" id="s10-2">
+  <h3><span class="num">10.2</span> Not here yet</h3>
+  <p class="who"><span class="who__label">Who sees it</span> anyone</p>
+  <figure><a href="39-trip-not-found.png" target="_blank" rel="noopener"><img src="39-trip-not-found.png" alt="Not here yet" loading="lazy"></a><figcaption>39-trip-not-found.png</figcaption></figure>
+  <p class="what">A trip that does not exist — or that belongs to someone else — is not found; existence is never disclosed. The page offers the way back.</p>
+  
+</article></section></main>
+</div>

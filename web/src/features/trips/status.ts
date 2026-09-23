@@ -30,7 +30,13 @@ export function stepState(
     if (idx === failedAt) return 'failed';
     return 'todo';
   }
-  if (trip.status === 'CANCELLED' || trip.status === 'CANCELLING') return 'skipped';
+  if (trip.status === 'CANCELLED' || trip.status === 'CANCELLING') {
+    // a trip that was booked before it was cancelled did go through every step; one withdrawn
+    // while planning never needed the rest
+    if (trip.evidence?.orderId)
+      return step.key === 'approval' && !trip.approval ? 'skipped' : 'done';
+    return 'skipped';
+  }
   if (step.statuses.includes(trip.status)) return 'current';
   const current = order.indexOf(trip.status);
   const first = order.indexOf(step.statuses[0]!);

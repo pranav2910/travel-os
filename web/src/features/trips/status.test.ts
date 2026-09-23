@@ -48,6 +48,12 @@ describe('trip progress', () => {
       'skipped',
       'skipped',
     ]);
+    // a booked trip being released did go through its steps; only approval may not have been needed
+    expect(
+      STEPS.map((s) =>
+        stepState({ ...base, status: 'CANCELLING', evidence: { orderId: 'ord_1' } }, s),
+      ),
+    ).toEqual(['done', 'done', 'skipped', 'done', 'done']);
     expect(explainCancelling({ ...base, status: 'CANCELLING' })).toMatch(
       /released at the suppliers/,
     );

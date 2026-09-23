@@ -192,7 +192,8 @@ make web-e2e                      # Playwright against it (Chromium, WebKit smok
 make web-dev                      # or: Vite on :5173 proxying /api to the services on their host ports
 ```
 
-Screen → endpoint → role matrix: [docs/frontend/api-matrix.md](docs/frontend/api-matrix.md). Three
+UI tour with a screenshot of every screen: [docs/frontend/ui-tour.md](docs/frontend/ui-tour.md) (re-taken by
+`docs/frontend/ui-tour/capture.js`). Screen → endpoint → role matrix: [docs/frontend/api-matrix.md](docs/frontend/api-matrix.md). Three
 narrow list endpoints were added for the inboxes (`GET /api/v1/trips?scope=tenant&status=`,
 `GET /api/v1/disruptions?status=`, `GET /api/v1/orders/exposures?status=`), each tested in its
 owning service.
