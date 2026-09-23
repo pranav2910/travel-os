@@ -245,4 +245,13 @@ message CreateTripRequest {
   string request_text = 6;                     // optional; untrusted, carried as data
   repeated string actor_roles = 7;             // realm roles of ctx.principal, from their JWT
   string actor_employee_id = 8;                // employee id of ctx.principal, from their JWT
+  // Who travels, when traveler_id is not ctx.principal: the reservation is made in this name
+  // (TRAVELER_IDENTITY_REQUIRED otherwise). Enterprise Context sends the verified HRIS identity.
+  TravelerIdentity traveler = 9;
+}
+
+message TravelerIdentity {
+  string given_name = 1;
+  string family_name = 2;
+  string email = 3;
 }

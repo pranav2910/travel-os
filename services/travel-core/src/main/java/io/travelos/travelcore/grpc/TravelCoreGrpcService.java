@@ -102,8 +102,14 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
               blankToNull(request.getTravelerId()),
               source,
               blankToNull(request.getRequestText()),
-              fromSpecs(request.getIntent()).withExplicitStay());
-    } catch (io.travelos.travelcore.trip.TravelIntent.HotelRequestException e) {
+              fromSpecs(request.getIntent()).withExplicitStay(),
+              request.hasTraveler()
+                  ? new io.travelos.travelcore.trip.TravelerIdentity(
+                      blankToNull(request.getTraveler().getGivenName()),
+                      blankToNull(request.getTraveler().getFamilyName()),
+                      blankToNull(request.getTraveler().getEmail()))
+                  : null);
+    } catch (io.travelos.travelcore.trip.IntentRejectedException e) {
       throw Status.INVALID_ARGUMENT
           .withDescription(e.code() + ": " + e.getMessage())
           .asRuntimeException();
@@ -122,8 +128,14 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
               blankToNull(request.getSourceReference()));
     } catch (ApiException.Forbidden e) {
       throw Status.PERMISSION_DENIED.withDescription(e.getMessage()).asRuntimeException();
+    } catch (io.travelos.travelcore.trip.IntentRejectedException e) {
+      throw Status.INVALID_ARGUMENT
+          .withDescription(e.code() + ": " + e.getMessage())
+          .asRuntimeException();
     } catch (ApiException.Unprocessable e) {
-      throw Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException();
+      throw Status.FAILED_PRECONDITION
+          .withDescription(e.code() + ": " + e.getMessage())
+          .asRuntimeException();
     }
     observer.onNext(withComponents(ctx.tenant(), trip));
     observer.onCompleted();

@@ -3,11 +3,13 @@ package io.travelos.context.service;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.travelos.common.tenant.TenantId;
+import io.travelos.context.model.Employee;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
 import io.travelos.contracts.trip.v1.CreateTripRequest;
 import io.travelos.contracts.trip.v1.TravelCoreServiceGrpc;
 import io.travelos.contracts.trip.v1.TravelIntent;
+import io.travelos.contracts.trip.v1.TravelerIdentity;
 import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.spring.grpc.GrpcChannels;
 import io.travelos.spring.web.auth.RequestPrincipal;
@@ -28,12 +30,20 @@ public class TripClient {
   public Trip createTrip(
       TenantId tenant,
       RequestPrincipal me,
-      String travelerId,
+      Employee traveler,
       TravelIntent intent,
       String idempotencyKey,
       String candidateId) {
+    // The reservation is made in the traveler's name: the verified HRIS identity goes along, so a
+    // manager converting a colleague's demand is not refused for an anonymous traveler.
+    String[] names = traveler.displayName().trim().split("\\s+", 2);
     CreateTripRequest request =
         CreateTripRequest.newBuilder()
+            .setTraveler(
+                TravelerIdentity.newBuilder()
+                    .setGivenName(names[0])
+                    .setFamilyName(names.length > 1 ? names[1] : names[0])
+                    .setEmail(traveler.email()))
             .setCtx(
                 RequestContext.newBuilder()
                     .setTenantId(tenant.value())
@@ -43,7 +53,7 @@ public class TripClient {
                         Principal.newBuilder()
                             .setKind(Principal.Kind.HUMAN)
                             .setId(me.principal().id())))
-            .setTravelerId(travelerId)
+            .setTravelerId(traveler.employeeId())
             .setIntent(intent)
             .setSource("DEMAND")
             .setSourceReference(candidateId)

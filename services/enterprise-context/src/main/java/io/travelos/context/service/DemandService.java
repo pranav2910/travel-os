@@ -1199,8 +1199,7 @@ public class DemandService {
                         "TRAVELER_INACTIVE", "the traveler is not an active employee"));
     TravelIntent intent = TravelPlan.derive(cand, traveler.timeZone());
     String key = "demand:" + cand.candidateId() + ":CONVERT:1";
-    Trip trip =
-        trips.createTrip(me.tenant(), me, cand.travelerId(), intent, key, cand.candidateId());
+    Trip trip = trips.createTrip(me.tenant(), me, traveler, intent, key, cand.candidateId());
     DemandStatus previous = cand.status();
     DemandCandidate updated =
         new DemandCandidate(

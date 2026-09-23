@@ -144,5 +144,14 @@ make web-e2e
 - **Deliberately not built**: conversational agent mode, plan-only mode, several travelers, trip
   editing, metro-area search, a booking horizon — listed in the README so the pilot is judged on
   what exists.
+- **Found by CI after the first commit (9b1307a)**: the kind end-to-end job's slice-4 case "the
+  traveler and her manager converted at the same moment: one trip" failed because Enterprise
+  Context's gRPC trip creation (a manager converting a colleague's detected demand) did not carry
+  the traveler's identity and was refused by the new `TRAVELER_IDENTITY_REQUIRED` rule — BUG-04 on
+  the internal door. The follow-up commit adds `TravelerIdentity` to the gRPC contract, sends the
+  verified HRIS identity from Enterprise Context, and covers it with
+  `TripLifecycleIntegrationTest.aServiceArrangingATripThroughGrpcNamesTheTravelerToo`; the local
+  Docker-stack results above were not affected (that path is exercised on kind only). CI for the
+  follow-up commit is the authority for it.
 - **Not deployed**: images were built and run locally only; nothing was pushed to a registry or a
   cluster.

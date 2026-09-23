@@ -493,6 +493,54 @@ class TripLifecycleIntegrationTest {
   }
 
   @Test
+  @org.junit.jupiter.api.Order(10)
+  void aServiceArrangingATripThroughGrpcNamesTheTravelerToo() {
+    // BUG-04 on the internal door: Enterprise Context converts a colleague's demand on the
+    // manager's
+    // behalf and must say who travels (the verified HRIS identity); without it the trip is refused
+    TravelIntent intent =
+        extraction("x", "EXTRACTED", "llm_01ARZ3NDEKTSV4RRFFQ69G5FB9").getIntent();
+    io.travelos.contracts.trip.v1.CreateTripRequest.Builder request =
+        io.travelos.contracts.trip.v1.CreateTripRequest.newBuilder()
+            .setCtx(
+                RequestContext.newBuilder()
+                    .setTenantId("acme")
+                    .setCorrelationId("dmd_01ARZ3NDEKTSV4RRFFQ69G5FB9")
+                    .setIdempotencyKey(
+                        "demand:dmd_01ARZ3NDEKTSV4RRFFQ69G5FB9:CONVERT:" + UUID.randomUUID())
+                    .setPrincipal(
+                        Principal.newBuilder().setKind(Principal.Kind.HUMAN).setId("human/bob")))
+            .setTravelerId("emp_1001")
+            .setIntent(intent)
+            .setSource("DEMAND")
+            .setSourceReference("dmd_01ARZ3NDEKTSV4RRFFQ69G5FB9")
+            .addActorRoles("MANAGER")
+            .setActorEmployeeId("emp_1002");
+    assertThatThrownBy(() -> core.createTrip(request.build()))
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> {
+              assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.FAILED_PRECONDITION);
+              assertThat(e.getStatus().getDescription()).contains("TRAVELER_IDENTITY_REQUIRED");
+            });
+    Trip created =
+        core.createTrip(
+            request
+                .setCtx(
+                    request.getCtx().toBuilder()
+                        .setIdempotencyKey("demand:convert:" + UUID.randomUUID()))
+                .setTraveler(
+                    io.travelos.contracts.trip.v1.TravelerIdentity.newBuilder()
+                        .setGivenName("Alice")
+                        .setFamilyName("Nguyen")
+                        .setEmail("alice@acme.example"))
+                .build());
+    assertThat(created.getTravelerId()).isEqualTo("emp_1001");
+    assertThat(created.getTraveler().getGivenName()).isEqualTo("Alice");
+    assertThat(created.getTraveler().getEmail()).isEqualTo("alice@acme.example");
+  }
+
+  @Test
   @org.junit.jupiter.api.Order(99)
   void everyLifecycleEventIsContractValid() {
     await()
