@@ -12,6 +12,7 @@ import io.travelos.policy.engine.Facts.Candidate;
 import io.travelos.policy.engine.Facts.Trip;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
@@ -39,6 +40,12 @@ public final class PolicyEngine {
   static final String RULE_HUMAN_ACTION = "HUMAN_ACTION";
   static final String RULE_ACTION_KNOWN = "ACTION_KNOWN";
   static final String RULE_REPLACEMENT_CONSTRAINTS = "REPLACEMENT_ITINERARY_CONSTRAINTS";
+  static final String RULE_BUDGET = "BUDGET";
+  static final String RULE_PREFERRED_SUPPLIER = "PREFERRED_SUPPLIER";
+  static final String RULE_APPROVAL_CHAIN = "APPROVAL_CHAIN";
+  static final String ROLE_FINANCE = "FINANCE";
+  static final String ROLE_TRAVEL_ADMIN = "TRAVEL_ADMIN";
+  static final java.time.Duration DEFAULT_APPROVAL_EXPIRY = java.time.Duration.ofHours(48);
 
   static final String ROLE_MANAGER = "MANAGER";
   static final String ROLE_TRAVELER = "TRAVELER";
@@ -53,7 +60,9 @@ public final class PolicyEngine {
           new GroundTransferLimitRule(),
           new TripBudgetRule(),
           new BookingHorizonRule(),
-          new ManagerApprovalThresholdRule());
+          new ManagerApprovalThresholdRule(),
+          new BudgetRule(),
+          new PreferredSupplierRule());
 
   /** Facts shared by every candidate of one evaluation: the benchmark fare and the ceiling. */
   record Context(Money referenceFare, Money inPolicyCeiling) {}
@@ -178,7 +187,118 @@ public final class PolicyEngine {
         rules.add(RULE_INCENTIVE);
       }
     }
-    return Decision.of(rules, violations, economics);
+    return governed(
+        policy,
+        trip,
+        proposed == null ? action.incrementalCost() : proposed.total(),
+        Decision.of(rules, violations, economics));
+  }
+
+  /**
+   * Phase 7: the ordered approval chain from the document (each step when the total is above its
+   * threshold), followed by any role a rule requires that the chain does not name; how long a step
+   * may wait; the budget that was consulted. Without a configured chain the chain is the rules'
+   * approvers, as before.
+   */
+  static Decision governed(
+      PolicyDocument policy, Trip trip, @Nullable Money total, Decision decision) {
+    List<String> chain = new ArrayList<>();
+    if (decision.requiresApproval()) {
+      for (PolicyDocument.Step step : policy.approval().steps()) {
+        boolean applies =
+            step.above() == null
+                || (total != null
+                    && total.currency().equals(policy.currency())
+                    && total.compareTo(Money.of(policy.currency(), step.above())) > 0);
+        if (applies && !chain.contains(step.role())) {
+          chain.add(step.role());
+        }
+      }
+      for (String role : decision.approverRoles()) {
+        if (!chain.contains(role)) {
+          chain.add(role);
+        }
+      }
+    }
+    java.time.Duration expiry =
+        policy.approval().expiresAfterHours() == null
+            ? DEFAULT_APPROVAL_EXPIRY
+            : java.time.Duration.ofHours(policy.approval().expiresAfterHours());
+    return decision.withGovernance(
+        chain,
+        decision.requiresApproval() ? expiry : null,
+        trip.budget() == null ? null : trip.budget().budgetId(),
+        trip.budget() == null ? null : trip.budget().remaining());
+  }
+
+  /** Phase 7: the candidate must fit what is left of the scope's budget. */
+  private static final class BudgetRule implements TripRule {
+    @Override
+    public String id() {
+      return RULE_BUDGET;
+    }
+
+    @Override
+    public Optional<Violation> evaluate(
+        PolicyDocument policy, Trip trip, Candidate c, Context ctx) {
+      Facts.Budget budget = trip.budget();
+      if (budget == null || !c.total().currency().equals(budget.remaining().currency())) {
+        return Optional.empty();
+      }
+      if (c.total().compareTo(budget.remaining()) <= 0) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          new Violation(
+              RULE_BUDGET,
+              "BUDGET_EXCEEDED",
+              "trip total "
+                  + c.total()
+                  + " exceeds the "
+                  + budget.remaining()
+                  + " left in budget "
+                  + budget.budgetId()
+                  + (budget.hard() ? " (a hard budget)" : ""),
+              budget.hard() ? Consequence.DENY : Consequence.REQUIRE_APPROVAL,
+              budget.hard() ? null : ROLE_FINANCE));
+    }
+  }
+
+  /**
+   * Phase 7: when the tenant has preferred suppliers of a kind, choosing another one means
+   * something.
+   */
+  private static final class PreferredSupplierRule implements TripRule {
+    @Override
+    public String id() {
+      return RULE_PREFERRED_SUPPLIER;
+    }
+
+    @Override
+    public Optional<Violation> evaluate(
+        PolicyDocument policy, Trip trip, Candidate c, Context ctx) {
+      Consequence consequence = policy.suppliers().onNonPreferred();
+      if (consequence == null || trip.preferredProviders().isEmpty()) {
+        return Optional.empty();
+      }
+      for (Map.Entry<String, String> e : c.providers().entrySet()) {
+        java.util.Set<String> preferred = trip.preferredProviders().get(e.getValue());
+        if (preferred != null && !preferred.isEmpty() && !preferred.contains(e.getKey())) {
+          return Optional.of(
+              new Violation(
+                  RULE_PREFERRED_SUPPLIER,
+                  "SUPPLIER_NOT_PREFERRED",
+                  e.getValue().toLowerCase(java.util.Locale.ROOT)
+                      + " from "
+                      + e.getKey()
+                      + " is outside the preferred suppliers "
+                      + preferred,
+                  consequence,
+                  consequence == Consequence.REQUIRE_APPROVAL ? ROLE_TRAVEL_ADMIN : null));
+        }
+      }
+      return Optional.empty();
+    }
   }
 
   /** Every constraint the replacement breaks is a DENY: a late arrival is not a cheaper option. */
@@ -293,7 +413,8 @@ public final class PolicyEngine {
                 && candidate.total().compareTo(limit) <= 0);
     boolean autonomous =
         purchase.enabled() && decision.outcome() != Decision.Outcome.DENY && withinLimit;
-    return decision.withPurchaseAutonomy(autonomous, limit);
+    return governed(
+        policy, trip, candidate.total(), decision.withPurchaseAutonomy(autonomous, limit));
   }
 
   /**

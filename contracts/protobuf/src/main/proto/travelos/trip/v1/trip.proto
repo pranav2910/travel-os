@@ -287,6 +287,10 @@ message TransitionTripRequest {
   repeated TripAlternative alternatives = 17;
   // Fare conditions of the selected plan, in words; bound by the authorization.
   string conditions = 18;
+  // Phase 7: the whole approval chain in order (approver_role stays the first step) and how long
+  // one step may wait before it escalates; from the policy decision.
+  repeated string approval_chain = 19;
+  int64 approval_expires_after_seconds = 20;
 }
 
 message ApplyIntentExtractionRequest {

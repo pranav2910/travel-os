@@ -4,6 +4,7 @@ import io.travelos.common.money.Money;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -26,7 +27,13 @@ public final class Facts {
       String routeNote,
       @Nullable Instant referenceTime,
       @Nullable Instant earliestDeparture,
-      @Nullable Instant latestReturn) {
+      @Nullable Instant latestReturn,
+      @Nullable Budget budget,
+      Map<String, Set<String>> preferredProviders) {
+    public Trip {
+      preferredProviders = preferredProviders == null ? Map.of() : Map.copyOf(preferredProviders);
+    }
+
     /** Without the times the booking-horizon rules have nothing to say. */
     public Trip(
         String tripId,
@@ -37,7 +44,56 @@ public final class Facts {
         String routeNote) {
       this(tripId, travelerId, origin, destination, international, routeNote, null, null, null);
     }
+
+    /** Phase 3 shape: times, no governance facts. */
+    public Trip(
+        String tripId,
+        String travelerId,
+        String origin,
+        String destination,
+        boolean international,
+        String routeNote,
+        @Nullable Instant referenceTime,
+        @Nullable Instant earliestDeparture,
+        @Nullable Instant latestReturn) {
+      this(
+          tripId,
+          travelerId,
+          origin,
+          destination,
+          international,
+          routeNote,
+          referenceTime,
+          earliestDeparture,
+          latestReturn,
+          null,
+          Map.of());
+    }
+
+    /** Phase 7: the budget that covers the trip's scope and the tenant's preferred suppliers. */
+    public Trip withGovernance(
+        @Nullable Budget budget, Map<String, Set<String>> preferredProviders) {
+      return new Trip(
+          tripId,
+          travelerId,
+          origin,
+          destination,
+          international,
+          routeNote,
+          referenceTime,
+          earliestDeparture,
+          latestReturn,
+          budget,
+          preferredProviders);
+    }
   }
+
+  /**
+   * Phase 7: what is left of the budget covering the trip's scope and period.
+   *
+   * @param hard true: a trip that does not fit is denied; false: it needs Finance's approval
+   */
+  public record Budget(String budgetId, Money remaining, boolean hard) {}
 
   /**
    * One bookable plan.
@@ -52,10 +108,23 @@ public final class Facts {
       @Nullable Air air,
       @Nullable Hotel hotel,
       List<Hotel> hotels,
-      List<Ground> ground) {
+      List<Ground> ground,
+      Map<String, String> providers) {
     public Candidate {
       hotels = List.copyOf(hotels);
       ground = List.copyOf(ground);
+      providers = providers == null ? Map.of() : Map.copyOf(providers);
+    }
+
+    /** The Slice 3 shape: components, no provider facts. */
+    public Candidate(
+        String bundleId,
+        Money total,
+        @Nullable Air air,
+        @Nullable Hotel hotel,
+        List<Hotel> hotels,
+        List<Ground> ground) {
+      this(bundleId, total, air, hotel, hotels, ground, Map.of());
     }
 
     /** The Slice 1/2 shape: one air component, at most one hotel. */

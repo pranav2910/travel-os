@@ -252,7 +252,11 @@ public class TripWorkflowImpl implements TripWorkflow {
 
       // ---- search
       stage = TripPlanning.Stage.SEARCHING;
-      SearchAirResponse search = activities.search(searchRequest(tenant, tripId, intent));
+      SearchAirResponse search =
+          activities.search(
+              searchRequest(tenant, tripId, intent).toBuilder()
+                  .addAllNegotiatedRates(Governed.airRates(governance(tenant, tripId, trip)))
+                  .build());
       if (search.getOffersCount() == 0) {
         String detail =
             search.getErrorsCount() == 0
@@ -290,6 +294,7 @@ public class TripWorkflowImpl implements TripWorkflow {
                   .setTripId(tripId)
                   .setTravelerId(trip.getTravelerId())
                   .setIntent(intent)
+                  .setScope(Governed.scopeOf(trip))
                   .addAllCandidates(bundles)
                   .build());
       Map<String, PolicyDecision> decisions = new HashMap<>();
@@ -415,6 +420,9 @@ public class TripWorkflowImpl implements TripWorkflow {
                       .setPolicyDecisionId(chosenDecision.getDecisionId())
                       .setTotal(chosenTotal)
                       .setApproverRole(role)
+                      .addAllApprovalChain(Governed.chain(chosenDecision, role))
+                      .setApprovalExpiresAfterSeconds(
+                          chosenDecision.getApprovalExpiresAfterSeconds())
                       .setReason(reasonSummary(chosenDecision))
                       .setAutonomousPurchase(autonomous)
                       .setQuoteExpiresAt(quoteExpiry)
@@ -485,6 +493,15 @@ public class TripWorkflowImpl implements TripWorkflow {
             "the outbound window closed at "
                 + ItineraryFlow.instant(intent.getArrivalDeadline())
                 + " while the trip waited; nothing was booked");
+      }
+      // Phase 7: the scope's budget, reserved under its lock; a hard budget that does not fit stops
+      // the purchase here (a soft one was judged by policy and, when required, approved).
+      io.travelos.contracts.policy.v1.BudgetReservation reserved =
+          reserveBudget(tenant, tripId, trip, chosenTotal);
+      if (reserved != null
+          && reserved.getStatus() == io.travelos.contracts.policy.v1.BudgetStatus.EXCEEDED
+          && reserved.getHard()) {
+        return fail(tenant, tripId, "BOOKING", "BUDGET_EXCEEDED", reserved.getMessage());
       }
       // Travel Core consumes exactly one purchase authorization covering the plan and price here,
       // or refuses. A refusal (the authorization lapsed) sends the trip back to a person.
@@ -1068,6 +1085,41 @@ public class TripWorkflowImpl implements TripWorkflow {
         .setIdempotencyKey(idempotencyKey)
         .setPrincipal(Principal.newBuilder().setKind(Principal.Kind.AGENT).setId(PRINCIPAL))
         .build();
+  }
+
+  /** Phase 7: the governance of the trip's scope; null when policy cannot say (no agreements). */
+  private io.travelos.contracts.policy.v1.@Nullable Governance governance(
+      String tenant, String tripId, Trip trip) {
+    try {
+      return activities.governance(
+          io.travelos.contracts.policy.v1.GetGovernanceRequest.newBuilder()
+              .setCtx(ctx(tenant, tripId, ""))
+              .setTravelerId(trip.getTravelerId())
+              .setScope(Governed.scopeOf(trip))
+              .build());
+    } catch (ActivityFailure e) {
+      log.warn(
+          "trip {}: governance unavailable ({}); searching public fares", tripId, failureCode(e));
+      return null;
+    }
+  }
+
+  private io.travelos.contracts.policy.v1.@Nullable BudgetReservation reserveBudget(
+      String tenant, String tripId, Trip trip, io.travelos.contracts.common.v1.Money total) {
+    try {
+      return activities.reserveBudget(
+          io.travelos.contracts.policy.v1.ReserveBudgetRequest.newBuilder()
+              .setCtx(ctx(tenant, tripId, tripId + ":RESERVE-BUDGET:1"))
+              .setTripId(tripId)
+              .setTravelerId(trip.getTravelerId())
+              .setScope(Governed.scopeOf(trip))
+              .setAmount(total)
+              .build());
+    } catch (ActivityFailure e) {
+      log.warn(
+          "trip {}: budget could not be reserved ({}); proceeding without", tripId, failureCode(e));
+      return null;
+    }
   }
 
   private static SearchAirRequest searchRequest(String tenant, String tripId, TravelIntent intent) {

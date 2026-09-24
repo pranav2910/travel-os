@@ -23,6 +23,15 @@ spring:
         request.timeout.ms: 15000
         linger.ms: 5
         delivery.timeout.ms: 45000
+    consumer:
+      group-id: policy
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+      observation-enabled: true
   security:
     oauth2:
       resourceserver:

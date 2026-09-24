@@ -83,6 +83,15 @@ public class TripController {
         .body(TripResponse.from(trip));
   }
 
+  /** Phase 7: every step of the trip's approval chain, oldest first. */
+  @GetMapping("/{tripId}/approvals")
+  public List<ApprovalController.ApprovalResponse> approvals(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    return trips.approvalsOf(me, tripId).stream()
+        .map(ApprovalController.ApprovalResponse::from)
+        .toList();
+  }
+
   /** Phase 3: a draft becomes a request and planning starts; idempotent by state. */
   @PostMapping(path = "/{tripId}/submission")
   public ResponseEntity<TripResponse> submit(

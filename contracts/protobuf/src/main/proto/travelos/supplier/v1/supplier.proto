@@ -47,6 +47,8 @@ message SearchAirRequest {
   travelos.common.v1.TimeWindow return_departure = 5;
   int32 passengers = 6;
   repeated travelos.common.v1.Cabin cabins = 7;
+  // Phase 7: corporate / negotiated fares to search under, from the tenant's supplier agreements.
+  repeated NegotiatedRate negotiated_rates = 8;
 }
 
 message SupplierError {
@@ -167,6 +169,12 @@ message CancelOrderResponse {
 
 // ---------------------------------------------------------------- Slice 3
 
+message NegotiatedRate {
+  // The carrier (AIR) or chain code (HOTEL) the rate belongs to; empty = the provider as a whole.
+  string carrier = 1;
+  string rate_code = 2;
+}
+
 message SearchHotelsRequest {
   travelos.common.v1.RequestContext ctx = 1;
   // IATA city/airport code.
@@ -174,7 +182,8 @@ message SearchHotelsRequest {
   // ISO local dates on the property's calendar.
   string check_in_date = 3;
   string check_out_date = 4;
-  int32 guests = 5;
+  int32 guests = 5;  // Phase 7: corporate rate codes from the tenant's supplier agreements.
+  repeated NegotiatedRate negotiated_rates = 6;
 }
 
 message SearchHotelsResponse {

@@ -44,7 +44,14 @@ public class ApprovalController {
       Instant requestedAt,
       @Nullable String decidedBy,
       @Nullable Instant decidedAt,
-      @Nullable String comment) {
+      @Nullable String comment,
+      int step,
+      int chainLength,
+      java.util.List<String> chainRoles,
+      @Nullable Instant expiresAt,
+      @Nullable Instant escalatedAt,
+      @Nullable String escalatedToRole,
+      @Nullable String onBehalfOf) {
 
     public static ApprovalResponse from(Approval a) {
       return new ApprovalResponse(
@@ -56,7 +63,14 @@ public class ApprovalController {
           a.requestedAt(),
           a.decidedBy(),
           a.decidedAt(),
-          a.comment());
+          a.comment(),
+          a.step(),
+          a.chainLength(),
+          a.chainRoles(),
+          a.expiresAt(),
+          a.escalatedAt(),
+          a.escalatedToRole(),
+          a.onBehalfOf());
     }
   }
 

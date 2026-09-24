@@ -48,6 +48,7 @@ public class PolicyEvaluationService {
   private final RouteClassifier routes;
   private final Outbox outbox;
   private final Clock clock;
+  private final io.travelos.policy.governance.GovernanceService governance;
 
   public PolicyEvaluationService(
       PolicyRepository policies,
@@ -55,7 +56,9 @@ public class PolicyEvaluationService {
       PolicyEngine engine,
       RouteClassifier routes,
       Outbox outbox,
-      Clock clock) {
+      Clock clock,
+      io.travelos.policy.governance.GovernanceService governance) {
+    this.governance = governance;
     this.policies = policies;
     this.decisions = decisions;
     this.engine = engine;
@@ -74,7 +77,13 @@ public class PolicyEvaluationService {
     }
     Instant now = clock.instant();
     String evaluationId = Ids.newId(IdPrefix.DECISION);
-    Optional<PolicyVersion> policy = policies.defaultPolicy(ctx.tenant());
+    // Phase 7: the policy, budget and agreements that govern this trip's scope
+    io.travelos.policy.governance.GovernanceService.Resolved governed =
+        governance.resolve(
+            ctx.tenant(),
+            scope(request.getTravelerId(), request.hasScope() ? request.getScope() : null),
+            request.hasReferenceTime() ? ProtoMapping.instant(request.getReferenceTime()) : now);
+    Optional<PolicyVersion> policy = governed.policy();
     TravelIntent intent = request.getIntent();
 
     EvaluateTripResponse.Builder response =
@@ -109,7 +118,8 @@ public class PolicyEvaluationService {
     Instant referenceTime =
         request.hasReferenceTime() ? ProtoMapping.instant(request.getReferenceTime()) : now;
     Facts.Trip trip =
-        tripFacts(request.getTripId(), request.getTravelerId(), intent, legs, referenceTime);
+        tripFacts(request.getTripId(), request.getTravelerId(), intent, legs, referenceTime)
+            .withGovernance(governed.budget(), governed.preferredProviders());
     List<Facts.Candidate> candidates =
         bundles.stream().map(b -> ProtoMapping.candidate(b, pv.document().currency())).toList();
     List<Decision.CandidateEvaluation> evaluations =
@@ -146,7 +156,12 @@ public class PolicyEvaluationService {
     }
     Instant now = clock.instant();
     String evaluationId = Ids.newId(IdPrefix.DECISION);
-    Optional<PolicyVersion> policy = policies.defaultPolicy(ctx.tenant());
+    io.travelos.policy.governance.GovernanceService.Resolved governed =
+        governance.resolve(
+            ctx.tenant(),
+            scope(request.getTravelerId(), request.hasScope() ? request.getScope() : null),
+            now);
+    Optional<PolicyVersion> policy = governed.policy();
     Decision decision;
     String policyId = "";
     int version = 0;
@@ -162,10 +177,11 @@ public class PolicyEvaluationService {
               : null;
       Facts.Trip trip =
           tripFacts(
-              request.getTripId(),
-              request.getTravelerId(),
-              null,
-              request.hasProposed() ? ProtoMapping.legs(request.getProposed()) : List.of());
+                  request.getTripId(),
+                  request.getTravelerId(),
+                  null,
+                  request.hasProposed() ? ProtoMapping.legs(request.getProposed()) : List.of())
+              .withGovernance(governed.budget(), governed.preferredProviders());
       Money incremental =
           request.hasIncrementalCost() ? ProtoMapping.money(request.getIncrementalCost()) : null;
       Facts.Constraints constraints =
@@ -199,6 +215,17 @@ public class PolicyEvaluationService {
         version,
         decision,
         now);
+  }
+
+  public static io.travelos.policy.governance.GovernanceRecords.Scope scope(
+      String travelerId, io.travelos.contracts.policy.v1.@Nullable EvaluationScope s) {
+    return new io.travelos.policy.governance.GovernanceRecords.Scope(
+        travelerId.isBlank() ? null : travelerId,
+        s == null || s.getDepartmentId().isBlank() ? null : s.getDepartmentId(),
+        s == null || s.getCostCenterId().isBlank() ? null : s.getCostCenterId(),
+        s == null || s.getProjectId().isBlank() ? null : s.getProjectId(),
+        s == null || s.getLegalEntityId().isBlank() ? null : s.getLegalEntityId(),
+        s == null || s.getOfficeId().isBlank() ? null : s.getOfficeId());
   }
 
   private Facts.Trip tripFacts(

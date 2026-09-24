@@ -45,6 +45,24 @@
         "disruptionId": {
           "type": "string",
           "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chainLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chainRoles": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "MANAGER",
+              "TRAVEL_ADMIN",
+              "FINANCE"
+            ]
+          }
         }
       }
     },
@@ -73,6 +91,20 @@
         "disruptionId": {
           "type": "string",
           "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chainLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "finalStep": {
+          "type": "boolean"
+        },
+        "onBehalfOf": {
+          "type": "string"
         }
       }
     },
@@ -101,6 +133,102 @@
         "disruptionId": {
           "type": "string",
           "pattern": "^dsr_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "chainLength": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "finalStep": {
+          "type": "boolean"
+        },
+        "onBehalfOf": {
+          "type": "string"
+        }
+      }
+    },
+    "travel.approval.escalated": {
+      "description": "Phase 7: an approval step nobody answered in time went to a wider role with a fresh expiry.",
+      "type": "object",
+      "required": [
+        "approvalId",
+        "tripId",
+        "step",
+        "role",
+        "escalatedToRole",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "role": {
+          "enum": [
+            "MANAGER",
+            "TRAVEL_ADMIN",
+            "FINANCE"
+          ]
+        },
+        "escalatedToRole": {
+          "enum": [
+            "MANAGER",
+            "TRAVEL_ADMIN",
+            "FINANCE"
+          ]
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "travel.approval.expired": {
+      "description": "Phase 7: an escalated approval step still unanswered was closed by the platform (a rejection follows).",
+      "type": "object",
+      "required": [
+        "approvalId",
+        "tripId",
+        "step",
+        "role",
+        "expiredAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "approvalId": {
+          "$ref": "common.schema.json#/$defs/approvalId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "role": {
+          "enum": [
+            "MANAGER",
+            "TRAVEL_ADMIN",
+            "FINANCE"
+          ]
+        },
+        "expiredAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     }

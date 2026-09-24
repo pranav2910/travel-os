@@ -25,7 +25,8 @@ public record PolicyDocument(
     Autonomy autonomy,
     Incentives incentives,
     @Nullable Ground ground,
-    @Nullable TripBudget trip) {
+    @Nullable TripBudget trip,
+    @Nullable Suppliers suppliers) {
 
   private static final Pattern POLICY_ID = Pattern.compile("^[A-Z][A-Z0-9_]{0,63}$");
 
@@ -33,6 +34,33 @@ public record PolicyDocument(
   public PolicyDocument {
     ground = ground == null ? new Ground(null, null) : ground;
     trip = trip == null ? new TripBudget(null, null) : trip;
+    suppliers = suppliers == null ? new Suppliers(null) : suppliers;
+  }
+
+  /** Documents from before Phase 7 have no suppliers section: a non-preferred supplier is fine. */
+  public PolicyDocument(
+      String policyId,
+      String name,
+      String currency,
+      Flight flight,
+      Hotel hotel,
+      Approval approval,
+      Autonomy autonomy,
+      Incentives incentives,
+      @Nullable Ground ground,
+      @Nullable TripBudget trip) {
+    this(
+        policyId,
+        name,
+        currency,
+        flight,
+        hotel,
+        approval,
+        autonomy,
+        incentives,
+        ground,
+        trip,
+        null);
   }
 
   public PolicyDocument(
@@ -44,7 +72,7 @@ public record PolicyDocument(
       Approval approval,
       Autonomy autonomy,
       Incentives incentives) {
-    this(policyId, name, currency, flight, hotel, approval, autonomy, incentives, null, null);
+    this(policyId, name, currency, flight, hotel, approval, autonomy, incentives, null, null, null);
   }
 
   /** What happens when a rule is violated. */
@@ -96,8 +124,39 @@ public record PolicyDocument(
 
   /**
    * @param managerRequiredAbove trip total above which a MANAGER must approve; null = never
+   * @param chain Phase 7: the approval chain, in order; a step applies when the total is above its
+   *     threshold (null = always). Roles a rule requires but the chain does not name are appended.
+   *     Null or empty = the single approver the rules name (the Slice 1 behaviour).
+   * @param expiresAfterHours Phase 7: how long one step may wait before it escalates; null = the
+   *     platform default (48h)
+   * @param escalateTo Phase 7: the role an unanswered step escalates to; null = TRAVEL_ADMIN
    */
-  public record Approval(@Nullable Long managerRequiredAbove) {}
+  public record Approval(
+      @Nullable Long managerRequiredAbove,
+      @Nullable List<Step> chain,
+      @Nullable Integer expiresAfterHours,
+      @Nullable String escalateTo) {
+    public Approval(@Nullable Long managerRequiredAbove) {
+      this(managerRequiredAbove, null, null, null);
+    }
+
+    public List<Step> steps() {
+      return chain == null ? List.of() : chain;
+    }
+  }
+
+  /**
+   * @param role MANAGER | TRAVEL_ADMIN | FINANCE
+   * @param above the trip total above which this step is required; null = always
+   */
+  public record Step(String role, @Nullable Long above) {}
+
+  /**
+   * Phase 7: what choosing a supplier outside the tenant's preferred agreements means.
+   *
+   * @param onNonPreferred null = nothing (agreements only steer the search)
+   */
+  public record Suppliers(@Nullable Consequence onNonPreferred) {}
 
   /**
    * Slice 3: ground transport.
@@ -189,6 +248,24 @@ public record PolicyDocument(
   /** Semantic validation beyond what JSON parsing checks. Empty list means valid. */
   public List<String> validate() {
     List<String> problems = new ArrayList<>();
+    if (approval != null) {
+      for (Step step : approval.steps()) {
+        if (step.role() == null
+            || !List.of("MANAGER", "TRAVEL_ADMIN", "FINANCE").contains(step.role())) {
+          problems.add("approval.chain[].role must be MANAGER, TRAVEL_ADMIN or FINANCE");
+        }
+        if (step.above() != null && step.above() < 0) {
+          problems.add("approval.chain[].above must be >= 0");
+        }
+      }
+      if (approval.expiresAfterHours() != null && approval.expiresAfterHours() <= 0) {
+        problems.add("approval.expiresAfterHours must be > 0");
+      }
+      if (approval.escalateTo() != null
+          && !List.of("MANAGER", "TRAVEL_ADMIN", "FINANCE").contains(approval.escalateTo())) {
+        problems.add("approval.escalateTo must be MANAGER, TRAVEL_ADMIN or FINANCE");
+      }
+    }
     if (policyId == null || !POLICY_ID.matcher(policyId).matches()) {
       problems.add("policyId must match [A-Z][A-Z0-9_]{0,63}");
     }

@@ -49,6 +49,123 @@ class PolicyEngineTest {
   }
 
   @Nested
+  class Governance {
+    @Test
+    void theApprovalChainFollowsTheDocumentAndAppendsWhatRulesRequire() {
+      PolicyDocument chained =
+          PolicyDocuments.parse(
+              EventSchemas.resource("policies/acme-us-standard.json")
+                  .replace(
+                      "\"approval\": {\n    \"managerRequiredAbove\": 120000\n  }",
+                      "\"approval\": {\"managerRequiredAbove\": 120000, \"chain\": [{\"role\": \"MANAGER\"}, {\"role\": \"FINANCE\", \"above\": 200000}], \"expiresAfterHours\": 12}"));
+      Decision big =
+          engine
+              .evaluateTrip(chained, DOMESTIC, List.of(air("big", 250000, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(big.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(big.approverRoles()).containsExactly("MANAGER");
+      assertThat(big.approvalChain()).containsExactly("MANAGER", "FINANCE");
+      assertThat(big.approvalExpiresAfter()).isEqualTo(java.time.Duration.ofHours(12));
+      Decision medium =
+          engine
+              .evaluateTrip(chained, DOMESTIC, List.of(air("medium", 150000, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(medium.approvalChain()).containsExactly("MANAGER");
+      Decision fine =
+          engine
+              .evaluateTrip(chained, DOMESTIC, List.of(air("fine", 47500, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(fine.approvalChain()).isEmpty();
+      assertThat(fine.approvalExpiresAfter()).isNull();
+      // without a configured chain, the chain is the rules' approvers, with the default expiry
+      Decision legacy =
+          engine
+              .evaluateTrip(POLICY, DOMESTIC, List.of(air("legacy", 150000, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(legacy.approvalChain()).containsExactly("MANAGER");
+      assertThat(legacy.approvalExpiresAfter()).isEqualTo(java.time.Duration.ofHours(48));
+    }
+
+    @Test
+    void aHardBudgetDeniesAndASoftOneAsksFinance() {
+      Trip hard =
+          DOMESTIC.withGovernance(new Facts.Budget("bud_1", Money.usd(50000), true), Map.of());
+      Decision denied =
+          engine
+              .evaluateTrip(POLICY, hard, List.of(air("a", 60000, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(denied.outcome()).isEqualTo(Outcome.DENY);
+      assertThat(denied.violations())
+          .extracting(Decision.Violation::code)
+          .contains("BUDGET_EXCEEDED");
+      assertThat(denied.budgetId()).isEqualTo("bud_1");
+      assertThat(denied.budgetRemaining()).isEqualTo(Money.usd(50000));
+      Trip soft =
+          DOMESTIC.withGovernance(new Facts.Budget("bud_2", Money.usd(50000), false), Map.of());
+      Decision asks =
+          engine
+              .evaluateTrip(POLICY, soft, List.of(air("b", 60000, Cabin.ECONOMY, 0)))
+              .getFirst()
+              .decision();
+      assertThat(asks.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(asks.approverRoles()).contains("FINANCE");
+      assertThat(
+              engine
+                  .evaluateTrip(POLICY, hard, List.of(air("c", 47500, Cabin.ECONOMY, 0)))
+                  .getFirst()
+                  .decision()
+                  .outcome())
+          .isEqualTo(Outcome.ALLOW);
+    }
+
+    @Test
+    void aNonPreferredSupplierMeansWhatTheDocumentSays() {
+      PolicyDocument strict =
+          PolicyDocuments.parse(
+              EventSchemas.resource("policies/acme-us-standard.json")
+                  .replace(
+                      "\"incentives\": {",
+                      "\"suppliers\": {\"onNonPreferred\": \"REQUIRE_APPROVAL\"},\n  \"incentives\": {"));
+      Trip trip = DOMESTIC.withGovernance(null, Map.of("HOTEL", java.util.Set.of("sandbox-hotel")));
+      Candidate other =
+          new Candidate(
+              "x",
+              Money.usd(87500),
+              new Air(Money.usd(47500), Cabin.ECONOMY, 0),
+              new Hotel(Money.usd(20000), 2),
+              List.of(new Hotel(Money.usd(20000), 2)),
+              List.of(),
+              Map.of("sandbox-air", "AIR", "other-hotel", "HOTEL"));
+      Decision d = engine.evaluateTrip(strict, trip, List.of(other)).getFirst().decision();
+      assertThat(d.outcome()).isEqualTo(Outcome.ALLOW_WITH_APPROVAL);
+      assertThat(d.violations())
+          .extracting(Decision.Violation::code)
+          .contains("SUPPLIER_NOT_PREFERRED");
+      assertThat(d.approvalChain()).contains("TRAVEL_ADMIN");
+      Candidate preferred =
+          new Candidate(
+              "y",
+              Money.usd(87500),
+              new Air(Money.usd(47500), Cabin.ECONOMY, 0),
+              new Hotel(Money.usd(20000), 2),
+              List.of(new Hotel(Money.usd(20000), 2)),
+              List.of(),
+              Map.of("sandbox-air", "AIR", "sandbox-hotel", "HOTEL"));
+      assertThat(
+              engine.evaluateTrip(strict, trip, List.of(preferred)).getFirst().decision().outcome())
+          .isEqualTo(Outcome.ALLOW);
+      // the seed policy says nothing about suppliers: no rule fires
+      assertThat(engine.evaluateTrip(POLICY, trip, List.of(other)).getFirst().decision().outcome())
+          .isEqualTo(Outcome.ALLOW);
+    }
+  }
+
+  @Nested
   class Trips {
 
     @Test
@@ -84,6 +201,8 @@ class PolicyEngineTest {
               "TRIP_BUDGET",
               "BOOKING_HORIZON",
               "MANAGER_APPROVAL_THRESHOLD",
+              "BUDGET",
+              "PREFERRED_SUPPLIER",
               "INCENTIVE_SHARE",
               "PURCHASE_AUTONOMY");
 

@@ -157,7 +157,23 @@ final class ItineraryFlow {
   /** True once a plan a person had approved was abandoned: the next plan asks a person again. */
   private boolean decidedBefore;
 
+  /**
+   * Phase 7: the governance of the trip's scope, read once per run; null when policy cannot say.
+   */
+  private io.travelos.contracts.policy.v1.@Nullable Governance governance;
+
   TripWorkflow.Outcome run(String tenant, String tripId, Trip trip) {
+    try {
+      governance =
+          activities.governance(
+              io.travelos.contracts.policy.v1.GetGovernanceRequest.newBuilder()
+                  .setCtx(host.ctx(tenant, tripId, ""))
+                  .setTravelerId(trip.getTravelerId())
+                  .setScope(Governed.scopeOf(trip))
+                  .build());
+    } catch (ActivityFailure e) {
+      log.warn("trip {}: governance unavailable; searching public fares", tripId);
+    }
     for (int attempt = 1; ; attempt++) {
       TripWorkflow.Outcome outcome = plan(tenant, tripId, trip, attempt);
       if (outcome != REPLAN) {
@@ -210,6 +226,7 @@ final class ItineraryFlow {
                     .setTripId(tripId)
                     .setTravelerId(trip.getTravelerId())
                     .setIntent(intent)
+                    .setScope(Governed.scopeOf(trip))
                     .addAllCandidates(offers.stream().map(ItineraryFlow::single).toList())
                     .build());
         Map<String, Outcome> outcomes = new HashMap<>();
@@ -366,6 +383,9 @@ final class ItineraryFlow {
                     .setPolicyDecisionId(selectedDecision.getDecisionId())
                     .setTotal(plannedTotal)
                     .setApproverRole(role)
+                    .addAllApprovalChain(Governed.chain(selectedDecision, role))
+                    .setApprovalExpiresAfterSeconds(
+                        selectedDecision.getApprovalExpiresAfterSeconds())
                     .setAutonomousPurchase(autonomous)
                     .setQuoteExpiresAt(Purchase.quoteExpiry(planned, Workflow.currentTimeMillis()))
                     .setConditions(Purchase.conditions(planned))
@@ -539,6 +559,8 @@ final class ItineraryFlow {
                         .setPolicyDecisionId(again.getDecisionId())
                         .setTotal(plan.getTotal())
                         .setApproverRole(role)
+                        .addAllApprovalChain(Governed.chain(again, role))
+                        .setApprovalExpiresAfterSeconds(again.getApprovalExpiresAfterSeconds())
                         .setAutonomousPurchase(!Purchase.confirmRequired(trip, again))
                         .setConditions(Purchase.conditions(plan))
                         .setReplanReason(
@@ -594,6 +616,27 @@ final class ItineraryFlow {
           "the first leg's window closed at "
               + firstDeadline
               + " while the trip waited; nothing was booked");
+    }
+    // Phase 7: the scope's budget, reserved under its lock; a hard budget that does not fit stops
+    // the purchase here (a soft one was judged by policy and, when required, approved).
+    io.travelos.contracts.policy.v1.BudgetReservation reserved = null;
+    try {
+      reserved =
+          activities.reserveBudget(
+              io.travelos.contracts.policy.v1.ReserveBudgetRequest.newBuilder()
+                  .setCtx(host.ctx(tenant, tripId, tripId + ":RESERVE-BUDGET:1"))
+                  .setTripId(tripId)
+                  .setTravelerId(trip.getTravelerId())
+                  .setScope(Governed.scopeOf(trip))
+                  .setAmount(plan.getTotal())
+                  .build());
+    } catch (ActivityFailure e) {
+      log.warn("trip {}: budget could not be reserved; proceeding without", tripId);
+    }
+    if (reserved != null
+        && reserved.getStatus() == io.travelos.contracts.policy.v1.BudgetStatus.EXCEEDED
+        && reserved.getHard()) {
+      return host.fail(tenant, tripId, "BOOKING", "BUDGET_EXCEEDED", reserved.getMessage());
     }
     PolicyDecision finalDecision = bookingDecision;
     Trip bookable;
@@ -860,6 +903,7 @@ final class ItineraryFlow {
                     .setDestination(leg.getDestination())
                     .setPassengers(Math.max(1, intent.getTravelers()))
                     .addAllCabins(Purchase.cabins(intent))
+                    .addAllNegotiatedRates(Governed.airRates(governance))
                     .setOutboundDeparture(
                         TimeWindow.newBuilder()
                             .setNotBefore(leg.getEarliestDeparture())
@@ -878,6 +922,7 @@ final class ItineraryFlow {
                     .setCheckInDate(stay.getCheckInDate())
                     .setCheckOutDate(stay.getCheckOutDate())
                     .setGuests(Math.max(1, intent.getTravelers()))
+                    .addAllNegotiatedRates(Governed.hotelRates(governance))
                     .build());
         found.getOffersList().forEach(o -> out.add(o.toBuilder().setComponentId(c.id()).build()));
       }
@@ -935,6 +980,7 @@ final class ItineraryFlow {
                 .setTripId(tripId)
                 .setTravelerId(trip.getTravelerId())
                 .setIntent(intent)
+                .setScope(Governed.scopeOf(trip))
                 .addCandidates(bundle)
                 .build());
     return verdict.getCandidatesCount() == 0

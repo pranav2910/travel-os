@@ -17,6 +17,86 @@ service PolicyService {
   rpc EvaluateTrip(EvaluateTripRequest) returns (EvaluateTripResponse);
   // "May this principal (typically an agent) do THIS action NOW?" e.g. rebook an existing order for +$83.
   rpc EvaluateAction(EvaluateActionRequest) returns (PolicyDecision);
+  // Phase 7: the governance that applies to a scope (the resolved policy and the tenant's supplier
+  // agreements), for the planner to search under negotiated rates.
+  rpc GetGovernance(GetGovernanceRequest) returns (Governance);
+  // Phase 7: budgets with concurrency. Reserve the trip's total against the scope's budget before
+  // the purchase (idempotent per trip); settle it when the platform knows the outcome.
+  rpc ReserveBudget(ReserveBudgetRequest) returns (BudgetReservation);
+  rpc SettleBudget(SettleBudgetRequest) returns (BudgetReservation);
+}
+
+// Phase 7: where a trip sits in the organization (from the trip's allocation snapshot). Policy
+// scope resolution: employee > project > cost center > department > legal entity > office > tenant.
+message EvaluationScope {
+  string department_id = 1;
+  string cost_center_id = 2;
+  string project_id = 3;
+  string legal_entity_id = 4;
+  string office_id = 5;
+}
+
+message GetGovernanceRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string traveler_id = 2;
+  EvaluationScope scope = 3;
+}
+
+message SupplierAgreement {
+  string agreement_id = 1;
+  string provider = 2;
+  // AIR | HOTEL | GROUND | RAIL | CAR
+  string kind = 3;
+  // For AIR: the carrier the corporate code belongs to.
+  string carrier = 4;
+  string rate_code = 5;
+  bool preferred = 6;
+  bool negotiated = 7;
+  google.protobuf.Timestamp valid_until = 8;
+}
+
+message Governance {
+  string policy_id = 1;
+  int32 policy_version = 2;
+  // How the policy was chosen: EMPLOYEE | PROJECT | COST_CENTER | DEPARTMENT | LEGAL_ENTITY | OFFICE | TENANT | NONE
+  string policy_scope_kind = 3;
+  repeated SupplierAgreement agreements = 4;
+}
+
+enum BudgetStatus {
+  BUDGET_STATUS_UNSPECIFIED = 0;
+  // No budget covers the scope and period: nothing to reserve.
+  NO_BUDGET = 1;
+  RESERVED = 2;
+  // The amount does not fit; `hard` says whether that stops the purchase.
+  EXCEEDED = 3;
+  COMMITTED = 4;
+  RELEASED = 5;
+}
+
+message ReserveBudgetRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  string traveler_id = 3;
+  EvaluationScope scope = 4;
+  travelos.common.v1.Money amount = 5;
+}
+
+message SettleBudgetRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string trip_id = 2;
+  // COMMIT (the trip was bought; amount = what it cost) | RELEASE (it was not)
+  string outcome = 3;
+  travelos.common.v1.Money amount = 4;
+}
+
+message BudgetReservation {
+  BudgetStatus status = 1;
+  string budget_id = 2;
+  string reservation_id = 3;
+  travelos.common.v1.Money remaining = 4;
+  bool hard = 5;
+  string message = 6;
 }
 
 enum Outcome {
@@ -76,6 +156,12 @@ message PolicyDecision {
   // denied. Approval, when required, is still a person's decision.
   bool autonomous_purchase = 11;
   travelos.common.v1.Money autonomous_purchase_limit = 12;
+  // Phase 7: every step of the approval chain in order (approvers[0] stays the first step for
+  // older readers), how long each step may wait before it escalates, and the budget consulted.
+  repeated ApproverRequirement approval_chain = 13;
+  int64 approval_expires_after_seconds = 14;
+  string budget_id = 15;
+  travelos.common.v1.Money budget_remaining = 16;
 }
 
 message EvaluateTripRequest {
@@ -87,6 +173,8 @@ message EvaluateTripRequest {
   // Phase 3: "now" for the booking-horizon rules (the workflow's clock); the service's clock
   // when unset. The engine itself stays clock-free.
   google.protobuf.Timestamp reference_time = 6;
+  // Phase 7: the trip's place in the organization; chooses the policy, the budget, the agreements.
+  EvaluationScope scope = 7;
 }
 
 message CandidateDecision {
@@ -113,4 +201,5 @@ message EvaluateActionRequest {
   travelos.trip.v1.TravelIntent intent = 7;
   // Why the action is being taken, for the evidence row (e.g. a disruption id). Never a rule input.
   string context_ref = 8;
+  EvaluationScope scope = 9;
 }

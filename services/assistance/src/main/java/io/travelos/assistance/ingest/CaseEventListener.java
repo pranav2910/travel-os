@@ -25,7 +25,13 @@ public class CaseEventListener {
 
   @KafkaListener(
       id = "assistance-cases",
-      topics = {"travel.trip", "travel.order", "travel.disruption", "travel.finance"},
+      topics = {
+        "travel.trip",
+        "travel.order",
+        "travel.disruption",
+        "travel.finance",
+        "travel.approval"
+      },
       groupId = "${spring.kafka.consumer.group-id}")
   public void onRecord(ConsumerRecord<String, String> record) {
     EventEnvelope event;

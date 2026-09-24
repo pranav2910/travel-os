@@ -46,6 +46,12 @@ public class TripService {
   private final TripAllocationRepository allocations;
   private final PurchaseAuthorizationRepository purchases;
   private final ConversationRepository conversations;
+  private final io.travelos.travelcore.approval.ApprovalDelegateRepository delegates;
+
+  /** Phase 7: how long one approval step may wait when the policy does not say. */
+  static final java.time.Duration DEFAULT_APPROVAL_EXPIRY = java.time.Duration.ofHours(48);
+
+  static final String SYSTEM_PRINCIPAL = "service/travel-core";
 
   /** Phase 3: how long a person's purchase authorization stands when the quote names no expiry. */
   static final java.time.Duration DEFAULT_AUTHORIZATION_LIFETIME = java.time.Duration.ofHours(24);
@@ -61,7 +67,9 @@ public class TripService {
       ContextClient context,
       TripAllocationRepository allocations,
       PurchaseAuthorizationRepository purchases,
-      ConversationRepository conversations) {
+      ConversationRepository conversations,
+      io.travelos.travelcore.approval.ApprovalDelegateRepository delegates) {
+    this.delegates = delegates;
     this.trips = trips;
     this.approvals = approvals;
     this.ledger = ledger;
@@ -786,6 +794,11 @@ public class TripService {
       String role =
           t.approverRole() == null || t.approverRole().isBlank() ? "MANAGER" : t.approverRole();
       String policyDecisionId = next.evidence().policyDecisionId();
+      // Phase 7: the chain from the policy decision (the first step is the role above); a step
+      // expires after the policy's period, then escalates, then expires for good
+      List<String> chain = t.approvalChain().isEmpty() ? List.of(role) : t.approvalChain();
+      java.time.Duration expiry =
+          t.approvalExpiresAfter() == null ? DEFAULT_APPROVAL_EXPIRY : t.approvalExpiresAfter();
       approval =
           approvals
               .pendingForTrip(tenant, trip.tripId())
@@ -796,11 +809,18 @@ public class TripService {
                             Ids.newId(IdPrefix.APPROVAL),
                             tenant,
                             trip.tripId(),
-                            role,
+                            chain.getFirst(),
                             Approval.Status.PENDING,
                             policyDecisionId,
                             now,
                             null,
+                            null,
+                            null,
+                            null,
+                            1,
+                            chain.size(),
+                            chain,
+                            now.plus(expiry),
                             null,
                             null,
                             null);
@@ -1180,23 +1200,66 @@ public class TripService {
     if (decision == Approval.Status.PENDING) {
       throw new IllegalArgumentException("decision must be APPROVED or REJECTED");
     }
+    Instant now = clock.instant();
+    // Phase 7: a delegate exercises the delegator's authority for the period of the delegation,
+    // which includes seeing the trips that authority covers
+    List<String> delegators =
+        me.employeeId() == null
+            ? List.of()
+            : delegates.delegatorsOf(me.tenant(), me.employeeId(), now);
     Trip trip =
         trips
             .find(me.tenant(), tripId)
-            .filter(t -> visible(me, t))
+            .filter(t -> visible(me, t) || delegateMaySee(t, delegators))
             .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
-    if (!me.hasAnyRole("MANAGER", "TRAVEL_ADMIN")) {
+    Optional<TripAllocation> allocation = allocations.find(trip.tenantId(), trip.tripId());
+    String onBehalfOf = null;
+    if (!me.hasAnyRole("MANAGER", "TRAVEL_ADMIN", "FINANCE") && delegators.isEmpty()) {
       throw new ApiException.Forbidden(
-          "NOT_AN_APPROVER", "only MANAGER or TRAVEL_ADMIN may decide approvals");
+          "NOT_AN_APPROVER",
+          "only MANAGER, FINANCE or TRAVEL_ADMIN (or their delegates) may decide approvals");
     }
     if (trip.travelerId().equals(me.employeeId())) {
       throw new ApiException.Forbidden("SELF_APPROVAL", "a traveler cannot approve their own trip");
     }
-    if (!TripAccess.canApprove(me, trip, allocations.find(trip.tenantId(), trip.tripId()))) {
+    Optional<Approval> pending = approvals.pendingForTrip(me.tenant(), tripId);
+    if (pending.isPresent()) {
+      Approval step = pending.get();
+      String role = step.deciderRole();
+      boolean allowed;
+      if (me.hasRole("TRAVEL_ADMIN")) {
+        allowed = true;
+      } else if ("MANAGER".equals(role)) {
+        allowed = me.hasRole("MANAGER") && TripAccess.canApprove(me, trip, allocation);
+        if (!allowed) {
+          // the manager's delegate: the manager the allocation names, or any manager's authority
+          // when the trip has no allocation (the Slice 1 rule)
+          String manager = allocation.map(TripAllocation::managerEmployeeId).orElse(null);
+          if (manager != null ? delegators.contains(manager) : !delegators.isEmpty()) {
+            allowed = true;
+            onBehalfOf = manager != null ? manager : delegators.getFirst();
+          }
+        }
+      } else {
+        allowed = me.hasRole(role);
+      }
+      if (!allowed) {
+        throw new ApiException.Forbidden(
+            "NOT_THE_APPROVER",
+            "step "
+                + step.step()
+                + " of "
+                + step.chainLength()
+                + " belongs to "
+                + role
+                + ("MANAGER".equals(role) ? " (the traveler's manager or their delegate)" : ""));
+      }
+    } else if (!TripAccess.canApprove(me, trip, allocation)
+        && !me.hasRole("FINANCE")
+        && delegators.isEmpty()) {
       throw new ApiException.Forbidden(
           "NOT_THE_APPROVER", "this trip's approval belongs to the traveler's manager");
     }
-    Optional<Approval> pending = approvals.pendingForTrip(me.tenant(), tripId);
     if (pending.isPresent() && trip.status() != TripStatus.AWAITING_APPROVAL) {
       // the requester withdrew (or the trip failed) after the approval was asked for
       throw new ApiException.Conflict(
@@ -1218,18 +1281,236 @@ public class TripService {
           "APPROVAL_ALREADY_DECIDED",
           "approval " + latest.approvalId() + " was already " + latest.status());
     }
-    Instant now = clock.instant();
     if (!approvals.decide(
-        pending.get(), decision, me.principal().id(), comment, idempotencyKey, now)) {
+        pending.get(), decision, me.principal().id(), comment, idempotencyKey, onBehalfOf, now)) {
       throw new ApiException.Conflict("APPROVAL_ALREADY_DECIDED", "decided concurrently; re-read");
     }
     Approval decided = approvals.find(me.tenant(), pending.get().approvalId()).orElseThrow();
     outbox.append(TripEvents.approvalDecided(trip, decided, me.principal(), comment, clock));
+    if (decision == Approval.Status.APPROVED && !decided.lastStep()) {
+      // Phase 7: the chain continues; the workflow hears nothing until the last step decides
+      java.time.Duration period =
+          decided.expiresAt() == null
+              ? DEFAULT_APPROVAL_EXPIRY
+              : java.time.Duration.between(decided.requestedAt(), decided.expiresAt());
+      Approval nextStep =
+          new Approval(
+              Ids.newId(IdPrefix.APPROVAL),
+              trip.tenantId(),
+              trip.tripId(),
+              decided.chainRoles().get(decided.step()),
+              Approval.Status.PENDING,
+              decided.policyDecisionId(),
+              now,
+              null,
+              null,
+              null,
+              null,
+              decided.step() + 1,
+              decided.chainLength(),
+              decided.chainRoles(),
+              now.plus(period),
+              null,
+              null,
+              null);
+      approvals.insert(nextStep);
+      trips.appendHistory(
+          trip,
+          TripStatus.AWAITING_APPROVAL,
+          TripStatus.AWAITING_APPROVAL,
+          "step "
+              + decided.step()
+              + " approved by "
+              + me.principal().id()
+              + "; step "
+              + nextStep.step()
+              + " ("
+              + nextStep.requiredRole()
+              + ") requested",
+          me.principal(),
+          now);
+      Trip withStep =
+          trip.withEvidence(
+              trip.evidence().merge(null, null, null, nextStep.approvalId(), null), null);
+      trips.update(withStep, trip.version());
+      outbox.append(TripEvents.approvalRequested(withStep, nextStep, clock));
+      noteConversation(
+          trip,
+          "STATUS",
+          "Approved by " + me.principal().id() + "; now with " + nextStep.requiredRole() + ".");
+      return decided;
+    }
     signaler.approvalDecided(
         trip.tripId(),
         new TripPlanning.ApprovalDecision(
             decided.approvalId(), decided.status().name(), me.principal().id(), comment));
     return decided;
+  }
+
+  private boolean delegateMaySee(Trip trip, List<String> delegators) {
+    if (delegators.isEmpty()) {
+      return false;
+    }
+    String manager =
+        allocations
+            .find(trip.tenantId(), trip.tripId())
+            .map(TripAllocation::managerEmployeeId)
+            .orElse(null);
+    return manager == null || delegators.contains(manager);
+  }
+
+  /** Phase 7: every step of a trip's approvals, for whoever may see the trip. */
+  @Transactional(readOnly = true)
+  public List<Approval> approvalsOf(RequestPrincipal me, String tripId) {
+    get(me, tripId);
+    return approvals.listForTrip(me.tenant(), tripId);
+  }
+
+  /**
+   * Phase 7: the expiry sweep. An unanswered step escalates once (to TRAVEL_ADMIN, with a fresh
+   * period); an escalated step still unanswered expires: rejected by the platform, which sends the
+   * trip back like any rejection. Returns how many approvals moved.
+   */
+  @Transactional
+  public int sweepExpiredApprovals() {
+    Instant now = clock.instant();
+    int moved = 0;
+    for (Approval a : approvals.expiredPending(now, 100)) {
+      Optional<Trip> found = trips.find(a.tenant(), a.tripId());
+      if (found.isEmpty()) {
+        continue;
+      }
+      Trip trip = found.get();
+      java.time.Duration period =
+          a.expiresAt() == null
+              ? DEFAULT_APPROVAL_EXPIRY
+              : java.time.Duration.between(a.requestedAt(), a.expiresAt());
+      if (period.isZero() || period.isNegative()) {
+        period = DEFAULT_APPROVAL_EXPIRY;
+      }
+      if (a.escalatedAt() == null) {
+        if (approvals.escalate(a, "TRAVEL_ADMIN", now.plus(period), now)) {
+          Approval escalated = approvals.find(a.tenant(), a.approvalId()).orElseThrow();
+          outbox.append(
+              TripEvents.approvalEscalated(
+                  trip,
+                  escalated,
+                  "no " + a.requiredRole() + " decision by " + a.expiresAt(),
+                  clock));
+          trips.appendHistory(
+              trip,
+              trip.status(),
+              trip.status(),
+              "approval step "
+                  + a.step()
+                  + " escalated to TRAVEL_ADMIN: no decision by "
+                  + a.expiresAt(),
+              new io.travelos.common.identity.Principal.Service("travel-core"),
+              now);
+          noteConversation(
+              trip, "STATUS", "Nobody decided in time; the approval went to a travel admin.");
+          moved++;
+        }
+      } else {
+        String comment = "expired: no decision by " + a.expiresAt() + " after escalation";
+        if (approvals.decide(
+            a,
+            Approval.Status.REJECTED,
+            SYSTEM_PRINCIPAL,
+            comment,
+            "expiry:" + a.approvalId(),
+            null,
+            now)) {
+          Approval expired = approvals.find(a.tenant(), a.approvalId()).orElseThrow();
+          outbox.append(TripEvents.approvalExpired(trip, expired, clock));
+          outbox.append(
+              TripEvents.approvalDecided(
+                  trip,
+                  expired,
+                  new io.travelos.common.identity.Principal.Service("travel-core"),
+                  comment,
+                  clock));
+          signaler.approvalDecided(
+              trip.tripId(),
+              new TripPlanning.ApprovalDecision(
+                  expired.approvalId(), "REJECTED", SYSTEM_PRINCIPAL, comment));
+          noteConversation(
+              trip, "STATUS", "The approval expired without a decision; the request is closed.");
+          moved++;
+        }
+      }
+    }
+    return moved;
+  }
+
+  // ------------------------------------------------------------------ Phase 7: delegates
+
+  @Transactional
+  public io.travelos.travelcore.approval.ApprovalDelegate delegateApprovals(
+      RequestPrincipal me,
+      @Nullable String delegatorEmployeeId,
+      String delegateEmployeeId,
+      @Nullable Instant from,
+      Instant until) {
+    Instant now = clock.instant();
+    String delegator =
+        delegatorEmployeeId == null || delegatorEmployeeId.isBlank()
+            ? me.employeeId()
+            : delegatorEmployeeId;
+    if (delegator == null) {
+      throw new ApiException.Forbidden("NOT_ALLOWED", "no employee identity to delegate");
+    }
+    if (!delegator.equals(me.employeeId()) && !me.hasRole("TRAVEL_ADMIN")) {
+      throw new ApiException.Forbidden(
+          "NOT_ALLOWED", "only a travel admin delegates on someone else's behalf");
+    }
+    if (delegator.equals(me.employeeId()) && !me.hasAnyRole("MANAGER", "TRAVEL_ADMIN", "FINANCE")) {
+      throw new ApiException.Forbidden(
+          "NOT_AN_APPROVER", "only approvers delegate their authority");
+    }
+    if (delegator.equals(delegateEmployeeId)) {
+      throw new ApiException.Unprocessable("SELF_DELEGATION", "one cannot delegate to oneself");
+    }
+    Instant start = from == null ? now : from;
+    if (!until.isAfter(start) || !until.isAfter(now)) {
+      throw new ApiException.Unprocessable(
+          "PERIOD_INVALID", "validUntil must be after validFrom and in the future");
+    }
+    io.travelos.travelcore.approval.ApprovalDelegate d =
+        new io.travelos.travelcore.approval.ApprovalDelegate(
+            Ids.newId(IdPrefix.APPROVAL_DELEGATE),
+            me.tenant(),
+            delegator,
+            delegateEmployeeId,
+            start,
+            until,
+            me.principal().id(),
+            now,
+            null,
+            null);
+    delegates.insert(d);
+    return d;
+  }
+
+  @Transactional
+  public void revokeDelegation(RequestPrincipal me, String delegateId) {
+    io.travelos.travelcore.approval.ApprovalDelegate d =
+        delegates
+            .find(me.tenant(), delegateId)
+            .orElseThrow(() -> new ApiException.NotFound("delegation", delegateId));
+    if (!d.delegatorEmployeeId().equals(me.employeeId()) && !me.hasRole("TRAVEL_ADMIN")) {
+      throw new ApiException.NotFound("delegation", delegateId);
+    }
+    delegates.revoke(me.tenant(), delegateId, me.principal().id(), clock.instant());
+  }
+
+  @Transactional(readOnly = true)
+  public List<io.travelos.travelcore.approval.ApprovalDelegate> delegations(
+      RequestPrincipal me, boolean all) {
+    if (all && me.hasRole("TRAVEL_ADMIN")) {
+      return delegates.all(me.tenant());
+    }
+    return me.employeeId() == null ? List.of() : delegates.involving(me.tenant(), me.employeeId());
   }
 
   /** The create command, decoupled from the HTTP shape. */
@@ -1317,9 +1598,55 @@ public class TripService {
       boolean autonomousPurchase,
       @Nullable Instant quoteExpiresAt,
       List<TripAlternative> alternatives,
-      @Nullable String conditions) {
+      @Nullable String conditions,
+      List<String> approvalChain,
+      java.time.@Nullable Duration approvalExpiresAfter) {
     public Transition {
       alternatives = alternatives == null ? List.of() : List.copyOf(alternatives);
+      approvalChain = approvalChain == null ? List.of() : List.copyOf(approvalChain);
+    }
+
+    /** The Phase 3 shape: a single approver role, the default expiry. */
+    public Transition(
+        String tripId,
+        TripStatus to,
+        @Nullable String reason,
+        @Nullable String selectedBundleId,
+        @Nullable String optimizationRunId,
+        @Nullable String policyDecisionId,
+        @Nullable String orderId,
+        @Nullable Money total,
+        @Nullable String approverRole,
+        @Nullable String failureStage,
+        @Nullable String failureCode,
+        @Nullable String causationId,
+        @Nullable String explanation,
+        @Nullable String replanReason,
+        boolean autonomousPurchase,
+        @Nullable Instant quoteExpiresAt,
+        List<TripAlternative> alternatives,
+        @Nullable String conditions) {
+      this(
+          tripId,
+          to,
+          reason,
+          selectedBundleId,
+          optimizationRunId,
+          policyDecisionId,
+          orderId,
+          total,
+          approverRole,
+          failureStage,
+          failureCode,
+          causationId,
+          explanation,
+          replanReason,
+          autonomousPurchase,
+          quoteExpiresAt,
+          alternatives,
+          conditions,
+          List.of(),
+          null);
     }
 
     public Transition(

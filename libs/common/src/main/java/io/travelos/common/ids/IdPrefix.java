@@ -15,6 +15,8 @@ public enum IdPrefix {
   POLICY_DECISION("pd"),
   OPTIMIZATION_RUN("opt"),
   APPROVAL("apr"),
+  /** Phase 7: delegated approval authority. */
+  APPROVAL_DELEGATE("apd"),
   DECISION("dec"),
   EVENT("evt"),
   COMMAND("cmd"),
@@ -58,7 +60,12 @@ public enum IdPrefix {
   TRAVEL_CREDIT("crd"),
   /** Phase 6: assistance cases and their history. */
   ASSISTANCE_CASE("cas"),
-  CASE_EVENT("cev");
+  CASE_EVENT("cev"),
+  /** Phase 7: governance. */
+  POLICY_SCOPE("psc"),
+  BUDGET("bud"),
+  BUDGET_RESERVATION("bre"),
+  SUPPLIER_AGREEMENT("agr");
 
   private final String prefix;
 

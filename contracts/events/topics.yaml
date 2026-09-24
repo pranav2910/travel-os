@@ -35,7 +35,7 @@ topics:
 
   - name: travel.approval
     slice: 1
-    events: [travel.approval.requested, travel.approval.approved, travel.approval.rejected]
+    events: [travel.approval.requested, travel.approval.approved, travel.approval.rejected, travel.approval.escalated, travel.approval.expired]
 
   - name: travel.order
     slice: 1

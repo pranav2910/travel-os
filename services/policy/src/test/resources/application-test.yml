@@ -11,6 +11,9 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
+    consumer:
+      properties:
+        metadata.max.age.ms: 1000
 travelos:
   grpc:
     server:

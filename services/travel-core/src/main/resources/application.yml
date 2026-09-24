@@ -84,6 +84,9 @@ travelos:
     namespace: travelos
   outbox:
     poll-interval: 500ms
+  approvals:
+    # Phase 7: how often unanswered approval steps are escalated (once) and then expired.
+    sweep: ${APPROVAL_SWEEP:1m}
     batch-size: 100
 
 logging:

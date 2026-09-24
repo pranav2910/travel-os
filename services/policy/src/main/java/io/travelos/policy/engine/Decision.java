@@ -18,7 +18,61 @@ public record Decision(
     List<String> approverRoles,
     Economics economics,
     boolean autonomousPurchase,
-    @Nullable Money autonomousPurchaseLimit) {
+    @Nullable Money autonomousPurchaseLimit,
+    List<String> approvalChain,
+    java.time.@Nullable Duration approvalExpiresAfter,
+    @Nullable String budgetId,
+    @Nullable Money budgetRemaining) {
+
+  public Decision {
+    approvalChain = approvalChain == null ? List.copyOf(approverRoles) : List.copyOf(approvalChain);
+  }
+
+  /** The Phase 3 shape: no approval chain, no budget facts. */
+  public Decision(
+      Outcome outcome,
+      List<String> rulesEvaluated,
+      List<Violation> violations,
+      boolean requiresApproval,
+      List<String> approverRoles,
+      Economics economics,
+      boolean autonomousPurchase,
+      @Nullable Money autonomousPurchaseLimit) {
+    this(
+        outcome,
+        rulesEvaluated,
+        violations,
+        requiresApproval,
+        approverRoles,
+        economics,
+        autonomousPurchase,
+        autonomousPurchaseLimit,
+        null,
+        null,
+        null,
+        null);
+  }
+
+  /** Phase 7: the ordered approval chain, how long a step may wait, and the budget consulted. */
+  Decision withGovernance(
+      List<String> chain,
+      java.time.@Nullable Duration expiresAfter,
+      @Nullable String budgetId,
+      @Nullable Money budgetRemaining) {
+    return new Decision(
+        outcome,
+        rulesEvaluated,
+        violations,
+        requiresApproval,
+        approverRoles,
+        economics,
+        autonomousPurchase,
+        autonomousPurchaseLimit,
+        chain,
+        expiresAfter,
+        budgetId,
+        budgetRemaining);
+  }
 
   public Decision(
       Outcome outcome,
@@ -48,7 +102,11 @@ public record Decision(
         approverRoles,
         economics,
         allowed,
-        limit);
+        limit,
+        approvalChain,
+        approvalExpiresAfter,
+        budgetId,
+        budgetRemaining);
   }
 
   public enum Outcome {

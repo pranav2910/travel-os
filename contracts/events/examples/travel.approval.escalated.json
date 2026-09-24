@@ -1,0 +1,19 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7T7",
+  "eventType": "travel.approval.escalated",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "approval",
+  "data": {
+    "approvalId": "apr_01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "step": 1,
+    "role": "MANAGER",
+    "escalatedToRole": "TRAVEL_ADMIN",
+    "expiresAt": "2026-09-13T20:11:52Z",
+    "reason": "no MANAGER decision by 2026-09-11T20:11:52Z"
+  }
+}

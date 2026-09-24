@@ -126,6 +126,35 @@ public class CaseIngestService {
               null,
               "trip-failed:" + tripId,
               "Tell the traveler; re-plan the trip with them or confirm it is abandoned");
+      case "travel.approval.escalated" ->
+          opened(
+              event,
+              tenant,
+              CaseKind.APPROVAL_ESCALATED,
+              Priority.HIGH,
+              Queue.APPROVALS,
+              "Approval step " + str(d.get("step")) + " for trip " + tripId + " went unanswered",
+              str(d.get("reason")),
+              tripId,
+              null,
+              null,
+              null,
+              null,
+              "approval:" + str(d.get("approvalId")),
+              "Decide the approval (POST /api/v1/trips/"
+                  + tripId
+                  + "/approval) or find the "
+                  + str(d.get("role"))
+                  + " who should",
+              "TRAVEL_ADMIN");
+      case "travel.approval.approved", "travel.approval.rejected", "travel.approval.expired" ->
+          settled(
+              tenant,
+              "approval:" + str(d.get("approvalId")),
+              "approval "
+                  + event.eventType().substring("travel.approval.".length())
+                  + (d.get("decidedBy") == null ? "" : " by " + str(d.get("decidedBy"))),
+              event);
       case "travel.disruption.approval-required" ->
           opened(
               event,

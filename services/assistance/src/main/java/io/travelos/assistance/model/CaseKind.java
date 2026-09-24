@@ -10,6 +10,8 @@ public enum CaseKind {
   CANCELLATION_INCOMPLETE,
   /** A disruption recovery is waiting on an approver while a traveler is affected. */
   RECOVERY_APPROVAL,
+  /** Phase 7: a trip's approval step nobody answered in time, escalated to a travel admin. */
+  APPROVAL_ESCALATED,
   /** The automated recovery found nothing; the traveler must be rebooked by hand. */
   RECOVERY_FAILED,
   /** A booking failed after approval; the traveler needs a new plan. */

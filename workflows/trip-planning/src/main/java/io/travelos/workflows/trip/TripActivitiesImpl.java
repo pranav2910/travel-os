@@ -105,6 +105,18 @@ public class TripActivitiesImpl implements TripActivities {
   }
 
   @Override
+  public io.travelos.contracts.policy.v1.Governance governance(
+      io.travelos.contracts.policy.v1.GetGovernanceRequest request) {
+    return call(() -> stub(PolicyServiceGrpc::newBlockingStub, "policy").getGovernance(request));
+  }
+
+  @Override
+  public io.travelos.contracts.policy.v1.BudgetReservation reserveBudget(
+      io.travelos.contracts.policy.v1.ReserveBudgetRequest request) {
+    return call(() -> stub(PolicyServiceGrpc::newBlockingStub, "policy").reserveBudget(request));
+  }
+
+  @Override
   public OptimizeTripResponse optimize(OptimizeTripRequest request) {
     return call(
         () -> stub(OptimizationServiceGrpc::newBlockingStub, "optimization").optimizeTrip(request));

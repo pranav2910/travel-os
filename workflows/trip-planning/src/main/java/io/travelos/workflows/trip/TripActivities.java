@@ -52,6 +52,14 @@ public interface TripActivities {
 
   EvaluateTripResponse evaluatePolicy(EvaluateTripRequest request);
 
+  /** Phase 7: the policy and supplier agreements governing the trip's scope. */
+  io.travelos.contracts.policy.v1.Governance governance(
+      io.travelos.contracts.policy.v1.GetGovernanceRequest request);
+
+  /** Phase 7: reserves the trip's total against its scope's budget (idempotent per trip). */
+  io.travelos.contracts.policy.v1.BudgetReservation reserveBudget(
+      io.travelos.contracts.policy.v1.ReserveBudgetRequest request);
+
   OptimizeTripResponse optimize(OptimizeTripRequest request);
 
   /** LLM gateway: narrate the decision from its evidence. Optional: failure never blocks a trip. */

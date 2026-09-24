@@ -190,7 +190,11 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                   request.getAlternativesList().stream()
                       .map(TravelCoreGrpcService::fromProto)
                       .toList(),
-                  blankToNull(request.getConditions())));
+                  blankToNull(request.getConditions()),
+                  request.getApprovalChainList(),
+                  request.getApprovalExpiresAfterSeconds() > 0
+                      ? java.time.Duration.ofSeconds(request.getApprovalExpiresAfterSeconds())
+                      : null));
       observer.onNext(withComponents(ctx.tenant(), trip));
     } catch (ApiException.NotFound e) {
       throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();

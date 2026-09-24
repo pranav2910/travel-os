@@ -76,7 +76,11 @@ final class ProtoMapping {
     Facts.Hotel hotel = null;
     List<Facts.Hotel> hotels = new ArrayList<>();
     List<Facts.Ground> ground = new ArrayList<>();
+    java.util.Map<String, String> providers = new java.util.LinkedHashMap<>();
     for (Offer offer : bundle.getOffersList()) {
+      if (!offer.getProvider().isBlank() && offer.getType() != OfferType.OFFER_TYPE_UNSPECIFIED) {
+        providers.put(offer.getProvider(), offer.getType().name());
+      }
       if (offer.getType() == OfferType.AIR && offer.hasAir()) {
         Money fare = money(offer.getTotal());
         airFare = airFare == null ? fare : airFare.plus(fare);
@@ -117,7 +121,7 @@ final class ProtoMapping {
                 .reduce(Money::plus)
                 .orElse(Money.zero(currencyFallback));
     Facts.Air air = airFare == null ? null : new Facts.Air(airFare, highest, maxStops);
-    return new Facts.Candidate(bundle.getBundleId(), total, air, hotel, hotels, ground);
+    return new Facts.Candidate(bundle.getBundleId(), total, air, hotel, hotels, ground, providers);
   }
 
   /** Slice 3: when each leg of a multi-leg proposal flies, keyed by component id. */
@@ -262,6 +266,25 @@ final class ProtoMapping {
               .findFirst()
               .orElse("");
       builder.addApprovers(ApproverRequirement.newBuilder().setRole(role).setReasonCode(reason));
+    }
+    for (String role : decision.approvalChain()) {
+      String reason =
+          decision.violations().stream()
+              .filter(v -> role.equals(v.approverRole()))
+              .map(Decision.Violation::code)
+              .findFirst()
+              .orElse("APPROVAL_CHAIN");
+      builder.addApprovalChain(
+          ApproverRequirement.newBuilder().setRole(role).setReasonCode(reason));
+    }
+    if (decision.approvalExpiresAfter() != null) {
+      builder.setApprovalExpiresAfterSeconds(decision.approvalExpiresAfter().toSeconds());
+    }
+    if (decision.budgetId() != null) {
+      builder.setBudgetId(decision.budgetId());
+    }
+    if (decision.budgetRemaining() != null) {
+      builder.setBudgetRemaining(money(decision.budgetRemaining()));
     }
     return builder.build();
   }

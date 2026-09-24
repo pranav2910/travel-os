@@ -266,6 +266,12 @@ final class TripEvents {
     data.put("role", approval.requiredRole());
     data.put("policyDecisionId", approval.policyDecisionId());
     data.put("total", money(trip.total()));
+    if (approval.expiresAt() != null) {
+      data.put("expiresAt", approval.expiresAt().toString());
+    }
+    data.put("step", approval.step());
+    data.put("chainLength", approval.chainLength());
+    data.put("chainRoles", approval.chainRoles());
     return EventEnvelope.create(
         "travel.approval.requested",
         1,
@@ -277,6 +283,47 @@ final class TripEvents {
         clock);
   }
 
+  /** Phase 7: an unanswered step went to a wider role with a fresh expiry. */
+  static EventEnvelope approvalEscalated(Trip trip, Approval approval, String reason, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("approvalId", approval.approvalId());
+    data.put("tripId", trip.tripId());
+    data.put("step", approval.step());
+    data.put("role", approval.requiredRole());
+    data.put(
+        "escalatedToRole",
+        approval.escalatedToRole() == null ? "TRAVEL_ADMIN" : approval.escalatedToRole());
+    if (approval.expiresAt() != null) {
+      data.put("expiresAt", approval.expiresAt().toString());
+    }
+    data.put("reason", reason);
+    return EventEnvelope.create(
+        "travel.approval.escalated",
+        1,
+        trip.tenantId(),
+        trip.tripId(),
+        null,
+        PRODUCER,
+        data,
+        clock);
+  }
+
+  /** Phase 7: an escalated step still unanswered: closed by the platform. */
+  static EventEnvelope approvalExpired(Trip trip, Approval approval, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("approvalId", approval.approvalId());
+    data.put("tripId", trip.tripId());
+    data.put("step", approval.step());
+    data.put("role", approval.deciderRole());
+    data.put(
+        "expiredAt",
+        approval.decidedAt() == null
+            ? clock.instant().toString()
+            : approval.decidedAt().toString());
+    return EventEnvelope.create(
+        "travel.approval.expired", 1, trip.tenantId(), trip.tripId(), null, PRODUCER, data, clock);
+  }
+
   static EventEnvelope approvalDecided(
       Trip trip, Approval approval, Principal by, @Nullable String comment, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
@@ -285,6 +332,12 @@ final class TripEvents {
     data.put("decidedBy", by.id());
     if (comment != null && !comment.isBlank()) {
       data.put("comment", comment);
+    }
+    data.put("step", approval.step());
+    data.put("chainLength", approval.chainLength());
+    data.put("finalStep", approval.lastStep() || approval.status() == Approval.Status.REJECTED);
+    if (approval.onBehalfOf() != null) {
+      data.put("onBehalfOf", approval.onBehalfOf());
     }
     String type =
         approval.status() == Approval.Status.APPROVED
