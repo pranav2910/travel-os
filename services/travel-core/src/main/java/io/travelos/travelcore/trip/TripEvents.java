@@ -211,6 +211,35 @@ final class TripEvents {
     return envelope("travel.trip.cancellation-requested", trip, null, data, clock);
   }
 
+  /** Phase 6: a person asked to release some components of a booked trip. */
+  static EventEnvelope componentCancellationRequested(
+      Trip trip,
+      String orderId,
+      List<String> componentIds,
+      String reason,
+      Principal requestedBy,
+      Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("orderId", orderId);
+    data.put("componentIds", componentIds);
+    data.put("reason", reason);
+    data.put("requestedBy", requestedBy.id());
+    return envelope("travel.trip.component-cancellation-requested", trip, null, data, clock);
+  }
+
+  /** Phase 6: the workflow reported what became of a component cancellation. */
+  static EventEnvelope componentsReleased(
+      Trip trip, List<TripComponent> components, @Nullable String causationId, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    if (trip.evidence().orderId() != null) {
+      data.put("orderId", trip.evidence().orderId());
+    }
+    data.put("components", components(components));
+    return envelope("travel.trip.components-released", trip, causationId, data, clock);
+  }
+
   /**
    * A supplier refused to release part of the reservation: the trip stays CANCELLING for a person.
    */

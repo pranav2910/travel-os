@@ -29,6 +29,9 @@ enum DisruptionType {
   FLIGHT_CANCELLED = 1;
   SCHEDULE_CHANGE = 2;
   DELAY = 3;
+  // Phase 6: not a supplier's disruption but the traveler's own request to move a segment; the
+  // same recovery path (search, policy, approval, change) with the person as the actor.
+  TRAVELER_REQUEST = 4;
 }
 
 enum DisruptionSeverity {
@@ -69,6 +72,12 @@ message AffectedSegment {
   google.protobuf.Timestamp scheduled_arrival = 7;
   // Slice 3: the itinerary component the segment belongs to, when the order knows it.
   string component_id = 8;
+  // Phase 6: a traveler-requested change (disruption type TRAVELER_REQUEST): the window the
+  // traveler now wants to fly in, and who asked. The recovery searches this window instead of
+  // "the same day, later", and policy judges the change with the person as the actor.
+  google.protobuf.Timestamp requested_not_before = 9;
+  google.protobuf.Timestamp requested_not_after = 10;
+  string requested_by = 11;
 }
 
 // Slice 3: what the recovery did to one component of a multi-component itinerary.

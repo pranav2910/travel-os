@@ -54,6 +54,7 @@ import io.travelos.contracts.policy.v1.EvaluateTripResponse;
 import io.travelos.contracts.policy.v1.Outcome;
 import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.policy.v1.ReasonCode;
+import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
 import io.travelos.contracts.supplier.v1.SearchGroundRequest;
 import io.travelos.contracts.supplier.v1.SearchGroundResponse;
@@ -555,6 +556,68 @@ class RecoveryWorkflowTest {
 
   private RecoveryWorkflow.Outcome run() {
     return stub().run(new DisruptionRecovery.Input(TENANT, DISRUPTION));
+  }
+
+  // ------------------------------------------------------------------ Phase 6: traveler requests
+
+  @Test
+  void aTravelerRequestSearchesTheAskedWindowAndPolicyJudgesThePersonNotTheAgent() {
+    current =
+        disruption(DisruptionStatus.IMPACT_CONFIRMED, RecoveryState.getDefaultInstance())
+            .toBuilder()
+            .setType(DisruptionType.TRAVELER_REQUEST)
+            .setSupplier("traveler")
+            .setSupplierEventId("traveler-request:human/alice:cr-1")
+            .setReason("the meeting moved to Wednesday")
+            .setAffected(
+                AffectedSegment.newBuilder()
+                    .setCarrier("DL")
+                    .setFlightNumber("DL240")
+                    .setOrigin("BOS")
+                    .setDestination("SEA")
+                    .setScheduledDeparture(hours(10))
+                    .setRequestedNotBefore(hours(24 + 8))
+                    .setRequestedNotAfter(hours(24 + 20))
+                    .setRequestedBy("human/alice"))
+            .build();
+    when(activities.search(any()))
+        .thenReturn(
+            SearchAirResponse.newBuilder()
+                .setSearchSessionId("srch_2")
+                .addOffers(
+                    offer(CHEAP, ORIGINAL_TOTAL + 7300, "DL242", Cabin.ECONOMY, 24 + 12, 24 + 18))
+                .build());
+    RecoveryWorkflow.Outcome outcome = run();
+    assertThat(outcome.finalStatus()).isEqualTo("RESOLVED");
+
+    // the search is the traveler's window, not "the same day, later"
+    ArgumentCaptor<SearchAirRequest> search = ArgumentCaptor.forClass(SearchAirRequest.class);
+    verify(activities).search(search.capture());
+    assertThat(search.getValue().getOutboundDeparture().getNotBefore()).isEqualTo(hours(24 + 8));
+    assertThat(search.getValue().getOutboundDeparture().getNotAfter().getSeconds())
+        .as("arrive within a day of the asked window's end")
+        .isEqualTo(hours(24 + 20 + 24).getSeconds());
+    // policy was asked with the person as the actor, against the retimed intent
+    ArgumentCaptor<EvaluateActionRequest> action =
+        ArgumentCaptor.forClass(EvaluateActionRequest.class);
+    verify(activities).evaluateAction(action.capture());
+    assertThat(action.getValue().getCtx().getPrincipal().getKind())
+        .isEqualTo(io.travelos.contracts.common.v1.Principal.Kind.HUMAN);
+    assertThat(action.getValue().getCtx().getPrincipal().getId()).isEqualTo("human/alice");
+    assertThat(action.getValue().getIntent().getEarliestDeparture()).isEqualTo(hours(24 + 8));
+    assertThat(action.getValue().getAction()).isEqualTo("order.change");
+    // the order change itself stays the agent's, once, and the record names the request
+    ArgumentCaptor<ChangeOrderCommand> change = ArgumentCaptor.forClass(ChangeOrderCommand.class);
+    verify(activities, times(1)).changeOrder(change.capture());
+    assertThat(change.getValue().getCtx().getPrincipal().getId())
+        .isEqualTo(DisruptionRecovery.AGENT);
+    ArgumentCaptor<RecordRecoveryDecisionRequest> rec =
+        ArgumentCaptor.forClass(RecordRecoveryDecisionRequest.class);
+    verify(activities).recordDecision(rec.capture());
+    assertThat(rec.getValue().getDecision().getTrigger())
+        .startsWith("TRAVELER_REQUEST by human/alice")
+        .contains("DL240 BOS-SEA")
+        .contains("2026-10-07T08:00:00Z..2026-10-07T20:00:00Z");
   }
 
   // ------------------------------------------------------------------ Slice 3: dependants

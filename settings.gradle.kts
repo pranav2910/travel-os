@@ -43,6 +43,8 @@ include(":services:disruption")
 include(":services:enterprise-context")
 // Slice 5: learning from outcomes (outcome records, feedback, evaluated profiles).
 include(":services:learning")
+// Phase 6: assistance (case management for what a person must finish).
+include(":services:assistance")
 
 // Temporal workflows: durable coordination of the trip lifecycle.
 include(":workflows:trip-planning")

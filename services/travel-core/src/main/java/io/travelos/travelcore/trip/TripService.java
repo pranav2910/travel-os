@@ -15,6 +15,7 @@ import io.travelos.travelcore.context.ContextClient;
 import io.travelos.workflows.TripPlanning;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1395,10 +1396,107 @@ public class TripService {
   @Transactional
   public Trip updateComponents(TenantId tenant, String tripId, List<TripComponent> states) {
     Trip trip = getInternal(tenant, tripId);
+    List<TripComponent> before = components.list(tenant, tripId);
+    List<TripComponent> released = new ArrayList<>();
     for (TripComponent c : states) {
       components.upsert(tenant, tripId, c);
+      // Phase 6: a component of a booked trip released (or refused) by a component cancellation
+      boolean terminalRelease =
+          "CANCELLED".equals(c.status()) || "CANCEL_FAILED".equals(c.status());
+      boolean wasReleasing =
+          before.stream()
+              .anyMatch(
+                  b -> b.componentId().equals(c.componentId()) && "CANCELLING".equals(b.status()));
+      if (trip.status() == TripStatus.BOOKED && terminalRelease && wasReleasing) {
+        released.add(c);
+      }
+    }
+    if (!released.isEmpty()) {
+      outbox.append(TripEvents.componentsReleased(trip, released, null, clock));
+      noteConversation(
+          trip,
+          "STATUS",
+          released.size()
+              + " component(s) released: "
+              + released.stream()
+                  .map(c -> c.componentId() + " " + c.status())
+                  .collect(java.util.stream.Collectors.joining(", ")));
     }
     return trip;
+  }
+
+  /**
+   * Phase 6: a partial cancellation. The named component of a BOOKED trip is marked CANCELLING and
+   * the component-scoped release workflow is asked for; the trip stays BOOKED for the rest. The
+   * traveler, the arranger or a travel admin may ask. Idempotent by state.
+   */
+  @Transactional
+  public TripComponent cancelComponent(
+      RequestPrincipal me, String tripId, String componentId, String reason) {
+    Trip trip = get(me, tripId);
+    if (!TripAccess.canCancel(me, trip) && !mayBuy(me, trip)) {
+      throw new ApiException.Forbidden(
+          "NOT_ALLOWED", "only the traveler, the arranger or a travel admin cancels a component");
+    }
+    if (trip.status() != TripStatus.BOOKED) {
+      throw new ApiException.Conflict(
+          "TRIP_NOT_BOOKED",
+          "trip "
+              + tripId
+              + " is "
+              + trip.status()
+              + "; components are released from a booked trip");
+    }
+    TripComponent component =
+        components.list(trip.tenantId(), tripId).stream()
+            .filter(c -> c.componentId().equals(componentId))
+            .findFirst()
+            .orElseThrow(() -> new ApiException.NotFound("component", componentId));
+    if ("CANCELLING".equals(component.status()) || "CANCELLED".equals(component.status())) {
+      return component;
+    }
+    if (!"CONFIRMED".equals(component.status())) {
+      throw new ApiException.Conflict(
+          "COMPONENT_NOT_CONFIRMED",
+          "component "
+              + componentId
+              + " is "
+              + component.status()
+              + "; only confirmed components are released");
+    }
+    if (trip.evidence().orderId() == null) {
+      throw new ApiException.Conflict("NO_ORDER", "the trip holds no order to release from");
+    }
+    Instant now = clock.instant();
+    TripComponent cancelling =
+        new TripComponent(
+            component.componentId(),
+            component.type(),
+            "CANCELLING",
+            component.offerId(),
+            component.provider(),
+            component.externalRef(),
+            component.total(),
+            null,
+            component.summary(),
+            component.position(),
+            now);
+    components.upsert(trip.tenantId(), tripId, cancelling);
+    trips.appendHistory(
+        trip,
+        TripStatus.BOOKED,
+        TripStatus.BOOKED,
+        "component " + componentId + " cancellation requested: " + reason,
+        me.principal(),
+        now);
+    outbox.append(
+        TripEvents.componentCancellationRequested(
+            trip, trip.evidence().orderId(), List.of(componentId), reason, me.principal(), clock));
+    noteConversation(
+        trip,
+        "STATUS",
+        "Releasing " + (component.summary() == null ? componentId : component.summary()) + ".");
+    return cancelling;
   }
 
   @Transactional(readOnly = true)

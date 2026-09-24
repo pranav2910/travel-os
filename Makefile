@@ -9,7 +9,7 @@ export JAVA_HOME
 GRADLE  := ./gradlew
 COMPOSE := docker compose -f platform/local/docker-compose.yml
 STACK   := docker compose -f platform/local/docker-compose.yml -f platform/local/docker-compose.app.yml
-JARS    := travel-core policy supplier-gateway order audit disruption enterprise-context learning
+JARS    := travel-core policy supplier-gateway order audit disruption enterprise-context learning assistance
 
 .PHONY: help up down nuke ps logs build test check fmt clean run run-worker seed-policy run-optimization run-llm-gateway jars images web-install web-dev web-check web-e2e web-e2e-kind stack-up stack-down stack-nuke stack-ps stack-logs stack-e2e stack-e2e2 stack-e2e3 stack-e2e4 stack-e2e5 kind-up kind-deploy kind-e2e kind-e2e2 kind-e2e3 kind-e2e4 kind-e2e5 kind-chaos kind-chaos2 kind-chaos3 kind-chaos4 kind-chaos5 kind-rollback-demo kind-down helm-lint tf-check
 

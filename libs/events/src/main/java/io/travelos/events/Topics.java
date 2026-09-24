@@ -26,6 +26,9 @@ public final class Topics {
    */
   public static final String FINANCE = "travel.finance";
 
+  /** Phase 6: assistance cases (the things a person must finish). */
+  public static final String ASSISTANCE = "travel.assistance";
+
   public static final String AUDIT = "travel.audit";
 
   public static final List<String> ALL =
@@ -43,6 +46,7 @@ public final class Topics {
           LEARNING,
           AGENT,
           FINANCE,
+          ASSISTANCE,
           AUDIT);
 
   private Topics() {}

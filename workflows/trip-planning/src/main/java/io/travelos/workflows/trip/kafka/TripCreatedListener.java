@@ -51,6 +51,20 @@ public class TripCreatedListener {
               String.valueOf(event.data().getOrDefault("orderId", "")),
               String.valueOf(event.data().getOrDefault("reason", "")),
               String.valueOf(event.data().getOrDefault("requestedBy", "")));
+      case "travel.trip.component-cancellation-requested" -> {
+        Object ids = event.data().get("componentIds");
+        java.util.List<String> componentIds = new java.util.ArrayList<>();
+        if (ids instanceof java.util.List<?> list) {
+          list.forEach(o -> componentIds.add(String.valueOf(o)));
+        }
+        startComponentCancellation(
+            event.tenantId(),
+            tripId,
+            String.valueOf(event.data().getOrDefault("orderId", "")),
+            String.valueOf(event.data().getOrDefault("reason", "")),
+            String.valueOf(event.data().getOrDefault("requestedBy", "")),
+            componentIds);
+      }
       default -> {}
     }
   }
@@ -79,6 +93,44 @@ public class TripCreatedListener {
           tenantId);
     } catch (WorkflowExecutionAlreadyStarted e) {
       log.info("cancellation for trip {} already exists; ignoring redelivery", tripId);
+    }
+  }
+
+  /** Phase 6: a component-scoped release; the trip stays BOOKED for the rest. */
+  public void startComponentCancellation(
+      String tenantId,
+      String tripId,
+      String orderId,
+      String reason,
+      String requestedBy,
+      java.util.List<String> componentIds) {
+    if (componentIds.isEmpty()) {
+      startCancellation(tenantId, tripId, orderId, reason, requestedBy);
+      return;
+    }
+    TripCancellationWorkflow workflow =
+        client.newWorkflowStub(
+            TripCancellationWorkflow.class,
+            WorkflowOptions.newBuilder()
+                .setTaskQueue(TripCancellation.TASK_QUEUE)
+                .setWorkflowId(TripCancellation.workflowId(tripId, componentIds))
+                .setWorkflowIdReusePolicy(
+                    WorkflowIdReusePolicy.WORKFLOW_ID_REUSE_POLICY_REJECT_DUPLICATE)
+                .build());
+    try {
+      WorkflowClient.start(
+          workflow::run,
+          new TripCancellation.Input(tenantId, tripId, orderId, reason, requestedBy, componentIds));
+      log.info(
+          "started component release for trip {} components {} (tenant {})",
+          tripId,
+          componentIds,
+          tenantId);
+    } catch (WorkflowExecutionAlreadyStarted e) {
+      log.info(
+          "component release for trip {} {} already exists; ignoring redelivery",
+          tripId,
+          componentIds);
     }
   }
 

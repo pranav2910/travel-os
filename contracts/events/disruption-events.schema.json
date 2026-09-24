@@ -12,7 +12,8 @@
       "enum": [
         "FLIGHT_CANCELLED",
         "SCHEDULE_CHANGE",
-        "DELAY"
+        "DELAY",
+        "TRAVELER_REQUEST"
       ]
     },
     "severity": {
@@ -83,6 +84,17 @@
         "componentId": {
           "type": "string",
           "pattern": "^cmp_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "requestedNotBefore": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "requestedNotAfter": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "requestedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
         }
       }
     },

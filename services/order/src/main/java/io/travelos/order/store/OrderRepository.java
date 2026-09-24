@@ -290,6 +290,15 @@ public class OrderRepository {
         .update();
   }
 
+  /** The refund recorded on one item, when the supplier answered. */
+  public Optional<Money> refundOf(String itemId) {
+    return jdbc.sql(
+            "SELECT refund_currency, refund_minor FROM order_item WHERE item_id = :id AND refund_minor IS NOT NULL")
+        .param("id", itemId)
+        .query((rs, i) -> Money.of(rs.getString("refund_currency"), rs.getLong("refund_minor")))
+        .optional();
+  }
+
   /** The recorded refunds of an order, summed; empty when none was recorded or currencies mix. */
   public Optional<Money> refundsOf(String orderId) {
     List<Money> refunds =

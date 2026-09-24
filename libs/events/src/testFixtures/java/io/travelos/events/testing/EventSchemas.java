@@ -100,7 +100,8 @@ public final class EventSchemas {
         "disruption-events.schema.json",
         "demand-events.schema.json",
         "learning-events.schema.json",
-        "finance-events.schema.json");
+        "finance-events.schema.json",
+        "assistance-events.schema.json");
   }
 
   private static Schema schema(String location) {

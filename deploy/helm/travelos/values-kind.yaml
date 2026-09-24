@@ -70,6 +70,11 @@ learning:
   networkPolicy:
     httpFrom: *host
     grpcFromApps: [trip-planning]
+assistance:
+  <<: *kindScale
+  service: { type: NodePort, nodePorts: { http: 30092 } }
+  networkPolicy:
+    httpFrom: *host
 web:
   <<: *kindScale
   service: { type: NodePort, nodePorts: { http: 30080 } }

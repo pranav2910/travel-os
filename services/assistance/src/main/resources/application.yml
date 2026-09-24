@@ -1,0 +1,93 @@
+spring:
+  application:
+    name: assistance
+  datasource:
+    # The assistance_app role can reach ONLY the assistance database (ADR-0006).
+    url: ${ASSISTANCE_DB_URL:jdbc:postgresql://localhost:5432/assistance}
+    username: ${ASSISTANCE_DB_USER:assistance_app}
+    password: ${ASSISTANCE_DB_PASSWORD:assistance-dev}
+    hikari:
+      maximum-pool-size: ${ASSISTANCE_DB_POOL_SIZE:10}
+      connection-timeout: 5000
+      validation-timeout: 2000
+  flyway:
+    locations: classpath:db/migration
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        request.timeout.ms: 15000
+        linger.ms: 5
+        delivery.timeout.ms: 45000
+    consumer:
+      group-id: assistance
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
+      observation-enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          audiences: travelos-api
+  threads:
+    virtual:
+      enabled: true
+
+server:
+  port: ${PORT:8092}
+  shutdown: graceful
+
+travelos:
+  outbox:
+    poll-interval: 500ms
+  assistance:
+    # Service levels per priority: the time a case may wait for a person before it escalates.
+    sla:
+      critical: ${ASSISTANCE_SLA_CRITICAL:1h}
+      high: ${ASSISTANCE_SLA_HIGH:4h}
+      normal: ${ASSISTANCE_SLA_NORMAL:24h}
+      low: ${ASSISTANCE_SLA_LOW:72h}
+    # How often overdue cases are escalated, and how far (level 1: the queue lead, level 2: the
+    # travel admin group, level 3: finance and travel admins together; nothing escalates past 3).
+    escalation-sweep: ${ASSISTANCE_ESCALATION_SWEEP:1m}
+    max-escalation-level: 3
+
+management:
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+    export:
+      enabled: ${TRACING_EXPORT_ENABLED:false}
+  opentelemetry:
+    tracing:
+      export:
+        otlp:
+          endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+          transport: http
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_METRICS_EXPORT_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://localhost:4318/v1/metrics}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  pattern:
+    correlation: "[%X{tenant_id:-}] [%X{principal:-}] [%X{correlation_id:-}] "

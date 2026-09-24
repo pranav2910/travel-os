@@ -43,3 +43,7 @@ REVOKE CONNECT ON DATABASE disruption FROM PUBLIC;
 CREATE ROLE learning_app LOGIN PASSWORD 'learning-dev';
 CREATE DATABASE learning OWNER learning_app;
 REVOKE CONNECT ON DATABASE learning FROM PUBLIC;
+
+CREATE ROLE assistance_app LOGIN PASSWORD 'assistance-dev';
+CREATE DATABASE assistance OWNER assistance_app;
+REVOKE CONNECT ON DATABASE assistance FROM PUBLIC;

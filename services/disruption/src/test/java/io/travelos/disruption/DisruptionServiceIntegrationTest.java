@@ -49,6 +49,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -435,6 +436,103 @@ class DisruptionServiceIntegrationTest {
         .singleElement()
         .satisfies(s -> assertThat(s.decision()).isEqualTo("APPROVED"));
     assertThat(get(DISRUPTION).getRecovery().getApprovalStatus()).isEqualTo("APPROVED");
+  }
+
+  // ------------------------------------------------------------------ Phase 6
+
+  @Test
+  @org.junit.jupiter.api.Order(6)
+  void aTravelerAsksToMoveHerFlightAndTheRequestBecomesARecoveryWithHerAsTheActor() {
+    String body =
+        "{\"tripId\":\""
+            + TRIP
+            + "\",\"orderId\":\""
+            + ORDER
+            + "\",\"componentId\":\"cmp_01ARZ3NDEKTSV4RRFFQ69G5FA0\","
+            + "\"notBefore\":\"2026-10-07T08:00:00Z\",\"notAfter\":\"2026-10-07T20:00:00Z\",\"reason\":\"the meeting moved to Wednesday\"}";
+    // dan is not the traveler of that order: he learns nothing
+    assertThat(request(TestTokens.dan(), body, "cr-dan").getStatusCode())
+        .isEqualTo(HttpStatus.NOT_FOUND);
+    ResponseEntity<String> created = request(TestTokens.alice(), body, "cr-1");
+    assertThat(created.getStatusCode()).as(created.getBody()).isEqualTo(HttpStatus.CREATED);
+    JsonNode view = json.readTree(created.getBody());
+    String id = view.get("disruptionId").asString();
+    assertThat(id).startsWith("dsr_");
+    assertThat(view.get("type").asString()).isEqualTo("TRAVELER_REQUEST");
+    assertThat(view.get("status").asString()).isEqualTo("IMPACT_CONFIRMED");
+    assertThat(view.get("tripId").asString()).isEqualTo(TRIP);
+    assertThat(view.get("orderId").asString()).isEqualTo(ORDER);
+    assertThat(view.get("travelerId").asString()).isEqualTo("emp_1001");
+    assertThat(view.get("severity").asString()).isEqualTo("LOW");
+    assertThat(view.get("reason").asString()).isEqualTo("the meeting moved to Wednesday");
+    JsonNode affected = view.get("affected");
+    assertThat(affected.get("flightNumber").asString()).isEqualTo("DL240");
+    assertThat(affected.get("componentId").asString()).isEqualTo("cmp_01ARZ3NDEKTSV4RRFFQ69G5FA0");
+    assertThat(affected.get("requestedNotBefore").asString()).isEqualTo("2026-10-07T08:00:00Z");
+    assertThat(affected.get("requestedNotAfter").asString()).isEqualTo("2026-10-07T20:00:00Z");
+    assertThat(affected.get("requestedBy").asString()).isEqualTo("human/alice");
+    // the same key again is the same disruption, not a second recovery
+    assertThat(
+            json.readTree(request(TestTokens.alice(), body, "cr-1").getBody())
+                .get("disruptionId")
+                .asString())
+        .isEqualTo(id);
+    assertThat(get(id).getType())
+        .isEqualTo(io.travelos.contracts.disruption.v1.DisruptionType.TRAVELER_REQUEST);
+    assertThat(get(id).getAffected().getRequestedBy()).isEqualTo("human/alice");
+    // a window in the past, an unknown component: refused explicitly
+    assertThat(
+            request(
+                    TestTokens.alice(),
+                    body.replace("2026-10-07T08:00:00Z", "2020-01-01T08:00:00Z")
+                        .replace("2026-10-07T20:00:00Z", "2020-01-02T08:00:00Z"),
+                    "cr-2")
+                .getStatusCode())
+        .isEqualTo(HttpStatus.UNPROCESSABLE_CONTENT);
+    assertThat(
+            request(
+                    TestTokens.alice(),
+                    body.replace(
+                        "cmp_01ARZ3NDEKTSV4RRFFQ69G5FA0", "cmp_01ARZ3NDEKTSV4RRFFQ69G5FZZ"),
+                    "cr-3")
+                .getStatusCode())
+        .isEqualTo(HttpStatus.NOT_FOUND);
+    // the recovery starts from the same event every supplier disruption starts from
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              consumer.poll(Duration.ofMillis(250)).forEach(received::add);
+              return received.stream()
+                  .anyMatch(
+                      r ->
+                          r.value().contains(id)
+                              && r.value().contains("travel.disruption.impact-confirmed"));
+            });
+    ConsumerRecord<String, String> confirmed =
+        received.stream()
+            .filter(
+                r ->
+                    r.value().contains(id)
+                        && r.value().contains("travel.disruption.impact-confirmed"))
+            .findFirst()
+            .orElseThrow();
+    assertThat(EventSchemas.violations(confirmed.value())).as(confirmed.value()).isEmpty();
+    JsonNode data = json.readTree(confirmed.value()).get("data");
+    assertThat(data.get("type").asString()).isEqualTo("TRAVELER_REQUEST");
+    assertThat(data.get("affected").get("requestedBy").asString()).isEqualTo("human/alice");
+    assertThat(confirmed.key()).isEqualTo(TRIP);
+  }
+
+  private ResponseEntity<String> request(String token, String body, String key) {
+    return http.post()
+        .uri("/api/v1/disruptions/requests")
+        .header("Authorization", "Bearer " + token)
+        .header("Idempotency-Key", key)
+        .header("Content-Type", "application/json")
+        .body(body)
+        .retrieve()
+        .toEntity(String.class);
   }
 
   @Test

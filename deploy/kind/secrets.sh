@@ -17,6 +17,7 @@ ORDER_DB_PASSWORD=$(gen)
 AUDIT_DB_PASSWORD=$(gen)
 DISRUPTION_DB_PASSWORD=$(gen)
 LEARNING_DB_PASSWORD=$(gen)
+ASSISTANCE_DB_PASSWORD=$(gen)
 SANDBOX_AIR_WEBHOOK_SECRET=$(gen)
 SANDBOX_CONNECTOR_WEBHOOK_SECRET=$(gen)
 KEYCLOAK_ADMIN_PASSWORD=$(gen)
@@ -48,7 +49,8 @@ apply postgres-app-passwords -n travelos-infra \
   --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD" \
   --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD" \
   --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD" \
-  --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD"
+  --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD" \
+  --from-literal=ASSISTANCE_DB_PASSWORD="$ASSISTANCE_DB_PASSWORD"
 apply temporal-db -n travelos-infra --from-literal=POSTGRES_USER=travelos --from-literal=POSTGRES_PWD="$POSTGRES_SUPERUSER_PASSWORD"
 apply keycloak-admin -n travelos-infra --from-literal=KC_BOOTSTRAP_ADMIN_PASSWORD="$KEYCLOAK_ADMIN_PASSWORD"
 # application namespace: one Secret per service, only what that service needs
@@ -61,6 +63,7 @@ if [ -n "${DUFFEL_ACCESS_TOKEN:-}" ] || [ -n "${HOTELBEDS_API_KEY:-}" ]; then ec
 apply disruption-secrets -n travelos --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
 apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_DB_PASSWORD="$ENTERPRISE_CONTEXT_DB_PASSWORD" --from-literal=SANDBOX_CONNECTOR_WEBHOOK_SECRET="${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-$(openssl rand -hex 16)}" --from-literal=TRAVELOS_FIELD_KEY="$TRAVELOS_FIELD_KEY"
 apply learning-secrets -n travelos --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD"
+apply assistance-secrets -n travelos --from-literal=ASSISTANCE_DB_PASSWORD="$ASSISTANCE_DB_PASSWORD"
 apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD" --from-literal=STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
 apply audit-secrets -n travelos --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"
 apply trip-planning-secrets -n travelos --from-literal=PAYMENT_TOKEN="$PAYMENT_TOKEN"

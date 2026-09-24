@@ -154,3 +154,58 @@ registered instrument's token or the legacy opaque token (an implicit sandbox in
 Configuration: `STRIPE_SECRET_KEY` (secrets mechanism; absent = sandbox only),
 `travelos.finance.settlement.<provider>` = CARD_AT_SUPPLIER | BALANCE | INVOICE.
 Events: topic `travel.finance` (schema `contracts/events/finance-events.schema.json`).
+
+## Phase 6 — servicing, partial cancellation, traveler requests, cases (ADR-0018)
+
+### Travel Core (port 8081)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `POST /api/v1/trips/{tripId}/components/{componentId}/cancellation` (`Idempotency-Key`) | the traveler, the arranger, TRAVEL_ADMIN (a manager who merely sees the trip: 403; a stranger: 404) | `{reason}`; 409 `TRIP_NOT_BOOKED`, `COMPONENT_NOT_CONFIRMED`, `NO_ORDER`; 404 unknown component | 202 `ComponentView` with `status: CANCELLING`; later `CANCELLED` or `CANCEL_FAILED` + `failureCode` on `GET /api/v1/trips/{id}` (`components[]`); the trip stays `BOOKED`. Repeats return the current state. |
+
+Events: `travel.trip.component-cancellation-requested {tripId, orderId, componentIds[], reason, requestedBy}`,
+`travel.trip.components-released {tripId, orderId, components[{componentId, type, status, provider, externalRef, total, failureCode, summary}]}`.
+
+### Order (gRPC `CancelOrderCommand.component_ids`, port 9085)
+
+A non-empty `component_ids` releases only those items (`ITEM_CANCELLED` with `refund`, or
+`ITEM_CANCEL_FAILED` with an OPEN exposure); the order's status is unchanged; `FAILED_PRECONDITION
+ORDER_NOT_CONFIRMED` unless CONFIRMED/CHANGED; `NOT_FOUND COMPONENT_UNKNOWN` when none of the ids is
+on the order. Refunds and credits appear on `GET /api/v1/orders/{id}/receipt` and
+`GET /api/v1/finance/credits`. Event `travel.order.items-released {orderId, tripId, items[],
+refused[exposure], refund, reason, releasedBy}`.
+
+### Disruption (port 8089)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `POST /api/v1/disruptions/requests` (`Idempotency-Key`) | the order's traveler, TRAVEL_ADMIN (anyone else: 404) | `{tripId, orderId, componentId, notBefore, notAfter?, reason?}`; 404 unknown order/component; 409 `ORDER_NOT_CHANGEABLE`, `COMPONENT_NOT_CONFIRMED`, `ORDER_SERVICE_UNAVAILABLE`; 422 `COMPONENT_NOT_RETIMEABLE` (not a flight), `WINDOW_IN_PAST`, `WINDOW_INVALID` | 201 `DisruptionView` with `type: TRAVELER_REQUEST`, `status: IMPACT_CONFIRMED`, `affected.requestedNotBefore/requestedNotAfter/requestedBy`; the same key again returns the same disruption. The recovery then runs as for any disruption (`GET /api/v1/disruptions/{id}`, approval at `/approval` when policy requires a manager). |
+
+### Assistance (new service, port 8092; nginx route `/api/v1/cases`)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `GET /api/v1/cases?status=&queue=&kind=&owner=me|<principal>&tripId=&overdue=&includeClosed=&limit=` | TRAVEL_ADMIN, FINANCE (all); a traveler (own trips only) | open cases by default, most urgent first | `[CaseView {caseId, kind, status, priority, queue, title, summary, tripId, orderId, travelerId, disruptionId, exposureId, componentId, owner, nextAction, nextActionRole, escalationLevel, dueAt, overdue, openedAt, updatedAt, resolvedAt, closedAt, resolution, sourceEventType, version}]` |
+| `GET /api/v1/cases/summary` | TRAVEL_ADMIN, FINANCE | — | `{open, overdue, byQueue{queue{status: count}}}` |
+| `GET /api/v1/cases/{id}` / `GET /api/v1/cases/{id}/events` | as above; 404 otherwise | — | `CaseView` / `[EventView {caseEventId, kind (OPENED, LINKED, NOTE, ASSIGNED, STATUS, ESCALATED, RESOLVED, REOPENED, CLOSED), actor, message, data, occurredAt}]` |
+| `POST /api/v1/cases` (`Idempotency-Key`) | a traveler (own trip), TRAVEL_ADMIN, FINANCE | `{kind (TRAVELER_REQUEST, SAFETY, OTHER, …), priority?, title, summary?, tripId?, orderId?}` | 201 `CaseView` (SAFETY → CRITICAL on the SAFETY queue) |
+| `POST /api/v1/cases/{id}/assignment` | TRAVEL_ADMIN, FINANCE (a traveler: 403) | `{owner: "me" \| principal id}`; 409 `CASE_NOT_OPEN` | `CaseView` (`IN_PROGRESS`) |
+| `POST /api/v1/cases/{id}/notes` | anyone who may read it | `{text}` | 201 `CaseView` |
+| `PUT /api/v1/cases/{id}/status` | TRAVEL_ADMIN, FINANCE | `{status: IN_PROGRESS \| WAITING \| OPEN (reopen a resolved case), reason?}`; 409 `STATUS_TRANSITION_INVALID`; 422 `STATUS_NOT_SETTABLE` | `CaseView` |
+| `POST /api/v1/cases/{id}/escalation` | TRAVEL_ADMIN, FINANCE | `{reason}` | `CaseView` (level +1, priority raised, fresh `dueAt`, `nextActionRole` widens to TRAVEL_ADMIN then TRAVEL_ADMIN+FINANCE) |
+| `POST /api/v1/cases/{id}/resolution` | TRAVEL_ADMIN, FINANCE | `{resolution}` | `CaseView` (`RESOLVED`) |
+| `POST /api/v1/cases/{id}/closure` | TRAVEL_ADMIN, FINANCE | `{reason?}`; 409 `CASE_NOT_RESOLVED` | `CaseView` (`CLOSED`) |
+
+Cases open by themselves from `travel.order.compensation-failed` / `items-released` (EXPOSURE per
+open exposure), `travel.order.failed` items with status UNKNOWN (OUTCOME_UNKNOWN),
+`travel.trip.cancellation-incomplete` and `components-released` CANCEL_FAILED
+(CANCELLATION_INCOMPLETE), `travel.trip.failed` (BOOKING_FAILED),
+`travel.disruption.approval-required` (RECOVERY_APPROVAL, CRITICAL, APPROVALS queue),
+`travel.disruption.recovery-failed` (RECOVERY_FAILED), `travel.finance.payment-declined`
+(PAYMENT_DECLINED); and resolve by themselves from `exposure-resolved`, `trip.cancelled`,
+`components-released` CANCELLED, `disruption.resolved`, `payment-authorized/captured`. SLAs:
+`travelos.assistance.sla.{critical,high,normal,low}` (1h/4h/24h/72h), sweep
+`travelos.assistance.escalation-sweep` (1m), max level 3. Events: topic `travel.assistance`
+(`case-opened`, `case-assigned`, `case-escalated`, `case-resolved`, `case-closed`; schema
+`contracts/events/assistance-events.schema.json`). Configuration: `ASSISTANCE_DB_URL/USER/PASSWORD`
+(secrets mechanism), `ASSISTANCE_URL` on the web edge.

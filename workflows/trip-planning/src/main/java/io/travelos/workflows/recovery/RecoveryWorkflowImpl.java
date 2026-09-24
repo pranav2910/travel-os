@@ -11,9 +11,11 @@ import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
 import io.travelos.contracts.common.v1.TimeWindow;
+import io.travelos.contracts.disruption.v1.AffectedSegment;
 import io.travelos.contracts.disruption.v1.ComponentChange;
 import io.travelos.contracts.disruption.v1.Disruption;
 import io.travelos.contracts.disruption.v1.DisruptionStatus;
+import io.travelos.contracts.disruption.v1.DisruptionType;
 import io.travelos.contracts.disruption.v1.RecordRecoveryDecisionRequest;
 import io.travelos.contracts.disruption.v1.RecordRecoveryOutcomeRequest;
 import io.travelos.contracts.disruption.v1.RecoveryDecision;
@@ -179,19 +181,36 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
     try {
       Order order = activities.loadOrder(tenant, tripId, d.getOrderId());
       Trip trip = activities.loadTrip(tenant, tripId);
-      TravelIntent intent = trip.getIntent();
+      // Phase 6: a traveler's request moves the intent's window to what they asked for; policy and
+      // the optimizer then judge the replacement against THAT window, with the person as the actor.
+      TravelIntent intent = requestedIntent(trip.getIntent(), d.getAffected());
+      boolean travelerRequest = d.getType() == DisruptionType.TRAVELER_REQUEST;
       Bundle original = originalItinerary(order);
       String trigger =
-          d.getType().name()
-              + " "
-              + d.getAffected().getFlightNumber()
-              + " "
-              + d.getAffected().getOrigin()
-              + "-"
-              + d.getAffected().getDestination()
-              + " (supplier event "
-              + d.getSupplierEventId()
-              + ")";
+          travelerRequest
+              ? "TRAVELER_REQUEST by "
+                  + d.getAffected().getRequestedBy()
+                  + ": move "
+                  + d.getAffected().getFlightNumber()
+                  + " "
+                  + d.getAffected().getOrigin()
+                  + "-"
+                  + d.getAffected().getDestination()
+                  + " to "
+                  + iso(d.getAffected().getRequestedNotBefore())
+                  + (d.getAffected().hasRequestedNotAfter()
+                      ? ".." + iso(d.getAffected().getRequestedNotAfter())
+                      : "")
+              : d.getType().name()
+                  + " "
+                  + d.getAffected().getFlightNumber()
+                  + " "
+                  + d.getAffected().getOrigin()
+                  + "-"
+                  + d.getAffected().getDestination()
+                  + " (supplier event "
+                  + d.getSupplierEventId()
+                  + ")";
 
       // ---- search
       stage = Stage.SEARCHING_ALTERNATIVES;
@@ -357,7 +376,10 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
       PolicyDecision verdict =
           activities.evaluateAction(
               EvaluateActionRequest.newBuilder()
-                  .setCtx(ctx(tenant, tripId, ""))
+                  .setCtx(
+                      travelerRequest
+                          ? actorCtx(tenant, tripId, d.getAffected().getRequestedBy())
+                          : ctx(tenant, tripId, ""))
                   .setTripId(tripId)
                   .setTravelerId(trip.getTravelerId())
                   .setAction(ACTION)
@@ -761,6 +783,50 @@ public class RecoveryWorkflowImpl implements RecoveryWorkflow {
         .setPrincipal(
             Principal.newBuilder().setKind(Principal.Kind.AGENT).setId(DisruptionRecovery.AGENT))
         .build();
+  }
+
+  /**
+   * Phase 6: the policy actor for a traveler's own request is the person, so the human rules apply
+   * (the approval threshold), not the agent's rebooking autonomy. Everything else the workflow does
+   * stays the agent's.
+   */
+  private static RequestContext actorCtx(String tenant, String correlationId, String requestedBy) {
+    Principal.Kind kind =
+        requestedBy.startsWith("human/") ? Principal.Kind.HUMAN : Principal.Kind.AGENT;
+    return ctx(tenant, correlationId, "").toBuilder()
+        .setPrincipal(
+            Principal.newBuilder()
+                .setKind(kind)
+                .setId(requestedBy.isBlank() ? DisruptionRecovery.AGENT : requestedBy))
+        .build();
+  }
+
+  /**
+   * Phase 6: a traveler-requested window replaces the intent's outbound window: depart no earlier
+   * than asked, arrive by the end of the asked window (or a day after its start when open-ended).
+   */
+  static TravelIntent requestedIntent(TravelIntent intent, AffectedSegment affected) {
+    if (!affected.hasRequestedNotBefore()) {
+      return intent;
+    }
+    Timestamp notBefore = affected.getRequestedNotBefore();
+    Timestamp deadline =
+        affected.hasRequestedNotAfter()
+            ? Timestamp.newBuilder()
+                .setSeconds(affected.getRequestedNotAfter().getSeconds() + 24 * 3600)
+                .build()
+            : Timestamp.newBuilder().setSeconds(notBefore.getSeconds() + 36 * 3600).build();
+    TravelIntent.Builder b =
+        intent.toBuilder().setEarliestDeparture(notBefore).setArrivalDeadline(deadline);
+    if (intent.hasReturnAfter() && intent.getReturnAfter().getSeconds() < deadline.getSeconds()) {
+      // the return cannot precede the new arrival; keep it a plan, not a constraint
+      b.clearReturnAfter().clearLatestReturn();
+    }
+    return b.build();
+  }
+
+  private static String iso(Timestamp t) {
+    return java.time.Instant.ofEpochSecond(t.getSeconds()).toString();
   }
 
   /** The trip's windows, but never in the past: a replacement departs no earlier than now. */

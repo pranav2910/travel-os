@@ -131,6 +131,18 @@ learning:
     httpFromApps: [web]
     grpcFromApps: [trip-planning]
 
+# Phase 6: assistance cases. HTTP only (people and the web edge); it consumes the platform's topics.
+assistance:
+  name: assistance
+  ports: { http: 8092 }
+  secretRef: assistance-secrets               # DB password
+  env:
+    ASSISTANCE_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/assistance
+    ASSISTANCE_DB_USER: assistance_app
+  networkPolicy:
+    httpFrom: *httpFrom
+    httpFromApps: [web]
+
 # The web edge (Slice 6): the React app behind nginx, proxying the public routes to the services.
 web:
   name: web
@@ -154,6 +166,7 @@ web:
     DISRUPTION_URL: http://disruption.travelos.svc.cluster.local:8089
     ENTERPRISE_CONTEXT_URL: http://enterprise-context.travelos.svc.cluster.local:8090
     LEARNING_URL: http://learning.travelos.svc.cluster.local:8091
+    ASSISTANCE_URL: http://assistance.travelos.svc.cluster.local:8092
   networkPolicy:
     httpFrom: *httpFrom
     infraPorts: []                            # static files + proxy: no database, broker or IdP calls
@@ -165,6 +178,7 @@ web:
       - { app: disruption, port: 8089 }
       - { app: enterprise-context, port: 8090 }
       - { app: learning, port: 8091 }
+      - { app: assistance, port: 8092 }
 
 trip-planning:
   name: trip-planning
@@ -252,4 +266,5 @@ ingress:
     - { path: /api/v1/demand, service: enterprise-context, port: 8090, pathType: Prefix }
     - { path: /api/v1/connectors, service: enterprise-context, port: 8090, pathType: Prefix }
     - { path: /api/v1/learning, service: learning, port: 8091, pathType: Prefix }
+    - { path: /api/v1/cases, service: assistance, port: 8092, pathType: Prefix }
     - { path: /, service: web, port: 8080, pathType: Prefix }   # the app itself (deep links -> index.html)

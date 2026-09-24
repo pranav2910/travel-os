@@ -1,0 +1,535 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/assistance-events.schema.json",
+  "title": "AssistanceEvents",
+  "description": "Phase 6: assistance cases. A case is the platform's record that a person must finish something the machines could not: an exposure at a supplier, an unknown outcome, an incomplete cancellation, a recovery waiting on an approver, a failed booking, a declined payment, a traveler's request. Cases point at the authoritative services; they never change an order, a trip or a payment.",
+  "$defs": {
+    "travel.assistance.case-opened": {
+      "description": "A case was opened from a platform event or by a person.",
+      "type": "object",
+      "required": [
+        "caseId",
+        "kind",
+        "status",
+        "priority",
+        "queue",
+        "title",
+        "nextAction",
+        "nextActionRole",
+        "escalationLevel",
+        "dueAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "pattern": "^cas_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "kind": {
+          "enum": [
+            "EXPOSURE",
+            "OUTCOME_UNKNOWN",
+            "CANCELLATION_INCOMPLETE",
+            "RECOVERY_APPROVAL",
+            "RECOVERY_FAILED",
+            "BOOKING_FAILED",
+            "PAYMENT_DECLINED",
+            "TRAVELER_REQUEST",
+            "SAFETY",
+            "OTHER"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "IN_PROGRESS",
+            "WAITING",
+            "ESCALATED",
+            "RESOLVED",
+            "CLOSED"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "CRITICAL",
+            "HIGH",
+            "NORMAL",
+            "LOW"
+          ]
+        },
+        "queue": {
+          "enum": [
+            "TRAVEL_OPS",
+            "FINANCE",
+            "APPROVALS",
+            "SAFETY"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "disruptionId": {
+          "type": "string"
+        },
+        "exposureId": {
+          "type": "string"
+        },
+        "owner": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "nextAction": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "nextActionRole": {
+          "type": "string"
+        },
+        "escalationLevel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dueAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "travel.assistance.case-assigned": {
+      "description": "A worker took the case or gave it to someone.",
+      "type": "object",
+      "required": [
+        "caseId",
+        "kind",
+        "status",
+        "priority",
+        "queue",
+        "title",
+        "nextAction",
+        "nextActionRole",
+        "escalationLevel",
+        "dueAt",
+        "assignedBy",
+        "owner"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "pattern": "^cas_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "kind": {
+          "enum": [
+            "EXPOSURE",
+            "OUTCOME_UNKNOWN",
+            "CANCELLATION_INCOMPLETE",
+            "RECOVERY_APPROVAL",
+            "RECOVERY_FAILED",
+            "BOOKING_FAILED",
+            "PAYMENT_DECLINED",
+            "TRAVELER_REQUEST",
+            "SAFETY",
+            "OTHER"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "IN_PROGRESS",
+            "WAITING",
+            "ESCALATED",
+            "RESOLVED",
+            "CLOSED"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "CRITICAL",
+            "HIGH",
+            "NORMAL",
+            "LOW"
+          ]
+        },
+        "queue": {
+          "enum": [
+            "TRAVEL_OPS",
+            "FINANCE",
+            "APPROVALS",
+            "SAFETY"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "disruptionId": {
+          "type": "string"
+        },
+        "exposureId": {
+          "type": "string"
+        },
+        "owner": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "nextAction": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "nextActionRole": {
+          "type": "string"
+        },
+        "escalationLevel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dueAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "assignedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    },
+    "travel.assistance.case-escalated": {
+      "description": "The case went one level up: by a person, or by the sweep because it was overdue.",
+      "type": "object",
+      "required": [
+        "caseId",
+        "kind",
+        "status",
+        "priority",
+        "queue",
+        "title",
+        "nextAction",
+        "nextActionRole",
+        "escalationLevel",
+        "dueAt",
+        "escalatedBy",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "pattern": "^cas_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "kind": {
+          "enum": [
+            "EXPOSURE",
+            "OUTCOME_UNKNOWN",
+            "CANCELLATION_INCOMPLETE",
+            "RECOVERY_APPROVAL",
+            "RECOVERY_FAILED",
+            "BOOKING_FAILED",
+            "PAYMENT_DECLINED",
+            "TRAVELER_REQUEST",
+            "SAFETY",
+            "OTHER"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "IN_PROGRESS",
+            "WAITING",
+            "ESCALATED",
+            "RESOLVED",
+            "CLOSED"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "CRITICAL",
+            "HIGH",
+            "NORMAL",
+            "LOW"
+          ]
+        },
+        "queue": {
+          "enum": [
+            "TRAVEL_OPS",
+            "FINANCE",
+            "APPROVALS",
+            "SAFETY"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "disruptionId": {
+          "type": "string"
+        },
+        "exposureId": {
+          "type": "string"
+        },
+        "owner": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "nextAction": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "nextActionRole": {
+          "type": "string"
+        },
+        "escalationLevel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dueAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "escalatedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "travel.assistance.case-resolved": {
+      "description": "The fact behind the case is settled: the platform reported it, or a person recorded what they did.",
+      "type": "object",
+      "required": [
+        "caseId",
+        "kind",
+        "status",
+        "priority",
+        "queue",
+        "title",
+        "nextAction",
+        "nextActionRole",
+        "escalationLevel",
+        "dueAt",
+        "resolvedBy",
+        "resolution"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "pattern": "^cas_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "kind": {
+          "enum": [
+            "EXPOSURE",
+            "OUTCOME_UNKNOWN",
+            "CANCELLATION_INCOMPLETE",
+            "RECOVERY_APPROVAL",
+            "RECOVERY_FAILED",
+            "BOOKING_FAILED",
+            "PAYMENT_DECLINED",
+            "TRAVELER_REQUEST",
+            "SAFETY",
+            "OTHER"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "IN_PROGRESS",
+            "WAITING",
+            "ESCALATED",
+            "RESOLVED",
+            "CLOSED"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "CRITICAL",
+            "HIGH",
+            "NORMAL",
+            "LOW"
+          ]
+        },
+        "queue": {
+          "enum": [
+            "TRAVEL_OPS",
+            "FINANCE",
+            "APPROVALS",
+            "SAFETY"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "disruptionId": {
+          "type": "string"
+        },
+        "exposureId": {
+          "type": "string"
+        },
+        "owner": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "nextAction": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "nextActionRole": {
+          "type": "string"
+        },
+        "escalationLevel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dueAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resolvedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "resolution": {
+          "type": "string",
+          "maxLength": 4000
+        }
+      }
+    },
+    "travel.assistance.case-closed": {
+      "description": "A resolved case was closed by a person once the traveler was told.",
+      "type": "object",
+      "required": [
+        "caseId",
+        "kind",
+        "status",
+        "priority",
+        "queue",
+        "title",
+        "nextAction",
+        "nextActionRole",
+        "escalationLevel",
+        "dueAt",
+        "closedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "caseId": {
+          "type": "string",
+          "pattern": "^cas_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "kind": {
+          "enum": [
+            "EXPOSURE",
+            "OUTCOME_UNKNOWN",
+            "CANCELLATION_INCOMPLETE",
+            "RECOVERY_APPROVAL",
+            "RECOVERY_FAILED",
+            "BOOKING_FAILED",
+            "PAYMENT_DECLINED",
+            "TRAVELER_REQUEST",
+            "SAFETY",
+            "OTHER"
+          ]
+        },
+        "status": {
+          "enum": [
+            "OPEN",
+            "IN_PROGRESS",
+            "WAITING",
+            "ESCALATED",
+            "RESOLVED",
+            "CLOSED"
+          ]
+        },
+        "priority": {
+          "enum": [
+            "CRITICAL",
+            "HIGH",
+            "NORMAL",
+            "LOW"
+          ]
+        },
+        "queue": {
+          "enum": [
+            "TRAVEL_OPS",
+            "FINANCE",
+            "APPROVALS",
+            "SAFETY"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "disruptionId": {
+          "type": "string"
+        },
+        "exposureId": {
+          "type": "string"
+        },
+        "owner": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "nextAction": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "nextActionRole": {
+          "type": "string"
+        },
+        "escalationLevel": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dueAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "closedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    }
+  }
+}

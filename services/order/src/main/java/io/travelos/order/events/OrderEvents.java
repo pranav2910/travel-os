@@ -132,6 +132,31 @@ public final class OrderEvents {
     return envelope("travel.order.cancelled", o, causationId, data, clock);
   }
 
+  /** Phase 6: a partial cancellation released some items; the order stays for the rest. */
+  public static EventEnvelope itemsReleased(
+      OrderRecord o,
+      java.util.List<OrderRecord.Item> released,
+      List<ExposureRecord> refused,
+      @Nullable Money refund,
+      String reason,
+      Principal by,
+      @Nullable String causationId,
+      Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("orderId", o.orderId());
+    data.put("tripId", o.tripId());
+    data.put("items", items(released));
+    if (!refused.isEmpty()) {
+      data.put("refused", exposures(refused));
+    }
+    if (refund != null) {
+      data.put("refund", money(refund));
+    }
+    data.put("reason", reason);
+    data.put("releasedBy", by.id());
+    return envelope("travel.order.items-released", o, causationId, data, clock);
+  }
+
   public static EventEnvelope changeRequested(
       OrderRecord o, OrderChangeRecord c, @Nullable String causationId, Clock clock) {
     Map<String, Object> data = base(o);
@@ -176,8 +201,12 @@ public final class OrderEvents {
   }
 
   private static List<Map<String, Object>> items(OrderRecord o) {
+    return items(o.items());
+  }
+
+  private static List<Map<String, Object>> items(List<OrderRecord.Item> source) {
     List<Map<String, Object>> items = new ArrayList<>();
-    for (OrderRecord.Item item : o.items()) {
+    for (OrderRecord.Item item : source) {
       Map<String, Object> m = new LinkedHashMap<>();
       m.put("itemId", item.itemId());
       m.put("type", item.offerType());

@@ -1,0 +1,33 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RR",
+  "eventType": "travel.order.items-released",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "data": {
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "items": [
+      {
+        "itemId": "itm_01K4Q0N7S6Z2X8G5H3J9M1P7RK",
+        "type": "HOTEL",
+        "status": "CANCELLED",
+        "provider": "sandbox-hotel",
+        "componentId": "cmp_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+        "total": {
+          "currency": "USD",
+          "amountMinor": 50000
+        }
+      }
+    ],
+    "refund": {
+      "currency": "USD",
+      "amountMinor": 50000
+    },
+    "reason": "the meeting moved online; the hotel is not needed",
+    "releasedBy": "human/alice"
+  }
+}

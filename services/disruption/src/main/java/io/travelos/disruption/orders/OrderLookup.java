@@ -25,6 +25,32 @@ public class OrderLookup {
     this.channels = channels;
   }
 
+  /** Phase 6: the order by id, for a traveler's change request. Empty when unknown. */
+  public Optional<Order> byId(String tenantId, String correlationId, String orderId) {
+    try {
+      return Optional.of(
+          OrderServiceGrpc.newBlockingStub(channels.channel(CLIENT))
+              .withDeadlineAfter(channels.deadline(CLIENT).toMillis(), TimeUnit.MILLISECONDS)
+              .getOrder(
+                  io.travelos.contracts.order.v1.GetOrderRequest.newBuilder()
+                      .setCtx(
+                          RequestContext.newBuilder()
+                              .setTenantId(tenantId)
+                              .setCorrelationId(correlationId)
+                              .setPrincipal(
+                                  Principal.newBuilder()
+                                      .setKind(Principal.Kind.SERVICE)
+                                      .setId(PRINCIPAL)))
+                      .setOrderId(orderId)
+                      .build()));
+    } catch (StatusRuntimeException e) {
+      if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
+        return Optional.empty();
+      }
+      throw e;
+    }
+  }
+
   /**
    * Empty when the reference is not one of ours; other failures propagate (the consumer retries).
    */

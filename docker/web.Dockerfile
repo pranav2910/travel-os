@@ -37,5 +37,6 @@ ENV PORT=8080 \
     AUDIT_URL=http://audit:8088 \
     DISRUPTION_URL=http://disruption:8089 \
     ENTERPRISE_CONTEXT_URL=http://enterprise-context:8090 \
-    LEARNING_URL=http://learning:8091
+    LEARNING_URL=http://learning:8091 \
+    ASSISTANCE_URL=http://assistance:8092
 EXPOSE 8080

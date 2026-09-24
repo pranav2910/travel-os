@@ -114,3 +114,21 @@ Status distinction: sandbox-payments flows are implemented and test-verified; St
 and provider-test-blocked (contract tests only; no `STRIPE_SECRET_KEY` in this environment; nothing
 here is a live payment); invoice documents (PDF) and automatic credit application at suppliers are
 absent.
+
+## Phase 6 — servicing, partial cancellation, traveler requests, cases (ADR-0018)
+
+| Command | Result |
+|---|---|
+| `./gradlew --offline :libs:events:test` | 83 run, 83 passed (topic `travel.assistance` with 5 event types; `travel.order.items-released`, `travel.trip.component-cancellation-requested`, `travel.trip.components-released`; `TRAVELER_REQUEST` disruption type and requested-window fields, all with examples) |
+| `./gradlew --offline :services:order:test --tests '*OrderIntegrationTest'` | 20 run, 20 passed: `aPartialCancellationReleasesOnlyTheNamedComponentsAndKeepsTheOrder` (one hotel released and refunded per item, the flight untouched, the order CONFIRMED, a repeat releases nothing twice, a non-refundable component is CANCEL_FAILED with an exposure for a person, an unknown component is NOT_FOUND) |
+| `./gradlew --offline :workflows:trip-planning:test --tests '*TripCancellationWorkflowTest'` | 10 run, 10 passed (3 Phase 6 cases: components reported CANCELLED with the trip left BOOKED; a refusal reported CANCEL_FAILED with its code; a trip that is not BOOKED left alone) |
+| `./gradlew --offline :services:travel-core:test --tests '*ItineraryApiIntegrationTest'` | 7 run, 7 passed (`aComponentOfABookedTripIsReleasedOnItsOwnAndTheTripStaysBooked`: 404 for a stranger, 403 for a manager who only sees the trip, 202 CANCELLING for the traveler, one request event however often it is asked, the release reported and announced, the trip BOOKED throughout) |
+| `./gradlew --offline :services:assistance:test` | 5 run, 5 passed (`AssistanceIntegrationTest`: an exposure is one case however often it is told and names the traveler; the traveler sees it read-only and a colleague or another tenant sees nothing; assignment, notes, WAITING, closure refused before resolution, the summary; settled by `travel.order.exposure-resolved`, then closed with the full history; a recovery approval case is CRITICAL, escalates by the sweep when overdue (2s SLA in the test profile), escalates by a person up to level 3, settles on `travel.disruption.resolved`; seven kinds of unfinished business open from seven events and four settle from the platform's own facts; a traveler opens a request on her own trip only, idempotently, and a SAFETY case is CRITICAL; every `travel.assistance.*` event contract-valid) |
+| `./gradlew --offline :services:disruption:test` | 7 run, 7 passed (`aTravelerAsksToMoveHerFlightAndTheRequestBecomesARecoveryWithHerAsTheActor`: 404 for someone else's order, 201 IMPACT_CONFIRMED with the requested window and requester, the same key is the same disruption, past windows and unknown components refused, the contract-valid `impact-confirmed` event keyed by the trip) |
+| `./gradlew --offline :workflows:trip-planning:test --tests '*RecoveryWorkflowTest'` | 17 run, 17 passed (`aTravelerRequestSearchesTheAskedWindowAndPolicyJudgesThePersonNotTheAgent`: the search window is the requested one, policy is asked with the HUMAN requester as the actor against the retimed intent, the order change stays the agent's single mutation, the decision record names the request) |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`, Docker stack down) | BUILD SUCCESSFUL in 4m 12s; every module green (travel-core 88, trip-planning 70, supplier-gateway 42 + 2 skipped, policy 41, order 36, enterprise-context 17, learning 14, disruption 7, assistance 5, events 83, both Python suites) |
+
+Status distinction: partial cancellation, traveler-requested changes and cases are implemented and
+test-verified against the SIMULATED suppliers and payment provider; nothing here was exercised
+against a live supplier. Not implemented: per-passenger changes (single-traveler trip model),
+notifications of case changes to people (Phase 8), safety advisories and acknowledgements (Phase 8).

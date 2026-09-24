@@ -6,6 +6,8 @@ package io.travelos.workflows;
  * these per trip and reports back through Travel Core's transitions (CANCELLING stays until every
  * component is released; CANCELLED only then).
  */
+import org.jspecify.annotations.Nullable;
+
 public final class TripCancellation {
 
   /** Shares the planning queue: the same worker, the same activities. */
@@ -19,13 +21,37 @@ public final class TripCancellation {
     return "cancel:" + tripId;
   }
 
+  /** Phase 6: one release workflow per component request; the same components again is a no-op. */
+  public static String workflowId(String tripId, java.util.List<String> componentIds) {
+    if (componentIds == null || componentIds.isEmpty()) {
+      return workflowId(tripId);
+    }
+    return "cancel:" + tripId + ":" + String.join("+", new java.util.TreeSet<>(componentIds));
+  }
+
   private TripCancellation() {}
 
   /**
    * @param requestedBy canonical principal id of the person who asked, e.g. human/alice
+   * @param componentIds Phase 6: release only these components (the trip stays BOOKED); empty or
+   *     null = the whole reservation
    */
   public record Input(
-      String tenantId, String tripId, String orderId, String reason, String requestedBy) {}
+      String tenantId,
+      String tripId,
+      String orderId,
+      String reason,
+      String requestedBy,
+      java.util.@Nullable List<String> componentIds) {
+    public Input(
+        String tenantId, String tripId, String orderId, String reason, String requestedBy) {
+      this(tenantId, tripId, orderId, reason, requestedBy, null);
+    }
+
+    public boolean partial() {
+      return componentIds != null && !componentIds.isEmpty();
+    }
+  }
 
   public enum Stage {
     LOADING,

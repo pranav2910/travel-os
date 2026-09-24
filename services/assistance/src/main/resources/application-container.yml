@@ -1,0 +1,11 @@
+# Active whenever the service runs in a container (docker compose app stack, kind, EKS): the `container` profile. Tokens are minted by
+# clients through http://localhost:8180, so that is their `iss`; the service validates that issuer
+# but fetches the signing keys over the compose network, where Keycloak is reachable as `keycloak`.
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/travelos}
+          jwk-set-uri: ${OIDC_JWK_SET_URI:http://keycloak:8180/realms/travelos/protocol/openid-connect/certs}
+          audiences: travelos-api

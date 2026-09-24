@@ -170,6 +170,9 @@ message CancelOrderCommand {
   travelos.common.v1.RequestContext ctx = 1;
   string order_id = 2;
   string reason = 3;
+  // Phase 6: release only these itinerary components (a partial cancellation); the order stays
+  // as it is for the rest. Empty = the whole order, as before.
+  repeated string component_ids = 4;
 }
 
 message ChangeOrderCommand {

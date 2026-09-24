@@ -55,14 +55,64 @@ final class FakeOrderService extends OrderServiceGrpc.OrderServiceImplBase {
                     .setStatus(OrderItemStatus.ITEM_CONFIRMED)
                     .setExternalRef(externalRef)
                     .setRecordLocator("TM3KA6")
+                    .setComponentId("cmp_01ARZ3NDEKTSV4RRFFQ69G5FA0")
                     .setOffer(
                         Offer.newBuilder()
                             .setOfferId("off_01ARZ3NDEKTSV4RRFFQ69G5FA0")
                             .setProvider("sandbox-air")
                             .setProviderOfferId("SBX-orig")
                             .setType(OfferType.AIR)
+                            .setComponentId("cmp_01ARZ3NDEKTSV4RRFFQ69G5FA0")
+                            .setAir(
+                                io.travelos.contracts.offer.v1.AirOffer.newBuilder()
+                                    .setOutbound(
+                                        io.travelos.contracts.offer.v1.Journey.newBuilder()
+                                            .addSegments(
+                                                io.travelos.contracts.offer.v1.FlightSegment
+                                                    .newBuilder()
+                                                    .setCarrier("DL")
+                                                    .setFlightNumber("DL240")
+                                                    .setOrigin("BOS")
+                                                    .setDestination("SEA")
+                                                    .setDeparture(
+                                                        com.google.protobuf.Timestamp.newBuilder()
+                                                            .setSeconds(
+                                                                java.time.Instant.parse(
+                                                                        "2026-10-06T10:00:00Z")
+                                                                    .getEpochSecond()))
+                                                    .setArrival(
+                                                        com.google.protobuf.Timestamp.newBuilder()
+                                                            .setSeconds(
+                                                                java.time.Instant.parse(
+                                                                        "2026-10-06T16:00:00Z")
+                                                                    .getEpochSecond())))))
                             .setTotal(Money.newBuilder().setCurrency("USD").setAmountMinor(49558))))
             .build());
+  }
+
+  /** Phase 6: the order by id, for a traveler's change request. */
+  @Override
+  public void getOrder(
+      io.travelos.contracts.order.v1.GetOrderRequest request, StreamObserver<Order> observer) {
+    if (down) {
+      observer.onError(
+          Status.UNAVAILABLE.withDescription("order service is down").asRuntimeException());
+      return;
+    }
+    Order order =
+        byRef.values().stream()
+            .filter(
+                o ->
+                    o.getTenantId().equals(request.getCtx().getTenantId())
+                        && o.getOrderId().equals(request.getOrderId()))
+            .findFirst()
+            .orElse(null);
+    if (order == null) {
+      observer.onError(Status.NOT_FOUND.withDescription("no such order").asRuntimeException());
+      return;
+    }
+    observer.onNext(order);
+    observer.onCompleted();
   }
 
   @Override

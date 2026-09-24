@@ -208,6 +208,23 @@ services:
     depends_on:
       <<: *infra-ready
 
+  assistance:
+    <<: *java
+    image: ghcr.io/pranav2910/travel-os/assistance:${TAG:-local}
+    build:
+      context: ../..
+      dockerfile: docker/java.Dockerfile
+      args:
+        JAR: services/assistance/build/libs/assistance-0.1.0-SNAPSHOT.jar
+    environment:
+      <<: *java-env
+      PORT: 8092
+      ASSISTANCE_DB_URL: jdbc:postgresql://postgres:5432/assistance
+    ports:
+      - "8092:8092"
+    depends_on:
+      <<: *infra-ready
+
   # The web app: the React build behind nginx, which also proxies /api/v1/* to the services above, so
   # the browser talks to one origin (http://localhost:8080). Keycloak stays on :8180 (OIDC redirects).
   web:
@@ -235,6 +252,7 @@ services:
     depends_on:
       travel-core: { condition: service_healthy }
       learning: { condition: service_healthy }
+      assistance: { condition: service_healthy }
 
   trip-planning:
     <<: *java

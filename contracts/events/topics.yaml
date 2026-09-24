@@ -19,7 +19,7 @@ topics:
 
   - name: travel.trip
     slice: 1
-    events: [travel.trip.created, travel.trip.planned, travel.trip.quoted, travel.trip.purchase-authorized, travel.trip.replanned, travel.trip.booked, travel.trip.cancellation-requested, travel.trip.cancellation-incomplete, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
+    events: [travel.trip.created, travel.trip.planned, travel.trip.quoted, travel.trip.purchase-authorized, travel.trip.replanned, travel.trip.booked, travel.trip.cancellation-requested, travel.trip.component-cancellation-requested, travel.trip.components-released, travel.trip.cancellation-incomplete, travel.trip.cancelled, travel.trip.failed, travel.trip.completed]
 
   - name: travel.search
     slice: 1
@@ -39,7 +39,7 @@ topics:
 
   - name: travel.order
     slice: 1
-    events: [travel.order.created, travel.order.confirmed, travel.order.change-requested, travel.order.changed, travel.order.cancelled, travel.order.failed, travel.order.compensation-failed, travel.order.exposure-resolved]
+    events: [travel.order.created, travel.order.confirmed, travel.order.change-requested, travel.order.changed, travel.order.cancelled, travel.order.items-released, travel.order.failed, travel.order.compensation-failed, travel.order.exposure-resolved]
 
   - name: travel.disruption
     slice: 2
@@ -64,6 +64,10 @@ topics:
   - name: travel.finance
     slice: 6
     events: [travel.finance.payment-authorized, travel.finance.payment-captured, travel.finance.payment-voided, travel.finance.payment-refunded, travel.finance.payment-declined, travel.finance.payable-recorded, travel.finance.payable-settled, travel.finance.credit-issued, travel.finance.credit-applied, travel.finance.credit-expired]
+
+  - name: travel.assistance
+    slice: 6
+    events: [travel.assistance.case-opened, travel.assistance.case-assigned, travel.assistance.case-escalated, travel.assistance.case-resolved, travel.assistance.case-closed]
 
   - name: travel.audit
     slice: 1

@@ -256,6 +256,26 @@ public class TripController {
     return TripResponse.from(trips.complete(me, tripId));
   }
 
+  /**
+   * Phase 6: release one component of a booked trip (the hotel is not needed, the return flight
+   * is). The trip stays BOOKED; the component becomes CANCELLING, then CANCELLED or CANCEL_FAILED
+   * with an exposure for a person. Refunds and credits reach the finance ledger per item.
+   */
+  @PostMapping(
+      path = "/{tripId}/components/{componentId}/cancellation",
+      consumes = "application/json")
+  public ResponseEntity<TripResponse.ComponentView> cancelComponent(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @PathVariable String componentId,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @Valid @RequestBody CancelTripRequest request) {
+    return ResponseEntity.accepted()
+        .body(
+            TripResponse.ComponentView.from(
+                trips.cancelComponent(me, tripId, componentId, request.reason())));
+  }
+
   /** Cancellation is a POST that returns 200 with the new state; repeats are idempotent. */
   @PostMapping(path = "/{tripId}/cancellation", consumes = "application/json")
   public TripResponse cancel(

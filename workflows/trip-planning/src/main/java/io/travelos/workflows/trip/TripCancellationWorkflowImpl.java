@@ -12,12 +12,15 @@ import io.travelos.contracts.order.v1.Order;
 import io.travelos.contracts.order.v1.OrderItem;
 import io.travelos.contracts.order.v1.OrderItemStatus;
 import io.travelos.contracts.order.v1.OrderStatus;
+import io.travelos.contracts.trip.v1.ComponentState;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.Trip;
 import io.travelos.contracts.trip.v1.TripStatus;
+import io.travelos.contracts.trip.v1.UpdateComponentsRequest;
 import io.travelos.workflows.TripCancellation;
 import java.time.Duration;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 /**
@@ -80,6 +83,9 @@ public class TripCancellationWorkflowImpl implements TripCancellationWorkflow {
     String tenant = input.tenantId();
     String tripId = input.tripId();
     Trip trip = travelCore.loadTrip(tenant, tripId);
+    if (input.partial()) {
+      return releaseComponents(input, trip);
+    }
     if (trip.getStatus() == TripStatus.CANCELLED) {
       stage = TripCancellation.Stage.CANCELLED;
       return new Outcome(tripId, "CANCELLED", null);
@@ -171,6 +177,105 @@ public class TripCancellationWorkflowImpl implements TripCancellationWorkflow {
   @Override
   public TripCancellation.Stage stage() {
     return stage;
+  }
+
+  /**
+   * Phase 6: release only the named components; the trip stays BOOKED. The Order service releases
+   * (refunds and credits reach the finance ledger per item); a refusal is an exposure for a person,
+   * reported on the component as CANCEL_FAILED; a lost answer resumes from item states.
+   */
+  private Outcome releaseComponents(TripCancellation.Input input, Trip trip) {
+    String tenant = input.tenantId();
+    String tripId = input.tripId();
+    java.util.List<String> componentIds = input.componentIds();
+    if (trip.getStatus() != TripStatus.BOOKED) {
+      log.warn("trip {} is {}, not BOOKED; components are not released", tripId, trip.getStatus());
+      stage = TripCancellation.Stage.NOTHING_TO_DO;
+      return new Outcome(tripId, trip.getStatus().name(), null);
+    }
+    String orderId = input.orderId().isBlank() ? trip.getOrderId() : input.orderId();
+    String reason = input.reason().isBlank() ? "component cancelled" : input.reason();
+    stage = TripCancellation.Stage.RELEASING;
+    Order order;
+    try {
+      order =
+          releasing.cancelOrder(
+              CancelOrderCommand.newBuilder()
+                  .setCtx(ctx(tenant, tripId, tripId + ":RELEASE-COMPONENTS:1"))
+                  .setOrderId(orderId)
+                  .setReason(reason)
+                  .addAllComponentIds(componentIds)
+                  .build());
+    } catch (ActivityFailure e) {
+      String code = FailureCodes.of(e);
+      log.error("trip {}: components {} could not be released: {}", tripId, componentIds, code);
+      report(tenant, tripId, trip, componentIds, null, "CANCEL_FAILED", code);
+      stage = TripCancellation.Stage.INCOMPLETE;
+      return new Outcome(tripId, "BOOKED", code);
+    }
+    report(tenant, tripId, trip, componentIds, order, null, null);
+    boolean refused =
+        order.getItemsList().stream()
+            .anyMatch(
+                i ->
+                    componentIds.contains(i.getComponentId())
+                        && i.getStatus() == OrderItemStatus.ITEM_CANCEL_FAILED);
+    stage = refused ? TripCancellation.Stage.AWAITING_RESOLUTION : TripCancellation.Stage.CANCELLED;
+    return new Outcome(tripId, "BOOKED", refused ? "CANCELLATION_INCOMPLETE" : null);
+  }
+
+  /** Tells Travel Core what became of each named component, from the order's item states. */
+  private void report(
+      String tenant,
+      String tripId,
+      Trip trip,
+      java.util.List<String> componentIds,
+      @Nullable Order order,
+      @Nullable String forcedStatus,
+      @Nullable String failureCode) {
+    UpdateComponentsRequest.Builder update =
+        UpdateComponentsRequest.newBuilder().setCtx(ctx(tenant, tripId, "")).setTripId(tripId);
+    for (String componentId : componentIds) {
+      ComponentState.Builder state = ComponentState.newBuilder().setComponentId(componentId);
+      trip.getComponentsList().stream()
+          .filter(c -> c.getComponentId().equals(componentId))
+          .findFirst()
+          .ifPresent(
+              c ->
+                  state
+                      .setType(c.getType())
+                      .setOfferId(c.getOfferId())
+                      .setProvider(c.getProvider())
+                      .setExternalRef(c.getExternalRef())
+                      .setTotal(c.getTotal())
+                      .setSummary(c.getSummary()));
+      if (forcedStatus != null) {
+        state.setStatus(forcedStatus).setFailureCode(failureCode == null ? "" : failureCode);
+      } else if (order != null) {
+        OrderItem item =
+            order.getItemsList().stream()
+                .filter(i -> i.getComponentId().equals(componentId))
+                .reduce((a, b) -> b)
+                .orElse(null);
+        if (item == null) {
+          state.setStatus("CANCEL_FAILED").setFailureCode("COMPONENT_UNKNOWN");
+        } else {
+          state.setStatus(
+              switch (item.getStatus()) {
+                case ITEM_CANCELLED -> "CANCELLED";
+                case ITEM_CANCEL_FAILED -> "CANCEL_FAILED";
+                default -> "CONFIRMED";
+              });
+          state.setFailureCode(item.getFailureCode());
+        }
+      }
+      update.addComponents(state);
+    }
+    try {
+      travelCore.updateComponents(update.build());
+    } catch (ActivityFailure e) {
+      log.error("trip {}: component states could not be reported: {}", tripId, FailureCodes.of(e));
+    }
   }
 
   private Order cancelOrder(String tenant, String tripId, String orderId, String reason) {

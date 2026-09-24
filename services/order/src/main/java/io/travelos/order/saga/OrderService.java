@@ -575,6 +575,146 @@ public class OrderService {
         });
   }
 
+  // ------------------------------------------------------------------ Phase 6: partial release
+
+  /**
+   * Releases only the named components at their suppliers; the order keeps its status for the rest.
+   * Idempotent by item state: released items are skipped, a refusal is an exposure for a person
+   * (never asked again by machine), a lost answer resumes from the item states.
+   */
+  private OrderRecord releaseComponents(
+      RequestContexts.Validated ctx, CancelOrderCommand command, OrderRecord order) {
+    if (order.status() != OrderStatus.CONFIRMED && order.status() != OrderStatus.CHANGED) {
+      throw Status.FAILED_PRECONDITION
+          .withDescription("ORDER_NOT_CONFIRMED: status " + order.status())
+          .asRuntimeException();
+    }
+    java.util.Set<String> wanted = new java.util.HashSet<>(command.getComponentIdsList());
+    List<Item> targets =
+        order.items().stream()
+            .filter(i -> i.componentId() != null && wanted.contains(i.componentId()))
+            .toList();
+    if (targets.isEmpty()) {
+      throw Status.NOT_FOUND
+          .withDescription(
+              "COMPONENT_UNKNOWN: none of " + wanted + " is part of order " + order.orderId())
+          .asRuntimeException();
+    }
+    String reason = command.getReason().isBlank() ? "component cancelled" : command.getReason();
+    List<Item> released = new ArrayList<>();
+    List<ExposureRecord> refusedNow = new ArrayList<>();
+    for (Item item : targets) {
+      if (item.status() != ItemStatus.CONFIRMED) {
+        continue; // already released, refused earlier, or never confirmed
+      }
+      CancelOrderResponse response;
+      try {
+        response =
+            suppliers.cancelOrder(
+                CancelOrderRequest.newBuilder()
+                    .setCtx(command.getCtx())
+                    .setProvider(item.provider())
+                    .setExternalOrderId(item.externalRef() == null ? "" : item.externalRef())
+                    .build());
+      } catch (StatusRuntimeException e) {
+        if (SupplierClient.isRetryable(e.getStatus())) {
+          throw e;
+        }
+        String code = failureCode(e);
+        metrics.cancelled(item.offerType(), "REFUSED");
+        ExposureRecord exposure =
+            new ExposureRecord(
+                Ids.newId(IdPrefix.EXPOSURE),
+                order.orderId(),
+                item.itemId(),
+                item.componentId(),
+                item.provider(),
+                item.externalRef() == null ? "" : item.externalRef(),
+                item.total(),
+                "CANCELLATION_REFUSED",
+                code
+                    + ": "
+                    + (e.getStatus().getDescription() == null
+                        ? code
+                        : e.getStatus().getDescription()),
+                ExposureRecord.Status.OPEN,
+                null,
+                null,
+                null,
+                clock.instant(),
+                null);
+        tx.executeWithoutResult(
+            s -> {
+              orders.updateItem(
+                  item.itemId(), ItemStatus.CANCEL_FAILED, null, null, code, clock.instant());
+              exposures.insert(ctx.tenant(), exposure);
+            });
+        refusedNow.add(exposure);
+        continue;
+      }
+      Money itemRefund =
+          response.hasRefund() && !response.getRefund().getCurrency().isBlank()
+              ? money(response.getRefund())
+              : Money.of(item.total().currency(), 0);
+      metrics.cancelled(item.offerType(), "RELEASED");
+      tx.executeWithoutResult(
+          s -> {
+            orders.updateItem(
+                item.itemId(), ItemStatus.CANCELLED, null, null, null, clock.instant());
+            orders.recordItemRefund(item.itemId(), itemRefund, clock.instant());
+          });
+      finance.refund(
+          order,
+          item.itemId(),
+          itemRefund,
+          "component cancellation refund from " + item.provider(),
+          "1");
+      if (response.hasCredit() && response.getCredit().getAmountMinor() > 0) {
+        finance.issueCredit(
+            order,
+            item,
+            money(response.getCredit()),
+            response.getCreditReference().isBlank()
+                ? item.externalRef() + ":credit"
+                : response.getCreditReference(),
+            response.hasCreditExpiresAt()
+                ? Instant.ofEpochSecond(response.getCreditExpiresAt().getSeconds())
+                : null);
+      }
+      released.add(item);
+    }
+    OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
+    if (!released.isEmpty() || !refusedNow.isEmpty()) {
+      Money refund = Money.of(fresh.total().currency(), 0);
+      for (Item i : fresh.items()) {
+        if (released.stream().anyMatch(r -> r.itemId().equals(i.itemId()))) {
+          Optional<Money> r = orders.refundOf(i.itemId());
+          if (r.isPresent() && r.get().currency().equals(refund.currency())) {
+            refund = refund.plus(r.get());
+          }
+        }
+      }
+      Money total = refund;
+      List<Item> releasedNow =
+          fresh.items().stream()
+              .filter(i -> released.stream().anyMatch(r -> r.itemId().equals(i.itemId())))
+              .toList();
+      tx.executeWithoutResult(
+          s ->
+              outbox.append(
+                  OrderEvents.itemsReleased(
+                      fresh,
+                      releasedNow,
+                      refusedNow,
+                      total,
+                      reason,
+                      ctx.principal(),
+                      command.getCtx().getCausationId(),
+                      clock)));
+    }
+    return fresh;
+  }
+
   // ------------------------------------------------------------------ Phase 5: finance
 
   public io.travelos.order.finance.FinanceService.Receipt receipt(OrderRecord order) {
@@ -687,6 +827,9 @@ public class OrderService {
   public OrderRecord cancel(CancelOrderCommand command) {
     RequestContexts.Validated ctx = RequestContexts.require(command.getCtx());
     OrderRecord order = get(ctx.tenant(), command.getOrderId());
+    if (command.getComponentIdsCount() > 0) {
+      return releaseComponents(ctx, command, order);
+    }
     if (order.status() == OrderStatus.CANCELLED) {
       return order;
     }

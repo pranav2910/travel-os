@@ -445,6 +445,143 @@ class ItineraryApiIntegrationTest {
         .isIn("DEPARTURE_IN_PAST", "INTENT_INVALID");
   }
 
+  // ------------------------------------------------------------------ Phase 6
+
+  @Test
+  void aComponentOfABookedTripIsReleasedOnItsOwnAndTheTripStaysBooked() {
+    String tripId =
+        json.readTree(post(TestTokens.alice(), ITINERARY).getBody()).get("tripId").asString();
+    transition(tripId, TripStatus.PLANNING, b -> {});
+    transition(
+        tripId,
+        TripStatus.APPROVED,
+        b ->
+            b.setTotal(usd(55000))
+                .setSelectedBundleId("bdl_01ARZ3NDEKTSV4RRFFQ69G5FC6")
+                .setReason("in policy"));
+    transition(tripId, TripStatus.BOOKING, b -> {});
+    Trip proto =
+        core.getTrip(GetTripRequest.newBuilder().setCtx(ctx("acme")).setTripId(tripId).build());
+    String leg1 = proto.getIntent().getItinerary().getLegs(0).getComponentId();
+    String stay1 = proto.getIntent().getItinerary().getStays(0).getComponentId();
+    core.updateComponents(
+        UpdateComponentsRequest.newBuilder()
+            .setCtx(ctx("acme"))
+            .setTripId(tripId)
+            .addComponents(
+                ComponentState.newBuilder()
+                    .setComponentId(leg1)
+                    .setType("AIR")
+                    .setStatus("CONFIRMED")
+                    .setProvider("sandbox-air")
+                    .setExternalRef("SBX-1")
+                    .setTotal(usd(31200))
+                    .setSummary("DL240 BOS-SEA 06 Oct"))
+            .addComponents(
+                ComponentState.newBuilder()
+                    .setComponentId(stay1)
+                    .setType("HOTEL")
+                    .setStatus("CONFIRMED")
+                    .setProvider("sandbox-hotel")
+                    .setExternalRef("HB-1")
+                    .setTotal(usd(23800))
+                    .setSummary("Harbor Suites 06-08 Oct"))
+            .build());
+    Trip booked =
+        transition(tripId, TripStatus.BOOKED, b -> b.setOrderId("ord_01ARZ3NDEKTSV4RRFFQ69G5FC6"));
+    assertThat(booked.getStatus()).isEqualTo(TripStatus.BOOKED);
+
+    // a stranger sees no trip; a manager who merely sees it may not release; the traveler may
+    String path = "/api/v1/trips/" + tripId + "/components/" + stay1 + "/cancellation";
+    String body = "{\"reason\":\"the meeting moved online; the hotel is not needed\"}";
+    assertThat(postJson(path, TestTokens.dan(), "cc-dan-" + tripId, body).getStatusCode().value())
+        .isEqualTo(404);
+    assertThat(postJson(path, TestTokens.bob(), "cc-bob-" + tripId, body).getStatusCode().value())
+        .isEqualTo(403);
+    ResponseEntity<String> accepted = postJson(path, TestTokens.alice(), "cc-1-" + tripId, body);
+    assertThat(accepted.getStatusCode().value()).as(accepted.getBody()).isEqualTo(202);
+    JsonNode cancelling = json.readTree(accepted.getBody());
+    assertThat(cancelling.get("status").asString()).isEqualTo("CANCELLING");
+    assertThat(
+            json.readTree(get("/api/v1/trips/" + tripId, TestTokens.alice()).getBody())
+                .get("status")
+                .asString())
+        .isEqualTo("BOOKED");
+    // again: the same state, no second request
+    assertThat(
+            json.readTree(postJson(path, TestTokens.alice(), "cc-2-" + tripId, body).getBody())
+                .get("status")
+                .asString())
+        .isEqualTo("CANCELLING");
+    ConsumerRecord<String, String> requested =
+        awaitEvent(tripId, "travel.trip.component-cancellation-requested");
+    assertThat(EventSchemas.violations(requested.value())).isEmpty();
+    JsonNode data = json.readTree(requested.value()).get("data");
+    assertThat(data.get("orderId").asString()).isEqualTo("ord_01ARZ3NDEKTSV4RRFFQ69G5FC6");
+    assertThat(data.get("componentIds").get(0).asString()).isEqualTo(stay1);
+    assertThat(data.get("requestedBy").asString()).isEqualTo("human/alice");
+    assertThat(
+            received.stream()
+                .filter(r -> r.key().equals(tripId))
+                .filter(r -> r.value().contains("travel.trip.component-cancellation-requested"))
+                .count())
+        .isEqualTo(1);
+
+    // the workflow reports the release; the trip announces it and stays BOOKED
+    core.updateComponents(
+        UpdateComponentsRequest.newBuilder()
+            .setCtx(ctx("acme"))
+            .setTripId(tripId)
+            .addComponents(
+                ComponentState.newBuilder()
+                    .setComponentId(stay1)
+                    .setType("HOTEL")
+                    .setStatus("CANCELLED")
+                    .setProvider("sandbox-hotel")
+                    .setExternalRef("HB-1")
+                    .setTotal(usd(23800))
+                    .setSummary("Harbor Suites 06-08 Oct"))
+            .build());
+    ConsumerRecord<String, String> released = awaitEvent(tripId, "travel.trip.components-released");
+    assertThat(EventSchemas.violations(released.value())).isEmpty();
+    assertThat(
+            json.readTree(released.value())
+                .get("data")
+                .get("components")
+                .get(0)
+                .get("status")
+                .asString())
+        .isEqualTo("CANCELLED");
+    JsonNode view = json.readTree(get("/api/v1/trips/" + tripId, TestTokens.alice()).getBody());
+    assertThat(view.get("status").asString()).isEqualTo("BOOKED");
+    assertThat(view.get("components").get(1).get("status").asString()).isEqualTo("CANCELLED");
+    assertThat(view.get("components").get(0).get("status").asString()).isEqualTo("CONFIRMED");
+    // a released component cannot be released again; the confirmed leg still can be
+    assertThat(
+            json.readTree(postJson(path, TestTokens.alice(), "cc-3-" + tripId, body).getBody())
+                .get("status")
+                .asString())
+        .isEqualTo("CANCELLED");
+    ResponseEntity<String> unknown =
+        postJson(
+            "/api/v1/trips/" + tripId + "/components/cmp_01ARZ3NDEKTSV4RRFFQ69G5FZZ/cancellation",
+            TestTokens.alice(),
+            "cc-4-" + tripId,
+            body);
+    assertThat(unknown.getStatusCode().value()).isEqualTo(404);
+  }
+
+  private ResponseEntity<String> postJson(String path, String token, String key, String body) {
+    return http.post()
+        .uri(path)
+        .contentType(MediaType.APPLICATION_JSON)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .header("Idempotency-Key", key)
+        .body(body)
+        .retrieve()
+        .toEntity(String.class);
+  }
+
   // ------------------------------------------------------------------ helpers
 
   private ResponseEntity<String> post(String token, String body) {

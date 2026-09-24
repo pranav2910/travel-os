@@ -1,0 +1,28 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RT",
+  "eventType": "travel.trip.components-released",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:11:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "travel-core",
+  "data": {
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "components": [
+      {
+        "componentId": "cmp_01K4Q0N7S6Z2X8G5H3J9M1P7RD",
+        "type": "HOTEL",
+        "status": "CANCELLED",
+        "provider": "sandbox-hotel",
+        "externalRef": "HB-1",
+        "total": {
+          "currency": "USD",
+          "amountMinor": 50000
+        },
+        "summary": "Harbor Suites 06-08 Oct"
+      }
+    ]
+  }
+}

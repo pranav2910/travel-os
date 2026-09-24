@@ -1,0 +1,28 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7T3",
+  "eventType": "travel.assistance.case-assigned",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-24T07:30:12Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7S4",
+  "producer": "assistance",
+  "data": {
+    "caseId": "cas_01K4Q0N7S6Z2X8G5H3J9M1P7T1",
+    "kind": "EXPOSURE",
+    "status": "IN_PROGRESS",
+    "priority": "HIGH",
+    "queue": "FINANCE",
+    "title": "USD 468.00 at risk with sandbox-hotel (SBH-01K4Q0N7S6Z2X8G5H3J9M1P7RK)",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "travelerId": "emp_1001",
+    "exposureId": "exp_01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+    "nextAction": "Release SBH-01K4Q0N7S6Z2X8G5H3J9M1P7RK with sandbox-hotel by phone or portal, then record the resolution on the order",
+    "nextActionRole": "TRAVEL_ADMIN",
+    "escalationLevel": 0,
+    "dueAt": "2026-09-24T11:30:12Z",
+    "assignedBy": "human/carol",
+    "owner": "human/carol"
+  }
+}

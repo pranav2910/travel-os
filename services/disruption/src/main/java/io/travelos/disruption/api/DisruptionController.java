@@ -2,12 +2,14 @@ package io.travelos.disruption.api;
 
 import io.travelos.disruption.model.Disruption;
 import io.travelos.disruption.model.RecoveryApproval;
+import io.travelos.disruption.service.ChangeRequestService;
 import io.travelos.disruption.service.DisruptionService;
 import io.travelos.disruption.service.DisruptionService.DisruptionAccess;
 import io.travelos.spring.web.auth.RequestPrincipal;
 import io.travelos.spring.web.error.ApiException;
 import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
@@ -38,9 +40,41 @@ public class DisruptionController {
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
   private final DisruptionService disruptions;
+  private final ChangeRequestService requests;
 
-  public DisruptionController(DisruptionService disruptions) {
+  public DisruptionController(DisruptionService disruptions, ChangeRequestService requests) {
     this.disruptions = disruptions;
+    this.requests = requests;
+  }
+
+  /** Phase 6: a traveler asks to move a booked flight into a window; see ChangeRequestService. */
+  public record ChangeRequestBody(
+      @NotBlank @Size(max = 64) String tripId,
+      @NotBlank @Size(max = 64) String orderId,
+      @NotBlank @Size(max = 64) String componentId,
+      @NotNull Instant notBefore,
+      @Nullable Instant notAfter,
+      @Nullable @Size(max = 1000) String reason) {}
+
+  @PostMapping(path = "/disruptions/requests", consumes = "application/json")
+  public org.springframework.http.ResponseEntity<DisruptionView> request(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @Valid @RequestBody ChangeRequestBody body) {
+    Disruption d =
+        requests.request(
+            me,
+            new ChangeRequestService.ChangeRequest(
+                body.tripId(),
+                body.orderId(),
+                body.componentId(),
+                body.notBefore(),
+                body.notAfter(),
+                body.reason()),
+            idempotencyKey);
+    return org.springframework.http.ResponseEntity.status(
+            org.springframework.http.HttpStatus.CREATED)
+        .body(view(d));
   }
 
   public record StatusChange(

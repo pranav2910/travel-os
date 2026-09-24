@@ -658,6 +658,97 @@ class OrderIntegrationTest {
             e -> assertThat(e.getStatus().getCode()).isEqualTo(io.grpc.Status.Code.NOT_FOUND));
   }
 
+  // ------------------------------------------------------------------ Phase 6
+
+  @Test
+  @org.junit.jupiter.api.Order(18)
+  void aPartialCancellationReleasesOnlyTheNamedComponentsAndKeepsTheOrder() {
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary(
+                    "bdl_01ARZ3NDEKTSV4RRFFQ69G5FB8",
+                    "ok-DL190",
+                    "hotel-SEA-8",
+                    "norefund-hotel-SEA-9")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    String hotel = order.getItems(1).getComponentId();
+    String nonRefundable = order.getItems(2).getComponentId();
+    String airRef = order.getItems(0).getExternalRef();
+
+    // the refundable hotel is not needed any more: only it is released, the order stays
+    CancelOrderCommand partial =
+        CancelOrderCommand.newBuilder()
+            .setCtx(ctx(order.getOrderId() + ":RELEASE-COMPONENTS:1"))
+            .setOrderId(order.getOrderId())
+            .setReason("the meeting moved online; the hotel is not needed")
+            .addComponentIds(hotel)
+            .build();
+    Order after = orders.cancelOrder(partial);
+    assertThat(after.getStatus())
+        .as("the order keeps its status for the rest")
+        .isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(after.getItems(0).getStatus()).isEqualTo(OrderItemStatus.ITEM_CONFIRMED);
+    assertThat(after.getItems(1).getStatus()).isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(after.getItems(2).getStatus()).isEqualTo(OrderItemStatus.ITEM_CONFIRMED);
+    assertThat(SUPPLIER.cancelled)
+        .contains(order.getItems(1).getExternalRef())
+        .doesNotContain(airRef);
+    // the same request again releases nothing twice
+    int attempts = SUPPLIER.cancelAttempts.size();
+    assertThat(orders.cancelOrder(partial).getItems(1).getStatus())
+        .isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(SUPPLIER.cancelAttempts).hasSize(attempts);
+    // the refund reached the ledger per item
+    JsonNode receipt =
+        json.readTree(
+            http.get()
+                .uri("/api/v1/orders/" + order.getOrderId() + "/receipt")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + TestTokens.alice())
+                .retrieve()
+                .body(String.class));
+    assertThat(receipt.get("payment").get("refundedMinor").asLong()).isEqualTo(40000);
+
+    // a non-refundable component: refused for good, an exposure for a person, the rest untouched
+    CancelOrderCommand refused =
+        partial.toBuilder()
+            .setCtx(ctx(order.getOrderId() + ":RELEASE-COMPONENTS:2"))
+            .clearComponentIds()
+            .addComponentIds(nonRefundable)
+            .build();
+    Order exposed = orders.cancelOrder(refused);
+    assertThat(exposed.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    assertThat(exposed.getItems(2).getStatus()).isEqualTo(OrderItemStatus.ITEM_CANCEL_FAILED);
+    assertThat(exposed.getItems(2).getFailureCode()).isEqualTo("CANCELLATION_REFUSED");
+    JsonNode exposures =
+        json.readTree(
+            http.get()
+                .uri("/api/v1/orders/exposures?status=OPEN&limit=500")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + TestTokens.carol())
+                .retrieve()
+                .body(String.class));
+    assertThat(
+            exposures
+                .valueStream()
+                .map(e -> e.get("exposure").path("componentId").asString(""))
+                .toList())
+        .as("the refusal is an exposure for a person, on that component")
+        .contains(nonRefundable);
+
+    // an unknown component is refused explicitly; a foreign tenant sees no order
+    assertThatThrownBy(
+            () ->
+                orders.cancelOrder(
+                    partial.toBuilder()
+                        .clearComponentIds()
+                        .addComponentIds("cmp_01ARZ3NDEKTSV4RRFFQ69G5FZZ")
+                        .build()))
+        .isInstanceOfSatisfying(
+            StatusRuntimeException.class,
+            e -> assertThat(e.getStatus().getCode()).isEqualTo(Status.Code.NOT_FOUND));
+  }
+
   @Test
   @org.junit.jupiter.api.Order(99)
   void everyOrderEventIsContractValid() {
@@ -677,7 +768,8 @@ class OrderIntegrationTest {
                       "travel.order.failed",
                       "travel.order.cancelled",
                       "travel.order.change-requested",
-                      "travel.order.changed");
+                      "travel.order.changed",
+                      "travel.order.items-released");
             });
     for (ConsumerRecord<String, String> record : received) {
       assertThat(EventSchemas.violations(record.value())).as(record.value()).isEmpty();

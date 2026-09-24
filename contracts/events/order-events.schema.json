@@ -467,6 +467,48 @@
           "$ref": "common.schema.json#/$defs/money"
         }
       }
+    },
+    "travel.order.items-released": {
+      "description": "Phase 6: a partial cancellation was attempted: the released components (refunds per item reach the finance ledger) and the refused ones (each an OPEN exposure for a person; the item stays CANCEL_FAILED). The order stays for the rest.",
+      "type": "object",
+      "required": [
+        "orderId",
+        "tripId",
+        "items",
+        "releasedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 0,
+          "items": {
+            "$ref": "#/$defs/orderItem"
+          }
+        },
+        "refund": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "releasedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        },
+        "refused": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/exposure"
+          }
+        }
+      }
     }
   }
 }

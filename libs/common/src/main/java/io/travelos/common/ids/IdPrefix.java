@@ -55,7 +55,10 @@ public enum IdPrefix {
   PAYMENT("pay"),
   PAYMENT_EVENT("pev"),
   PAYABLE("pyb"),
-  TRAVEL_CREDIT("crd");
+  TRAVEL_CREDIT("crd"),
+  /** Phase 6: assistance cases and their history. */
+  ASSISTANCE_CASE("cas"),
+  CASE_EVENT("cev");
 
   private final String prefix;
 

@@ -183,6 +183,124 @@ class TripCancellationWorkflowTest {
     verify(activities, times(1)).cancelOrder(any());
   }
 
+  // ------------------------------------------------------------------ Phase 6: components
+
+  @Test
+  void aComponentReleaseReportsEachComponentAndLeavesTheTripBooked() {
+    when(activities.loadTrip(anyString(), anyString())).thenReturn(bookedWithComponents());
+    when(activities.cancelOrder(any()))
+        .thenReturn(
+            order(OrderStatus.CONFIRMED, "").toBuilder()
+                .addItems(item("itm_air", "cmp_air", OrderItemStatus.ITEM_CONFIRMED, ""))
+                .addItems(item("itm_hotel", "cmp_hotel", OrderItemStatus.ITEM_CANCELLED, ""))
+                .build());
+    List<io.travelos.contracts.trip.v1.UpdateComponentsRequest> reports =
+        new CopyOnWriteArrayList<>();
+    when(activities.updateComponents(any()))
+        .thenAnswer(
+            inv -> {
+              reports.add(inv.getArgument(0));
+              return bookedWithComponents();
+            });
+    TripCancellationWorkflow.Outcome outcome = result(startPartial(List.of("cmp_hotel")));
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(outcome.failureCode()).isNull();
+    assertThat(transitions).as("the trip itself never changes status").isEmpty();
+    verify(activities, times(1)).cancelOrder(any());
+    assertThat(reports).hasSize(1);
+    assertThat(reports.getFirst().getComponentsList())
+        .extracting(io.travelos.contracts.trip.v1.ComponentState::getComponentId)
+        .containsExactly("cmp_hotel");
+    assertThat(reports.getFirst().getComponents(0).getStatus()).isEqualTo("CANCELLED");
+    assertThat(reports.getFirst().getComponents(0).getSummary()).isEqualTo("Harbor Suites");
+  }
+
+  @Test
+  void aRefusedComponentIsReportedAsCancelFailedForAPerson() {
+    when(activities.loadTrip(anyString(), anyString())).thenReturn(bookedWithComponents());
+    when(activities.cancelOrder(any()))
+        .thenReturn(
+            order(OrderStatus.CONFIRMED, "").toBuilder()
+                .addItems(
+                    item(
+                        "itm_hotel",
+                        "cmp_hotel",
+                        OrderItemStatus.ITEM_CANCEL_FAILED,
+                        "CANCELLATION_REFUSED"))
+                .build());
+    List<io.travelos.contracts.trip.v1.UpdateComponentsRequest> reports =
+        new CopyOnWriteArrayList<>();
+    when(activities.updateComponents(any()))
+        .thenAnswer(
+            inv -> {
+              reports.add(inv.getArgument(0));
+              return bookedWithComponents();
+            });
+    TripCancellationWorkflow.Outcome outcome = result(startPartial(List.of("cmp_hotel")));
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(outcome.failureCode()).isEqualTo("CANCELLATION_INCOMPLETE");
+    assertThat(reports.getFirst().getComponents(0).getStatus()).isEqualTo("CANCEL_FAILED");
+    assertThat(reports.getFirst().getComponents(0).getFailureCode())
+        .isEqualTo("CANCELLATION_REFUSED");
+    assertThat(transitions).isEmpty();
+  }
+
+  @Test
+  void aComponentReleaseOfATripThatIsNotBookedDoesNothing() {
+    when(activities.loadTrip(anyString(), anyString())).thenReturn(trip(TripStatus.CANCELLED));
+    TripCancellationWorkflow.Outcome outcome = result(startPartial(List.of("cmp_hotel")));
+    assertThat(outcome.finalStatus()).isEqualTo("CANCELLED");
+    verify(activities, never()).cancelOrder(any());
+    verify(activities, never()).updateComponents(any());
+  }
+
+  private TripCancellationWorkflow startPartial(List<String> componentIds) {
+    TripCancellationWorkflow workflow =
+        client.newWorkflowStub(
+            TripCancellationWorkflow.class,
+            WorkflowOptions.newBuilder()
+                .setTaskQueue(TripCancellation.TASK_QUEUE)
+                .setWorkflowId(TripCancellation.workflowId(TRIP, componentIds))
+                .build());
+    WorkflowClient.start(
+        workflow::run,
+        new TripCancellation.Input(
+            TENANT, TRIP, ORDER, "hotel not needed", "human/alice", componentIds));
+    return workflow;
+  }
+
+  private static Trip bookedWithComponents() {
+    return trip(TripStatus.BOOKED).toBuilder()
+        .addComponents(
+            io.travelos.contracts.trip.v1.ComponentState.newBuilder()
+                .setComponentId("cmp_air")
+                .setType("AIR")
+                .setStatus("CONFIRMED")
+                .setProvider("sandbox-air")
+                .setExternalRef("SBX-1")
+                .setSummary("DL240 BOS-SEA"))
+        .addComponents(
+            io.travelos.contracts.trip.v1.ComponentState.newBuilder()
+                .setComponentId("cmp_hotel")
+                .setType("HOTEL")
+                .setStatus("CANCELLING")
+                .setProvider("sandbox-hotel")
+                .setExternalRef("HTL-1")
+                .setSummary("Harbor Suites"))
+        .build();
+  }
+
+  private static OrderItem item(
+      String id, String componentId, OrderItemStatus status, String failureCode) {
+    return OrderItem.newBuilder()
+        .setItemId(id)
+        .setComponentId(componentId)
+        .setStatus(status)
+        .setFailureCode(failureCode)
+        .setOffer(Offer.newBuilder().setType(OfferType.HOTEL).setProvider("sandbox-hotel"))
+        .build();
+  }
+
   // ------------------------------------------------------------------ helpers
 
   private TripCancellationWorkflow start() {

@@ -276,7 +276,7 @@ public class DisruptionIngestService {
     }
   }
 
-  static boolean isTransient(Status status) {
+  public static boolean isTransient(Status status) {
     return switch (status.getCode()) {
       case UNAVAILABLE, DEADLINE_EXCEEDED, RESOURCE_EXHAUSTED, ABORTED, UNKNOWN, INTERNAL -> true;
       default -> false;
