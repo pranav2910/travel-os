@@ -28,6 +28,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  * UPDATE SKIP LOCKED} hands each instance a disjoint batch. A send failure leaves the row
  * unpublished and stops the batch, so ordering within a partition key is preserved and the row is
  * retried on the next poll.
+ *
+ * <p>Within one instance only one relay runs at a time: the scheduled poll and the after-commit
+ * nudge (Phase 10) take the same lock. Two concurrent relays would each lock part of the same
+ * backlog and publish their parts in whatever order they finished, which reorders events that share
+ * a partition key (seen once in CI as seq 4 before seq 3).
  */
 public final class OutboxPublisher {
 
@@ -71,12 +76,20 @@ public final class OutboxPublisher {
     meters.gauge("travelos.outbox.backlog", this, OutboxPublisher::backlog);
   }
 
+  private final java.util.concurrent.locks.ReentrantLock relaying =
+      new java.util.concurrent.locks.ReentrantLock();
+
   @Scheduled(fixedDelayString = "${travelos.outbox.poll-interval:PT0.5S}")
   public void relay() {
-    int relayed;
-    do {
-      relayed = relayBatch();
-    } while (relayed == properties.batchSize());
+    relaying.lock();
+    try {
+      int relayed;
+      do {
+        relayed = relayBatch();
+      } while (relayed == properties.batchSize());
+    } finally {
+      relaying.unlock();
+    }
   }
 
   // ---- Phase 10: an appending transaction that committed asks for a relay now, not at the next

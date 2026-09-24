@@ -612,7 +612,7 @@ public class OrderService {
         response =
             suppliers.cancelOrder(
                 CancelOrderRequest.newBuilder()
-                    .setCtx(command.getCtx())
+                    .setCtx(cancelCtx(command.getCtx(), item))
                     .setProvider(item.provider())
                     .setExternalOrderId(item.externalRef() == null ? "" : item.externalRef())
                     .build());
@@ -874,7 +874,7 @@ public class OrderService {
         response =
             suppliers.cancelOrder(
                 CancelOrderRequest.newBuilder()
-                    .setCtx(command.getCtx())
+                    .setCtx(cancelCtx(command.getCtx(), item))
                     .setProvider(item.provider())
                     .setExternalOrderId(item.externalRef() == null ? "" : item.externalRef())
                     .build());
@@ -1300,6 +1300,21 @@ public class OrderService {
         null,
         current.updatedAt(),
         componentId);
+  }
+
+  /**
+   * The supplier gateway's ledger (Phase 4) keys a mutation by {@code ctx.idempotency_key} and
+   * refuses the same key for a different request. One cancel command releases several supplier
+   * orders, so each release gets the command's key plus the item: a retry of the command repeats
+   * the same per-item keys and is answered from the ledger; a new command asks the supplier again.
+   * Without a command key the gateway keys the release by the supplier order itself.
+   */
+  private static RequestContext cancelCtx(RequestContext ctx, Item item) {
+    String key = ctx.getIdempotencyKey();
+    if (key.isBlank()) {
+      return ctx;
+    }
+    return ctx.toBuilder().setIdempotencyKey(key + ":" + item.itemId()).build();
   }
 
   /** Cancel the current booking and book the replacement, each under its own idempotent key. */

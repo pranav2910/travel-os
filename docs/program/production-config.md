@@ -59,7 +59,7 @@ as the Phase 10 run did). Migrations are additive; none drops data.
 
 | Service | Sweep | Interval |
 |---|---|---|
-| every service | outbox relay (safety net; commits nudge it) | 500 ms |
+| every service | outbox relay (safety net; commits nudge it; within an instance the poll and the nudge take one lock, so events that share a partition key leave in creation order — across replicas `SKIP LOCKED` batches are disjoint but not ordered against each other, so run one replica of a service whose consumers need per-key order, or accept the reorder at batch edges) | 500 ms |
 | travel-core | approval expiry: escalate once, then expire | `APPROVAL_SWEEP` 1m |
 | order | credit expiry | `travelos.finance.credit-sweep` 1h |
 | enterprise-context | connector scheduler; document retention purge | 10 s / 1h |

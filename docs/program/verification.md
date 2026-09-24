@@ -208,3 +208,17 @@ p95 mode is an open finding, not a fix.
 | Go-live checklist, daily operations, alerts, replay, rollback, offboarding | `docs/runbooks/go-live.md` (with `kubernetes.md`, `supplier-credentials.md`, `enterprise-federation.md`) |
 | Remaining external dependencies and what unblocks each | `docs/program/external-dependencies.md` |
 | Performance findings with before/after evidence | `docs/program/performance.md` |
+
+## CI on the branch (`platform/complete-backend`)
+
+The workflows run on pushes to `main` and on pull requests; `ci.yml` gained `workflow_dispatch` so
+the branch could be checked without opening a pull request (`gh workflow run ci.yml --ref
+platform/complete-backend`, `gh workflow run kind-e2e.yml --ref platform/complete-backend`).
+
+| Run | Result |
+|---|---|
+| `ci` at `49e6984` (run 36051534449) | FAILED in `gradle check`: `OutboxIntegrationTest.committedEventsReachKafkaInOrderWithTheCorrelationKey` saw seq 4 before seq 3 (web app, helm, terraform jobs green). Cause: the Phase 10 after-commit nudge relayed on its own thread while the scheduled poll relayed too; each `SKIP LOCKED` select took part of the same five-row backlog and published it in its own order. Never reproduced in six local runs; a race. |
+| `kind-e2e` at `49e6984` (run 36051537780) | FAILED in the browser E2E: `cancellation.spec.ts` "a supplier that refuses keeps the trip Cancelling until Finance resolves the exposure" — the air legs were not `CANCELLED` (19 of 20 specs passed). Cause: the whole-order and partial release loops in `OrderService` sent every item's supplier cancellation under the command's idempotency key; the Phase 4 mutation ledger in the gateway refuses "same key, different request" (`IDEMPOTENCY_KEY_REUSED`), so after the LAX room's refusal each air leg was refused too. The Order tests never saw it because `FakeSupplierGateway` had no ledger. |
+| fix | `OutboxPublisher.relay()` takes a lock shared by the poll and the nudge (per-key order within an instance; the cross-replica case is documented in `production-config.md`). `OrderService` keys each release `<command key>:<item id>` (a retry of the command repeats the keys and is answered from the ledger; a new command asks the supplier again). `FakeSupplierGateway` now applies the ledger's reuse rule. |
+| `./gradlew --offline :services:order:test` with the fake's rule and without the saga fix | 36 run, 33 passed, 3 failed (`IDEMPOTENCY_KEY_REUSED` on every multi-item release: the rule reproduces the kind failure) |
+| `./gradlew --offline :libs:spring-outbox:test :services:order:test` with both fixes | order 36 run, 36 passed; spring-outbox 6 run, 6 passed; the outbox suite repeated three more times, green each time |

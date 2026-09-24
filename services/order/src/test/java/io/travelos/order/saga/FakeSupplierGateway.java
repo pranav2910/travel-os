@@ -49,6 +49,10 @@ public final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatew
   final Map<String, AtomicInteger> createAttempts = new ConcurrentHashMap<>();
   final List<String> cancelled = new ArrayList<>();
   final Map<String, ChangeOrderResponse> changesByKey = new ConcurrentHashMap<>();
+
+  /** ctx.idempotency_key -> the supplier order it was first used to cancel (the ledger's rule). */
+  final Map<String, String> cancelKeys = new ConcurrentHashMap<>();
+
   final Map<String, AtomicInteger> changeAttempts = new ConcurrentHashMap<>();
   public final List<String> createLog = new ArrayList<>();
   final List<String> cancelAttempts = new ArrayList<>();
@@ -174,6 +178,21 @@ public final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatew
     String external = request.getExternalOrderId();
     synchronized (cancelAttempts) {
       cancelAttempts.add(external);
+    }
+    // The real gateway's mutation ledger: the same key for a different request is refused. A
+    // command that releases several supplier orders must key each release on its own.
+    String key = request.getCtx().getIdempotencyKey();
+    if (!key.isBlank() && !cancelKeys.computeIfAbsent(key, k -> external).equals(external)) {
+      observer.onError(
+          Status.INVALID_ARGUMENT
+              .withDescription(
+                  "IDEMPOTENCY_KEY_REUSED: "
+                      + key
+                      + " was already used for a different CANCEL ("
+                      + cancelKeys.get(key)
+                      + ")")
+              .asRuntimeException());
+      return;
     }
     if (offerByExternalId.getOrDefault(external, "").startsWith("norefund-")) {
       observer.onError(
