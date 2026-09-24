@@ -49,8 +49,15 @@ public class OutboxAutoConfiguration {
       JdbcClient jdbc,
       EventCodec codec,
       Clock clock,
-      org.springframework.beans.factory.ObjectProvider<OpenTelemetry> otel) {
-    return new JdbcOutbox(jdbc, codec, clock, otel.getIfAvailable());
+      org.springframework.beans.factory.ObjectProvider<OpenTelemetry> otel,
+      org.springframework.beans.factory.ObjectProvider<OutboxPublisher> publisher) {
+    // Phase 10: the publisher is resolved lazily at nudge time (it may be disabled in tests).
+    return new JdbcOutbox(
+        jdbc,
+        codec,
+        clock,
+        otel.getIfAvailable(),
+        () -> publisher.ifAvailable(OutboxPublisher::nudge));
   }
 
   @Bean

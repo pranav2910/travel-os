@@ -23,6 +23,21 @@ profile. **Slice 2: autonomous disruption recovery**, **Slice 3: hotels, ground 
 and multi-city itineraries**, **Slice 4: travel-demand detection from calendar, CRM, HRIS and
 expense** (all below) are built on top of it. **Slice 5: learning from outcomes** is done: verified outcomes and authorized traveler feedback become versioned, evaluated supplier-reliability profiles that adjust the optimizer's soft ranking within bounds, off / shadow / active per tenant, explainable in the ledger and reversible in one call ([ADR-0013](docs/adr/0013-learning-is-bounded-evaluated-and-reversible.md)).
 
+**Platform completion program (branch `platform/complete-backend`, 2026-09-24):** eleven phases
+extended the sandbox pilot into a complete corporate travel backend without a rewrite: traveler
+profiles, organization and explicit arranger authority (ADR-0014); planning separated from purchase
+authorization (ADR-0015); ledgered, credential-gated live supplier adapters (ADR-0016); an
+authoritative finance ledger with payments, payables, credits and reconciliation (ADR-0017);
+component-scoped cancellation, traveler-requested changes and an assistance service for cases
+(ADR-0018); scoped policies, budgets, agreements, approval chains, delegation, expiry, SCIM
+provisioning, IdP federation and genuine HRIS/calendar/CRM/expense adapters (ADR-0019); durable
+notifications, traveler safety and itinerary export (ADR-0020); reports (ADR-0021); a measured
+performance improvement; and the production configuration, go-live runbook, external-dependency
+register and frontend hand-off. The evidence lives in `docs/program/`: the capability matrix says,
+row by row, what is verified, what is implemented but blocked on an external account, and what is
+absent; the verification ledger lists every command and result. Nothing there claims a live
+integration that was not exercised.
+
 Built so far: contracts, shared libs, local platform, **Travel Core**, **Policy**, **Supplier
 Gateway** (sandbox adapter), **Order** (booking saga with compensation), **Optimization** (OR-Tools),
 the **Temporal trip-planning workflow**, the **Audit service** (every `travel.*` event, stored once,

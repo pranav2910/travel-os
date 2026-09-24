@@ -178,3 +178,33 @@ repository; the tests prove the delivery machinery through a recording channel, 
 
 Status distinction: reports are implemented and test-verified from contract-example events; they
 are exactly as complete as the events the services emit (nothing is estimated or converted).
+
+## Phase 10 — performance measurement and improvement
+
+| Command | Result |
+|---|---|
+| `make images && make stack-up` (local Docker stack; the pre-existing Postgres volume needed the `assistance` role and database created by hand, as `platform/local/postgres/init/01-databases.sql` does on a fresh volume) | 21 containers healthy |
+| `python3 perf/load.py --label before-236d2d2 --samples 20 --concurrency 10 --burst 25` | `docs/program/performance/before-236d2d2.{json,md}`: create p95 26 ms, detail p95 7.7 ms, inbox p95 6.9 ms, spend report p95 18 ms, end-to-end to BOOKED p50 1.1 s / p95 1.6 s, 20/20 BOOKED; 10 concurrent users all BOOKED in 2.2 s; burst 25/25 accepted at 187 req/s |
+| change: `libs/spring-outbox` after-commit nudge (`JdbcOutbox` transaction synchronization, `OutboxPublisher.nudge()` on one coalescing relay thread; poll kept as the safety net); images rebuilt; `make stack-up` | recreated containers run the rebuilt images |
+| `python3 perf/load.py --label after-236d2d2-outbox-nudge --samples 20 --concurrency 10 --burst 25` | `docs/program/performance/after-236d2d2-outbox-nudge.{json,md}`: end-to-end p50 0.6 s (was 1.1 s), p95 1.6 s (unchanged: a 1.6 s mode in 5 of 20 samples, recorded as an open finding), 20/20 BOOKED; REST latencies unchanged within noise; 10 concurrent users all BOOKED in 2.2 s; burst 25/25 at 273 req/s |
+| `./gradlew --offline :libs:spring-outbox:test` (stack down) | 6 run, 6 passed: `OutboxNudgeIntegrationTest` 2 (a committed append reaches Kafka within milliseconds with the poll set to 30 s; a rolled-back append publishes nothing), existing 4 |
+| `make stack-down` | stack stopped before the test suites (Docker memory rule) |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`, Docker stack down) | BUILD SUCCESSFUL in 5m 09s; every module green (travel-core 92, trip-planning 70, policy 48, supplier-gateway 42 + 2 skipped, order 36, enterprise-context 23, learning 14, assistance 9, disruption 7, audit 6, spring-outbox 6, events 88, both Python suites) |
+
+Status distinction: the measurement is real and repeatable on this laptop's Docker stack with the
+SIMULATED suppliers; it says nothing about live suppliers, a cluster, or more than ten concurrent
+users. The improvement is verified by before/after runs and by an integration test; the remaining
+p95 mode is an open finding, not a fix.
+
+## Phase 11 — verification, production configuration, runbooks, hand-off
+
+| Deliverable | Where |
+|---|---|
+| Capability matrix with evidence and the implemented / provider-test-verified / live-verified / blocked distinction | `docs/program/capability-matrix.md` |
+| Every command and result, phase by phase | this file |
+| API contracts for the frontend, per phase | `docs/program/api-contracts.md`, `docs/program/frontend-handoff.md` |
+| Decisions | `docs/adr/0014` … `0021` |
+| Production configuration reference (every variable, every secret, where each environment gets it, migrations, scheduled work) | `docs/program/production-config.md` |
+| Go-live checklist, daily operations, alerts, replay, rollback, offboarding | `docs/runbooks/go-live.md` (with `kubernetes.md`, `supplier-credentials.md`, `enterprise-federation.md`) |
+| Remaining external dependencies and what unblocks each | `docs/program/external-dependencies.md` |
+| Performance findings with before/after evidence | `docs/program/performance.md` |

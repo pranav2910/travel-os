@@ -79,6 +79,38 @@ public final class OutboxPublisher {
     } while (relayed == properties.batchSize());
   }
 
+  // ---- Phase 10: an appending transaction that committed asks for a relay now, not at the next
+  // poll. One relay thread; nudges that arrive while one runs collapse into a single follow-up
+  // pass (the flag), so a burst of commits costs one extra pass, not one per commit. The poll
+  // stays as the safety net for anything the nudge misses (a crash between commit and relay).
+  private final java.util.concurrent.ExecutorService nudger =
+      java.util.concurrent.Executors.newSingleThreadExecutor(
+          r -> {
+            Thread t = new Thread(r, "outbox-nudge");
+            t.setDaemon(true);
+            return t;
+          });
+  private final java.util.concurrent.atomic.AtomicBoolean nudgePending =
+      new java.util.concurrent.atomic.AtomicBoolean();
+
+  public void nudge() {
+    if (nudgePending.compareAndSet(false, true)) {
+      try {
+        nudger.execute(
+            () -> {
+              nudgePending.set(false);
+              try {
+                relay();
+              } catch (RuntimeException e) {
+                log.warn("nudged outbox relay failed; the poll will retry: {}", e.getMessage());
+              }
+            });
+      } catch (java.util.concurrent.RejectedExecutionException e) {
+        nudgePending.set(false);
+      }
+    }
+  }
+
   /** One transaction: lock a batch, send each record, mark it published. Returns rows relayed. */
   int relayBatch() {
     Integer count =

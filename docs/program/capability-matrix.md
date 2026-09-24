@@ -63,7 +63,7 @@ determined from the code and the tests run on this branch).
 | Workflows | Temporal trip planning, cancellation, disruption recovery, demand sync, learning build; restarts and lost answers | verified (simulated) | `workflows/trip-planning`, `TripWorkflowTest`, `TripCancellationWorkflowTest`, QA P12 |
 | Observability | OpenTelemetry traces, metrics, Grafana/Tempo locally | verified locally | `platform/local`, QA P12-OBS-01 |
 | Deployment | Docker compose stack, kind chart, EKS values, Terraform static checks, CI (gradle, web, images, helm, terraform, kind e2e) | verified (local/CI) / blocked (no cloud account) | `.github/workflows/ci.yml`, `deploy/` |
-| Performance | Latency percentiles measured on the local stack (QA P13); no baselines under supplier delay/concurrent tenants | partial | QA P13-LAT-01 |
+| Performance | Repeatable measurement harness (`perf/load.py`): warm latency of the people-facing calls, end-to-end booking time, 10 concurrent users, a 25-request burst, results kept per run; one measured improvement (the outbox after-commit nudge halved the median end-to-end time, 1.1 s → 0.6 s); the remaining 1.6 s p95 mode recorded as an open finding | verified on the local stack (Phase 10); nothing measured under live suppliers or a cluster | `docs/program/performance.md`, `docs/program/performance/*.{json,md}`, `OutboxNudgeIntegrationTest` |
 
 Baseline regression: `JAVA_HOME=<jdk21> ./gradlew check` and `cd web && npm run check` on `61fcf14`
 (results recorded in `docs/program/verification.md`).
