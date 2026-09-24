@@ -158,6 +158,38 @@ enterprise-context:
       # bootstrap; rotation = new key + re-encrypt (ADR-0014).
       - secretKey: TRAVELOS_FIELD_KEY
         remoteRef: { key: travelos/ENV/enterprise-context/profiles, property: field_key }
+      # Phase 7: per-tenant SCIM provisioning tokens and enterprise adapter credentials. Every entry
+      # is optional at the source; an absent value disables that tenant's provisioning / that adapter.
+      - secretKey: SCIM_TOKEN_ACME
+        remoteRef: { key: travelos/ENV/enterprise-context/scim, property: token_acme }
+      - secretKey: WORKDAY_REPORT_URL
+        remoteRef: { key: travelos/ENV/enterprise-context/workday, property: report_url }
+      - secretKey: WORKDAY_USERNAME
+        remoteRef: { key: travelos/ENV/enterprise-context/workday, property: username }
+      - secretKey: WORKDAY_PASSWORD
+        remoteRef: { key: travelos/ENV/enterprise-context/workday, property: password }
+      - secretKey: GOOGLE_SERVICE_ACCOUNT_EMAIL
+        remoteRef: { key: travelos/ENV/enterprise-context/google, property: service_account_email }
+      - secretKey: GOOGLE_SERVICE_ACCOUNT_KEY
+        remoteRef: { key: travelos/ENV/enterprise-context/google, property: private_key }
+      - secretKey: MICROSOFT_TENANT_ID
+        remoteRef: { key: travelos/ENV/enterprise-context/microsoft, property: tenant_id }
+      - secretKey: MICROSOFT_CLIENT_ID
+        remoteRef: { key: travelos/ENV/enterprise-context/microsoft, property: client_id }
+      - secretKey: MICROSOFT_CLIENT_SECRET
+        remoteRef: { key: travelos/ENV/enterprise-context/microsoft, property: client_secret }
+      - secretKey: SALESFORCE_INSTANCE_URL
+        remoteRef: { key: travelos/ENV/enterprise-context/salesforce, property: instance_url }
+      - secretKey: SALESFORCE_CLIENT_ID
+        remoteRef: { key: travelos/ENV/enterprise-context/salesforce, property: client_id }
+      - secretKey: SALESFORCE_CLIENT_SECRET
+        remoteRef: { key: travelos/ENV/enterprise-context/salesforce, property: client_secret }
+      - secretKey: CONCUR_CLIENT_ID
+        remoteRef: { key: travelos/ENV/enterprise-context/concur, property: client_id }
+      - secretKey: CONCUR_CLIENT_SECRET
+        remoteRef: { key: travelos/ENV/enterprise-context/concur, property: client_secret }
+      - secretKey: CONCUR_REFRESH_TOKEN
+        remoteRef: { key: travelos/ENV/enterprise-context/concur, property: refresh_token }
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress: *awsEgress

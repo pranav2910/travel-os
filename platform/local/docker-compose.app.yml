@@ -179,6 +179,23 @@ services:
       # Field-encryption key for profiles (base64 AES-256). LOCAL STACK ONLY: this value protects
       # nothing but a laptop's sandbox data; every other environment gets its key from a secret.
       TRAVELOS_FIELD_KEY: ${TRAVELOS_FIELD_KEY:-bG9jYWwtZGV2LW9ubHktZmllbGQta2V5LTMyYnl0ZXM=}
+      # Phase 7: provisioning tokens and enterprise credentials come from the shell (never from this
+      # file); absent = no SCIM for that tenant, no live adapter. The local stack uses a dev token.
+      SCIM_TOKEN_ACME: ${SCIM_TOKEN_ACME:-local-dev-only-scim-token-acme}
+      WORKDAY_REPORT_URL: ${WORKDAY_REPORT_URL:-}
+      WORKDAY_USERNAME: ${WORKDAY_USERNAME:-}
+      WORKDAY_PASSWORD: ${WORKDAY_PASSWORD:-}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:-}
+      GOOGLE_SERVICE_ACCOUNT_KEY: ${GOOGLE_SERVICE_ACCOUNT_KEY:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      SALESFORCE_INSTANCE_URL: ${SALESFORCE_INSTANCE_URL:-}
+      SALESFORCE_CLIENT_ID: ${SALESFORCE_CLIENT_ID:-}
+      SALESFORCE_CLIENT_SECRET: ${SALESFORCE_CLIENT_SECRET:-}
+      CONCUR_CLIENT_ID: ${CONCUR_CLIENT_ID:-}
+      CONCUR_CLIENT_SECRET: ${CONCUR_CLIENT_SECRET:-}
+      CONCUR_REFRESH_TOKEN: ${CONCUR_REFRESH_TOKEN:-}
     ports:
       - "8090:8090"
       - "9090:9090"

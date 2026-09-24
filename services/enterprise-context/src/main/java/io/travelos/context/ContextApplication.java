@@ -7,7 +7,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableConfigurationProperties({ContextProperties.class, ProfileProperties.class})
+@EnableConfigurationProperties({
+  ContextProperties.class,
+  ProfileProperties.class,
+  IntegrationProperties.class
+})
 public class ContextApplication {
   public static void main(String[] args) {
     SpringApplication.run(ContextApplication.class, args);

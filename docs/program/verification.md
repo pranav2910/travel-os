@@ -132,3 +132,23 @@ Status distinction: partial cancellation, traveler-requested changes and cases a
 test-verified against the SIMULATED suppliers and payment provider; nothing here was exercised
 against a live supplier. Not implemented: per-passenger changes (single-traveler trip model),
 notifications of case changes to people (Phase 8), safety advisories and acknowledgements (Phase 8).
+
+## Phase 7 — governance (ADR-0019)
+
+| Command | Result |
+|---|---|
+| `./gradlew --offline :libs:events:test` | 85 run, 85 passed (`travel.approval.escalated/expired`, approval step fields, `APPROVAL_ESCALATED` case kind, all with examples) |
+| `./gradlew --offline :services:policy:test` | 48 run, 48 passed: `GovernanceIntegrationTest` 4 (scope precedence project > cost center > tenant default and un-assignment; approval chain `[MANAGER, FINANCE above 200000]` with 24h expiry from the document; a hard budget denies what does not fit, two trips racing for the last of it from two threads: exactly one RESERVED, one EXCEEDED, the same trip again is the same reservation, `travel.trip.cancelled` releases and `travel.trip.booked` commits at what it cost, NO_BUDGET for an unfunded scope, another tenant's admin sees nothing; agreements steer GetGovernance and a non-preferred hotel needs a travel admin under a strict policy, nothing under the default), `PolicyEngineTest.Governance` 3, existing 41 |
+| `./gradlew --offline :workflows:trip-planning:test` | 70 run, 70 passed (scope, chain, budget reservation and negotiated rates are null-safe when policy cannot answer) |
+| `./gradlew --offline :services:travel-core:test` | 91 run, 91 passed: `ApprovalChainIntegrationTest` 3 (a chain decided step by step with Finance refused on the manager's step and vice versa, the workflow signalled once by the last step, two requested and two approved events with `finalStep`; a delegate of the manager decides in his name with `onBehalfOf`, sees the trip only while the delegation lasts, a traveler cannot delegate; an unanswered step escalates to TRAVEL_ADMIN after its expiry and expires as a rejection by `service/travel-core` after the next, signalled once, every event contract-valid), existing 88 |
+| `./gradlew --offline :services:enterprise-context:test` | 23 run, 23 passed: `ScimIntegrationTest` 1 (no token / wrong token / a person's JWT refused; Okta create with enterprise extension; uniqueness conflict in the SCIM error shape; filters by userName and externalId; another tenant's token sees nothing; Entra patch of manager and displayName; deactivation by patch runs the platform's offboarding; PUT reactivates; DELETE deactivates and keeps the record), `LiveSourcesContractTest` 5 (Workday RaaS under basic auth with revoked = final and 503 = retry; Google service-account JWT bearer, sync token per user, 410 restarts a user; Microsoft Graph client credentials, delta links, 403 = revoked; Salesforce SOQL since the watermark with nextRecordsUrl and 429 = retry; Concur refresh token and offset paging), existing 17 |
+| `./gradlew --offline :services:assistance:test` | 5 run, 5 passed |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`, Docker stack down) | BUILD SUCCESSFUL in 4m 38s; every module green (travel-core 91, trip-planning 70, policy 48, supplier-gateway 42 + 2 skipped, order 36, enterprise-context 23, learning 14, disruption 7, assistance 5, events 85, both Python suites) |
+| `bash -n deploy/keycloak/federate.sh` | syntax OK (the script itself needs a customer IdP and a running Keycloak to exercise) |
+
+Status distinction: scoped policies, approval chains, delegation, expiry/escalation, budgets and
+agreements are implemented and test-verified; SCIM provisioning is verified end to end against the
+shapes Okta and Entra ID send but no real IdP cycle ran; federation is a Keycloak broker script
+(syntax-checked, not exercised); the five enterprise adapters are contract-tested against scripted
+provider responses and have not been run against any live tenant (no credentials here). Nothing in
+this phase claims a live verification it did not perform.

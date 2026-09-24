@@ -72,6 +72,32 @@ travelos:
     # Encrypted passenger fields (ADR-0014). A base64 AES-256 key from the platform's secret store;
     # the service refuses to start without one.
     field-key: ${TRAVELOS_FIELD_KEY:}
+  # Phase 7: provisioning and genuine enterprise adapters. Every credential is optional and comes
+  # from the secrets mechanism; an absent one means that adapter is not registered.
+  context.integrations:
+    scim:
+      tokens:
+        acme: ${SCIM_TOKEN_ACME:}
+        globex: ${SCIM_TOKEN_GLOBEX:}
+    workday:
+      report-url: ${WORKDAY_REPORT_URL:}
+      username: ${WORKDAY_USERNAME:}
+      password: ${WORKDAY_PASSWORD:}
+    google:
+      service-account-email: ${GOOGLE_SERVICE_ACCOUNT_EMAIL:}
+      private-key: ${GOOGLE_SERVICE_ACCOUNT_KEY:}
+    microsoft:
+      tenant-id: ${MICROSOFT_TENANT_ID:}
+      client-id: ${MICROSOFT_CLIENT_ID:}
+      client-secret: ${MICROSOFT_CLIENT_SECRET:}
+    salesforce:
+      instance-url: ${SALESFORCE_INSTANCE_URL:}
+      client-id: ${SALESFORCE_CLIENT_ID:}
+      client-secret: ${SALESFORCE_CLIENT_SECRET:}
+    concur:
+      client-id: ${CONCUR_CLIENT_ID:}
+      client-secret: ${CONCUR_CLIENT_SECRET:}
+      refresh-token: ${CONCUR_REFRESH_TOKEN:}
     document-retention-days: ${PROFILE_DOCUMENT_RETENTION_DAYS:90}
     retention-sweep: ${PROFILE_RETENTION_SWEEP:1h}
 

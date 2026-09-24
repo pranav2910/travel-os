@@ -209,3 +209,59 @@ open exposure), `travel.order.failed` items with status UNKNOWN (OUTCOME_UNKNOWN
 (`case-opened`, `case-assigned`, `case-escalated`, `case-resolved`, `case-closed`; schema
 `contracts/events/assistance-events.schema.json`). Configuration: `ASSISTANCE_DB_URL/USER/PASSWORD`
 (secrets mechanism), `ASSISTANCE_URL` on the web edge.
+
+## Phase 7 — governance (ADR-0019)
+
+### Policy (port 8082)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `GET /api/v1/policies/scopes` | MANAGER, FINANCE, TRAVEL_ADMIN | — | `[ScopeView {scopeId, scopeKind (EMPLOYEE, PROJECT, COST_CENTER, DEPARTMENT, LEGAL_ENTITY, OFFICE), scopeRef, policyId, createdBy, createdAt}]` |
+| `PUT /api/v1/policies/scopes` | TRAVEL_ADMIN | `{scopeKind, scopeRef, policyId}`; 422 `POLICY_UNKNOWN` | `ScopeView` (upsert) |
+| `DELETE /api/v1/policies/scopes/{scopeKind}/{scopeRef}` | TRAVEL_ADMIN | — | 204 |
+| `GET /api/v1/budgets` / `GET /api/v1/budgets/{id}` / `GET /api/v1/budgets/{id}/reservations` | MANAGER, FINANCE, TRAVEL_ADMIN | — | `BudgetView {budgetId, name, scopeKind, scopeRef, periodStart, periodEnd, amount, reserved, committed, remaining, hard, active, version}`; `[ReservationView {reservationId, tripId, travelerId, amountMinor, status (RESERVED, COMMITTED, RELEASED)}]` |
+| `POST /api/v1/budgets` | FINANCE, TRAVEL_ADMIN | `{name, scopeKind, scopeRef, periodStart, periodEnd, currency, amountMinor, hard}` | 201 `BudgetView` |
+| `DELETE /api/v1/budgets/{id}` | FINANCE, TRAVEL_ADMIN | — | 204 (deactivated) |
+| `GET /api/v1/policies/agreements` | MANAGER, FINANCE, TRAVEL_ADMIN | — | `[AgreementView {agreementId, provider, kind, carrier, rateCode, preferred, negotiated, contractRef, validFrom, validUntil, active}]` |
+| `POST /api/v1/policies/agreements` | TRAVEL_ADMIN | `{provider, kind (AIR, HOTEL, GROUND, RAIL, CAR), carrier?, rateCode?, preferred?, negotiated, contractRef?, validFrom?, validUntil?}`; 422 `RATE_CODE_REQUIRED` | 201 `AgreementView` |
+| `DELETE /api/v1/policies/agreements/{id}` | TRAVEL_ADMIN | — | 204 (ended) |
+
+Policy document additions: `approval.chain [{role, above?}]`, `approval.expiresAfterHours`,
+`approval.escalateTo`, `suppliers.onNonPreferred`. Decision additions: `approvalChain[]`,
+`approvalExpiresAfterSeconds`, `budgetId`, `budgetRemaining`; reason codes `BUDGET_EXCEEDED`,
+`SUPPLIER_NOT_PREFERRED`. gRPC: `EvaluateTripRequest.scope` / `EvaluateActionRequest.scope`
+(`EvaluationScope`), `GetGovernance`, `ReserveBudget`, `SettleBudget`. Kafka: the Policy service
+consumes `travel.trip` to settle reservations.
+
+### Travel Core (port 8081)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `POST /api/v1/trips/{id}/approval` (`Idempotency-Key`) | the step's role (MANAGER: the traveler's manager or their delegate; FINANCE; TRAVEL_ADMIN any step) | `{decision, comment?}`; 403 `NOT_THE_APPROVER` names the step and role | `ApprovalResponse {…, step, chainLength, chainRoles, expiresAt, escalatedAt, escalatedToRole, onBehalfOf}`; the trip stays AWAITING_APPROVAL until the last step |
+| `GET /api/v1/trips/{id}/approvals` | whoever sees the trip | — | `[ApprovalResponse]` every step, oldest first |
+| `GET /api/v1/approvals/delegates?all=` | anyone (own); TRAVEL_ADMIN (`all=true`) | — | `[DelegateView {delegateId, delegatorEmployeeId, delegateEmployeeId, validFrom, validUntil, active, revokedAt}]` |
+| `POST /api/v1/approvals/delegates` | MANAGER, FINANCE, TRAVEL_ADMIN (own authority); TRAVEL_ADMIN for anyone (`delegatorEmployeeId`) | `{delegatorEmployeeId?, delegateEmployeeId, validFrom?, validUntil}`; 422 `SELF_DELEGATION`, `PERIOD_INVALID` | 201 `DelegateView` |
+| `DELETE /api/v1/approvals/delegates/{id}` | the delegator, TRAVEL_ADMIN | — | 204 |
+
+Events: `travel.approval.requested` (+ `step`, `chainLength`, `chainRoles`, `expiresAt`),
+`travel.approval.approved/rejected` (+ `step`, `chainLength`, `finalStep`, `onBehalfOf`),
+`travel.approval.escalated`, `travel.approval.expired`. Configuration: `APPROVAL_SWEEP` (1m).
+gRPC: `TransitionTripRequest.approval_chain`, `approval_expires_after_seconds`.
+
+### Enterprise Context (port 8090)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `GET /scim/v2/ServiceProviderConfig` | a tenant's SCIM token | — | SCIM ServiceProviderConfig |
+| `GET /scim/v2/Users?filter=&startIndex=&count=` | SCIM token | `userName eq`, `externalId eq`, `id eq` | SCIM ListResponse |
+| `GET/POST/PUT/PATCH/DELETE /scim/v2/Users[/{id}]` | SCIM token | SCIM User (core + enterprise + `travelos` extension `{workLocation, timeZone, officeId}`) | SCIM User / 204; errors in the SCIM error shape (`uniqueness`, `invalidValue`) |
+
+Connectors: providers `workday` (HRIS), `google-workspace` and `microsoft-365` (CALENDAR;
+`config.users[]`), `salesforce` (CRM), `sap-concur` (EXPENSE), registered only when their
+environment credentials exist (`docs/runbooks/enterprise-federation.md`).
+
+### Worker
+
+The trip's allocation scope is on every policy evaluation; the approval chain and expiry reach
+Travel Core; the budget is reserved before BOOKING (`BUDGET_EXCEEDED` fails a trip a hard budget no
+longer fits); negotiated rates from the agreements go to supplier searches.

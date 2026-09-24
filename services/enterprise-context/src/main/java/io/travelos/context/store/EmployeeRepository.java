@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -52,6 +53,54 @@ public class EmployeeRepository {
             .param("office", e.officeId())
             .update()
         == 1;
+  }
+
+  /**
+   * Phase 7: SCIM provisioning is authoritative for existence, identity and activity: it writes
+   * whatever it is given (a later HRIS sync with an older revision cannot override it).
+   */
+  public void provision(Employee e, @Nullable String externalId, String by, Instant now) {
+    jdbc.sql(
+            """
+            INSERT INTO employee (tenant_id, employee_id, email, display_name, work_location, time_zone,
+              manager_employee_id, active, source_revision, updated_at,
+              department_id, cost_center_id, legal_entity_id, office_id, scim_external_id, provisioned_by, provisioned_at)
+            VALUES (:tenant, :id, :email, :name, :location, :zone, :manager, :active, :revision, :now,
+              :department, :costCenter, :legalEntity, :office, :external, :by, :now)
+            ON CONFLICT (tenant_id, employee_id) DO UPDATE SET
+              email = EXCLUDED.email, display_name = EXCLUDED.display_name, work_location = EXCLUDED.work_location,
+              time_zone = EXCLUDED.time_zone, manager_employee_id = EXCLUDED.manager_employee_id,
+              active = EXCLUDED.active, source_revision = EXCLUDED.source_revision, updated_at = EXCLUDED.updated_at,
+              department_id = EXCLUDED.department_id, cost_center_id = EXCLUDED.cost_center_id,
+              legal_entity_id = EXCLUDED.legal_entity_id, office_id = EXCLUDED.office_id,
+              scim_external_id = COALESCE(EXCLUDED.scim_external_id, employee.scim_external_id),
+              provisioned_by = EXCLUDED.provisioned_by, provisioned_at = EXCLUDED.provisioned_at
+            """)
+        .param("tenant", e.tenant().value())
+        .param("id", e.employeeId())
+        .param("email", e.email())
+        .param("name", e.displayName())
+        .param("location", e.workLocation())
+        .param("zone", e.timeZone().getId())
+        .param("manager", e.managerEmployeeId())
+        .param("active", e.active())
+        .param("revision", e.sourceRevision())
+        .param("now", Rows.ts(now))
+        .param("department", e.departmentId())
+        .param("costCenter", e.costCenterId())
+        .param("legalEntity", e.legalEntityId())
+        .param("office", e.officeId())
+        .param("external", externalId)
+        .param("by", by)
+        .update();
+  }
+
+  public Optional<Employee> findByExternalId(TenantId tenant, String externalId) {
+    return jdbc.sql("SELECT * FROM employee WHERE tenant_id = :t AND scim_external_id = :x")
+        .param("t", tenant.value())
+        .param("x", externalId)
+        .query(EmployeeRepository::map)
+        .optional();
   }
 
   /** Offboarding by a travel admin: inactive now, and a stale HRIS revision cannot revive it. */

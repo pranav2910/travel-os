@@ -32,7 +32,7 @@ public class ResourceServerSecurityAutoConfiguration {
   }
 
   @Bean
-  @ConditionalOnMissingBean(SecurityFilterChain.class)
+  @ConditionalOnMissingBean(name = "apiSecurityFilterChain")
   public SecurityFilterChain apiSecurityFilterChain(
       HttpSecurity http,
       TenantJwtAuthenticationConverter converter,
