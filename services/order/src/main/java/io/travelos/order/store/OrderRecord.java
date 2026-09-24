@@ -39,7 +39,12 @@ public record OrderRecord(
     /** Replaced by a later item through a change (disruption recovery); kept for the history. */
     CHANGED,
     /** Slice 3: confirmed at the supplier, and our cancellation was refused: exposure recorded. */
-    CANCEL_FAILED
+    CANCEL_FAILED,
+    /**
+     * Phase 4: the supplier may or may not have executed the booking (answer lost, no way to look
+     * it up by our key). Never retried by a machine; an exposure asks a person to reconcile.
+     */
+    UNKNOWN
   }
 
   /**

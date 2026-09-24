@@ -32,7 +32,8 @@
             "FAILED",
             "CANCELLED",
             "CHANGED",
-            "CANCEL_FAILED"
+            "CANCEL_FAILED",
+            "UNKNOWN"
           ]
         },
         "externalRef": {
@@ -379,7 +380,8 @@
           "enum": [
             "COMPENSATION_FAILED",
             "NON_REFUNDABLE",
-            "CANCELLATION_REFUSED"
+            "CANCELLATION_REFUSED",
+            "OUTCOME_UNKNOWN"
           ]
         },
         "detail": {

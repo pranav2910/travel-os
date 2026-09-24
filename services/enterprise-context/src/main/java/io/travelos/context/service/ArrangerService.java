@@ -117,7 +117,7 @@ public class ArrangerService {
           case SPONSOR -> "SPONSOR";
           case MANAGER -> "MANAGER";
           case GRANT, GRANT_WITH_DOCUMENTS -> "GRANT";
-          case FINANCE, NONE -> throw new IllegalStateException(r.name());
+          case FINANCE, SYSTEM, NONE -> throw new IllegalStateException(r.name());
         };
     return new Authorization(true, basis, null, ProfileAccess.mayRevealDocuments(r));
   }

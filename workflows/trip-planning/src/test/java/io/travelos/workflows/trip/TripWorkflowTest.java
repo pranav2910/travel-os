@@ -437,6 +437,47 @@ class TripWorkflowTest {
   }
 
   @Test
+  void thePassengerIsReadFromEnterpriseContextAtBookingTimeAndFallsBackToTheSnapshot() {
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    when(activities.passenger(anyString(), anyString(), anyString()))
+        .thenReturn(
+            io.travelos.contracts.supplier.v1.Passenger.newBuilder()
+                .setGivenName("Alice")
+                .setFamilyName("Nguyen")
+                .setEmail("alice@acme.example")
+                .setPhone("+16175550101")
+                .setDateOfBirth("1990-04-12")
+                .setGender("F")
+                .addDocuments(
+                    io.travelos.contracts.supplier.v1.PassengerDocument.newBuilder()
+                        .setType("PASSPORT")
+                        .setNumber("X123456789")
+                        .setIssuingCountry("US")
+                        .setExpiresOn("2031-01-15"))
+                .build());
+    assertThat(result(start()).finalStatus()).isEqualTo("BOOKED");
+    ArgumentCaptor<CreateOrderCommand> order = ArgumentCaptor.forClass(CreateOrderCommand.class);
+    verify(activities).createOrder(order.capture());
+    assertThat(order.getValue().getPassengers(0).getDateOfBirth()).isEqualTo("1990-04-12");
+    assertThat(order.getValue().getPassengers(0).getDocuments(0).getNumber())
+        .isEqualTo("X123456789");
+    verify(activities).passenger(TENANT, TRIP, "emp_1001");
+
+    // Enterprise Context unreachable: the trip's own snapshot is what the supplier gets
+    env.close();
+    setUp();
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    when(activities.passenger(anyString(), anyString(), anyString()))
+        .thenThrow(
+            ApplicationFailure.newNonRetryableFailure("UNAVAILABLE: context down", "UNAVAILABLE"));
+    assertThat(result(start()).finalStatus()).isEqualTo("BOOKED");
+    order = ArgumentCaptor.forClass(CreateOrderCommand.class);
+    verify(activities).createOrder(order.capture());
+    assertThat(order.getValue().getPassengers(0).getGivenName()).isEqualTo("Alice");
+    assertThat(order.getValue().getPassengers(0).getDateOfBirth()).isEmpty();
+  }
+
+  @Test
   void bookedWithoutApprovalWhenPolicySaysAllow() {
     doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
     TripWorkflow.Outcome outcome = result(start());

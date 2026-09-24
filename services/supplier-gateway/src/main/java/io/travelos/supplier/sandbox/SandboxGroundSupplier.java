@@ -70,6 +70,8 @@ public class SandboxGroundSupplier implements GroundSupplier {
         .setStatusLookupSupported(true)
         .setNotificationsSupported(false)
         .setIntegration("SIMULATED")
+        .setMutationsIdempotent(true)
+        .setReconciliationByKeySupported(true)
         .build();
   }
 

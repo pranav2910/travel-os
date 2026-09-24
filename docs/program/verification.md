@@ -75,3 +75,27 @@ What the tests prove (implemented and test-verified; suppliers simulated):
 
 Not verified here: the frontend has no confirm/select/refresh UI yet (Phase 11 handoff contract in
 `api-contracts.md`); the sandbox suppliers' fare conditions are synthetic.
+
+## Phase 4 — supplier integrations (ADR-0016)
+
+| Command | Result |
+|---|---|
+| `./gradlew --offline :services:supplier-gateway:test` | 44 run, 42 passed, 2 skipped (the two `LiveSupplierSmokeTest` cases: no `DUFFEL_ACCESS_TOKEN` / `HOTELBEDS_API_KEY` in this environment); contract tests (Duffel 7, Hotelbeds 5), `MutationLedgerIntegrationTest` 4, existing sandbox suites |
+| `./gradlew --offline :workflows:trip-planning:test` | 66 run, 66 passed (passenger from Enterprise Context; fallback to the snapshot) |
+| `./gradlew --offline :services:enterprise-context:test --tests io.travelos.context.ProfileIntegrationTest` | 7 run, 7 passed (agent reads for BOOKING logged; other purposes refused) |
+| `./gradlew --offline :services:order:test` | 19 run, 19 passed (unknown outcome → UNKNOWN item + `OUTCOME_UNKNOWN` exposure, order `PARTIALLY_FAILED`, events contract-valid) |
+| `./gradlew --offline :libs:events:test` | 65 run, 65 passed (order event enums extended) |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`) | BUILD SUCCESSFUL in 3m 23s; every module green (travel-core 87, trip-planning 66, supplier-gateway 42 + 2 skipped, policy 41, order 19, enterprise-context 17, learning 14, disruption 6, audit 5, libs, both Python suites 30 / 41) |
+
+Status distinction for this phase, as the request demands it:
+
+- **Implemented and test-verified**: mutation ledger (persist before side effects, ledger answers
+  retries, key reuse refused, reconciliation by lookup, OUTCOME_UNKNOWN), Order's honest unknown
+  item + exposure, passenger data at booking time (read, logged, never persisted), rail/car seams,
+  coordinates and distances in the catalog, capability flags on the sandboxes.
+- **Implemented, provider-test-blocked**: the Duffel and Hotelbeds adapters. Their contract tests
+  run against scripted HTTP servers that follow the suppliers' documented v2 / 1.0 shapes; the
+  credential-gated live smoke tests (search only, never a booking) exist and are skipped here
+  because no `DUFFEL_ACCESS_TOKEN` / `HOTELBEDS_API_KEY` is available in this environment. No
+  result in this repository is a live supplier result.
+- **Absent**: rail and car adapters (simulated or live), Duffel webhooks, Duffel order changes.

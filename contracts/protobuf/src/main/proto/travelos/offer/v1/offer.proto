@@ -17,6 +17,32 @@ enum OfferType {
   AIR = 1;
   HOTEL = 2;
   GROUND = 3;
+  // Phase 4: rail and car rental are their own kinds, not ground transfers: different suppliers,
+  // different conditions, different policy rules.
+  RAIL = 4;
+  CAR = 5;
+}
+
+message RailOffer {
+  string operator = 1;                // e.g. "Amtrak", "SNCF"
+  string train_number = 2;
+  string origin_station = 3;          // station code as the operator names it
+  string destination_station = 4;
+  google.protobuf.Timestamp departure = 5;
+  google.protobuf.Timestamp arrival = 6;
+  string travel_class = 7;            // STANDARD | FIRST | BUSINESS as the operator sells it
+  string fare_name = 8;
+}
+
+message CarRentalOffer {
+  string vendor_id = 1;
+  string vendor_name = 2;
+  string vehicle_class = 3;           // ACRISS category or vendor class
+  string pickup_location = 4;
+  string dropoff_location = 5;
+  google.protobuf.Timestamp pickup = 6;
+  google.protobuf.Timestamp dropoff = 7;
+  bool unlimited_mileage = 8;
 }
 
 message FlightSegment {
@@ -116,7 +142,13 @@ message Offer {
     AirOffer air = 10;
     HotelOffer hotel = 11;
     GroundOffer ground = 14;
+    RailOffer rail = 16;
+    CarRentalOffer car = 17;
   }
+  // Phase 4: priced under a corporate / negotiated agreement (a private fare, a corporate rate
+  // code). The rate_code names the agreement as the supplier reports it.
+  bool negotiated = 18;
+  string rate_code = 19;
 
   // Slice 3: which itinerary component this offer fulfils ("cmp_<ulid>" from the frozen intent).
   // Empty for Slice 1/2 single-component bundles.

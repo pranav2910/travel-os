@@ -36,13 +36,27 @@ public class ProfileAccess {
     GRANT_WITH_DOCUMENTS,
     /** FINANCE: names and cost allocation, nothing sensitive. */
     FINANCE,
+    /**
+     * Phase 4: the platform's own machine identity (an agent or service principal) executing a
+     * booking the platform already authorized. Reads what a supplier needs, every read logged under
+     * the machine principal with purpose BOOKING. Never a person's relationship.
+     */
+    SYSTEM,
     NONE
   }
 
-  /** Who the caller is: the ids the grants and the HRIS link are keyed by. */
-  public record Caller(@Nullable String employeeId, Set<String> roles) {
+  /**
+   * Who the caller is: the ids the grants and the HRIS link are keyed by.
+   *
+   * @param system a machine identity (agent/service principal) acting for the platform
+   */
+  public record Caller(@Nullable String employeeId, Set<String> roles, boolean system) {
     public Caller {
       roles = Set.copyOf(roles);
+    }
+
+    public Caller(@Nullable String employeeId, Set<String> roles) {
+      this(employeeId, roles, false);
     }
 
     public boolean has(String role) {
@@ -70,6 +84,9 @@ public class ProfileAccess {
   }
 
   public Relation relation(TenantId tenant, Caller me, String travelerId) {
+    if (me.system()) {
+      return Relation.SYSTEM;
+    }
     if (me.employeeId() != null && me.employeeId().equals(travelerId)) {
       return Relation.SELF;
     }
@@ -142,7 +159,7 @@ public class ProfileAccess {
   public static boolean mayArrange(Relation r) {
     return switch (r) {
       case SELF, TRAVEL_ADMIN, SPONSOR, MANAGER, GRANT, GRANT_WITH_DOCUMENTS -> true;
-      case FINANCE, NONE -> false;
+      case FINANCE, SYSTEM, NONE -> false;
     };
   }
 
@@ -154,7 +171,7 @@ public class ProfileAccess {
   /** May the principal see phone, date of birth, loyalty numbers, the emergency contact? */
   public static boolean mayRevealSensitive(Relation r) {
     return switch (r) {
-      case SELF, TRAVEL_ADMIN, SPONSOR, GRANT, GRANT_WITH_DOCUMENTS -> true;
+      case SELF, TRAVEL_ADMIN, SPONSOR, GRANT, GRANT_WITH_DOCUMENTS, SYSTEM -> true;
       case MANAGER, FINANCE, NONE -> false;
     };
   }
@@ -162,7 +179,7 @@ public class ProfileAccess {
   /** May the principal read document numbers? Narrower than {@link #mayRevealSensitive}. */
   public static boolean mayRevealDocuments(Relation r) {
     return switch (r) {
-      case SELF, TRAVEL_ADMIN, SPONSOR, GRANT_WITH_DOCUMENTS -> true;
+      case SELF, TRAVEL_ADMIN, SPONSOR, GRANT_WITH_DOCUMENTS, SYSTEM -> true;
       case MANAGER, GRANT, FINANCE, NONE -> false;
     };
   }
@@ -170,7 +187,7 @@ public class ProfileAccess {
   public static boolean mayWrite(Relation r) {
     return switch (r) {
       case SELF, TRAVEL_ADMIN, SPONSOR, GRANT, GRANT_WITH_DOCUMENTS -> true;
-      case MANAGER, FINANCE, NONE -> false;
+      case MANAGER, FINANCE, SYSTEM, NONE -> false;
     };
   }
 }

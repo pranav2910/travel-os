@@ -141,11 +141,17 @@ public class ContextGrpcService
   public void getTravelerSnapshot(
       GetTravelerSnapshotRequest request, StreamObserver<TravelerSnapshotResponse> observer) {
     RequestContexts.Validated ctx = RequestContexts.require(request.getCtx());
+    String purpose = request.getPurpose().isBlank() ? "SNAPSHOT" : request.getPurpose();
+    // Phase 4: the platform's own machine identity, booking what a person or policy already
+    // authorized, reads the passenger as the supplier needs them; the read is logged under it.
+    boolean system =
+        "BOOKING".equals(purpose)
+            && !(ctx.principal() instanceof io.travelos.common.identity.Principal.Human);
     ProfileAccess.Caller caller =
         new ProfileAccess.Caller(
             request.getArrangerEmployeeId().isBlank() ? null : request.getArrangerEmployeeId(),
-            new HashSet<>(request.getArrangerRolesList()));
-    String purpose = request.getPurpose().isBlank() ? "SNAPSHOT" : request.getPurpose();
+            new HashSet<>(request.getArrangerRolesList()),
+            system);
     ProfileService.View view;
     try {
       view =

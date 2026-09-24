@@ -68,6 +68,8 @@ public class SandboxHotelSupplier implements HotelSupplier {
         .setStatusLookupSupported(true)
         .setNotificationsSupported(false)
         .setIntegration("SIMULATED")
+        .setMutationsIdempotent(true)
+        .setReconciliationByKeySupported(true)
         .build();
   }
 

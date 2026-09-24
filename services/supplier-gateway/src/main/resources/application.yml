@@ -66,6 +66,34 @@ travelos:
         failure-rate-threshold: 50
         sliding-window-size: 20
         wait-in-open-state: 30s
+    # Phase 4: real suppliers' protection settings (their published limits are lower than the
+    # sandbox's). The adapters themselves exist only when travelos.integrations.* credentials do.
+    duffel:
+      rate-limit-per-second: 10
+      circuit-breaker:
+        failure-rate-threshold: 50
+        sliding-window-size: 20
+        wait-in-open-state: 60s
+    hotelbeds:
+      rate-limit-per-second: 10
+      circuit-breaker:
+        failure-rate-threshold: 50
+        sliding-window-size: 20
+        wait-in-open-state: 60s
+  # Phase 4 (ADR-0016): credentials come ONLY from the secrets mechanism. Empty = adapter absent.
+  integrations:
+    duffel:
+      access-token: ${DUFFEL_ACCESS_TOKEN:}
+      base-url: ${DUFFEL_BASE_URL:https://api.duffel.com}
+      timeout: 20s
+      # private-fares:            # airline IATA code -> corporate code, e.g.
+      #   UA: ${DUFFEL_UA_CORPORATE_CODE:}
+    hotelbeds:
+      api-key: ${HOTELBEDS_API_KEY:}
+      secret: ${HOTELBEDS_SECRET:}
+      base-url: ${HOTELBEDS_BASE_URL:https://api.test.hotelbeds.com}
+      timeout: 20s
+      radius-km: 25
 
 management:
   tracing:

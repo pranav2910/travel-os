@@ -533,11 +533,7 @@ public class TripWorkflowImpl implements TripWorkflow {
               .setBundle(plan.selected)
               .setPolicyDecisionId(plan.decision.getDecisionId())
               .setOptimizationRunId(optimized.getOptimizationRunId())
-              .addPassengers(
-                  Passenger.newBuilder()
-                      .setGivenName(trip.getTraveler().getGivenName())
-                      .setFamilyName(trip.getTraveler().getFamilyName())
-                      .setEmail(trip.getTraveler().getEmail()))
+              .addPassengers(passenger(tenant, tripId, trip))
               .setPaymentToken(paymentToken());
       if (approvalId != null) {
         command.setApprovalId(approvalId);
@@ -684,6 +680,30 @@ public class TripWorkflowImpl implements TripWorkflow {
         why = "quote refreshed";
       }
     }
+  }
+
+  /**
+   * Phase 4: the passenger as the suppliers need them, from Enterprise Context at booking time.
+   * When Enterprise Context knows no profile (or is unreachable), the trip's own snapshot (names,
+   * email) is what the supplier gets; a supplier that needs more refuses with a clear code.
+   */
+  private Passenger passenger(String tenant, String tripId, Trip trip) {
+    try {
+      Passenger full = activities.passenger(tenant, tripId, trip.getTravelerId());
+      if (full != null && !full.getGivenName().isBlank() && !full.getFamilyName().isBlank()) {
+        return full;
+      }
+    } catch (ActivityFailure e) {
+      log.warn(
+          "trip {}: passenger details unavailable ({}); booking on the trip's snapshot",
+          tripId,
+          failureCode(e));
+    }
+    return Passenger.newBuilder()
+        .setGivenName(trip.getTraveler().getGivenName())
+        .setFamilyName(trip.getTraveler().getFamilyName())
+        .setEmail(trip.getTraveler().getEmail())
+        .build();
   }
 
   /** The plan priced again by its suppliers, or null when any offer can no longer be quoted. */
@@ -871,6 +891,11 @@ public class TripWorkflowImpl implements TripWorkflow {
     @Override
     public String paymentToken() {
       return TripWorkflowImpl.this.paymentToken();
+    }
+
+    @Override
+    public Passenger passenger(String tenant, String tripId, Trip trip) {
+      return TripWorkflowImpl.this.passenger(tenant, tripId, trip);
     }
 
     @Override

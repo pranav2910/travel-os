@@ -17,22 +17,31 @@ import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
 import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
+import io.travelos.contracts.supplier.v1.SearchCarsRequest;
+import io.travelos.contracts.supplier.v1.SearchCarsResponse;
 import io.travelos.contracts.supplier.v1.SearchGroundRequest;
 import io.travelos.contracts.supplier.v1.SearchGroundResponse;
 import io.travelos.contracts.supplier.v1.SearchHotelsRequest;
 import io.travelos.contracts.supplier.v1.SearchHotelsResponse;
+import io.travelos.contracts.supplier.v1.SearchRailRequest;
+import io.travelos.contracts.supplier.v1.SearchRailResponse;
 import io.travelos.contracts.supplier.v1.SupplierCapabilities;
 import io.travelos.contracts.supplier.v1.SupplierError;
 import io.travelos.contracts.supplier.v1.SupplierGatewayGrpc;
 import io.travelos.spring.grpc.RequestContexts;
 import io.travelos.supplier.AirSupplier;
 import io.travelos.supplier.AirSupplier.SupplierException;
+import io.travelos.supplier.CarRentalSupplier;
 import io.travelos.supplier.GroundSupplier;
 import io.travelos.supplier.HotelSupplier;
+import io.travelos.supplier.RailSupplier;
 import io.travelos.supplier.SupplierAdapter;
 import io.travelos.supplier.SupplierRegistry;
+import io.travelos.supplier.ledger.MutationAttempt;
+import io.travelos.supplier.ledger.MutationLedger;
 import io.travelos.supplier.notification.SupplierOrderRefRepository;
 import java.time.Clock;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -49,12 +58,17 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
 
   private final SupplierRegistry registry;
   private final SupplierOrderRefRepository refs;
+  private final MutationLedger ledger;
   private final Clock clock;
 
   public SupplierGatewayGrpcService(
-      SupplierRegistry registry, SupplierOrderRefRepository refs, Clock clock) {
+      SupplierRegistry registry,
+      SupplierOrderRefRepository refs,
+      MutationLedger ledger,
+      Clock clock) {
     this.registry = registry;
     this.refs = refs;
+    this.ledger = ledger;
     this.clock = clock;
   }
 
@@ -103,7 +117,23 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
   public void createOrder(
       CreateOrderRequest request, StreamObserver<CreateOrderResponse> observer) {
     RequestContexts.require(request.getCtx());
-    CreateOrderResponse response = guarded(request.getProvider(), s -> s.createOrder(request));
+    // Phase 4: written to the mutation ledger before the supplier is called; answered from it on
+    // a retry; a lost answer is reconciled or reported as OUTCOME_UNKNOWN, never booked twice.
+    CreateOrderResponse response =
+        guarded(
+            request.getProvider(),
+            s ->
+                ledger.run(
+                    new MutationLedger.Mutation<>(
+                        request.getCtx().getTenantId(),
+                        s,
+                        MutationAttempt.Command.CREATE,
+                        request.getCtx().getIdempotencyKey(),
+                        request,
+                        request.getCtx().getCorrelationId(),
+                        CreateOrderResponse.parser(),
+                        CreateOrderResponse::getExternalOrderId,
+                        a -> a.createOrder(request))));
     // The door remembers what it booked: a later supplier notice about this order is tied back to
     // the trip (correlation id) without asking anyone.
     refs.remember(
@@ -122,7 +152,21 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
   public void changeOrder(
       ChangeOrderRequest request, StreamObserver<ChangeOrderResponse> observer) {
     RequestContexts.require(request.getCtx());
-    observer.onNext(guarded(request.getProvider(), s -> s.changeOrder(request)));
+    observer.onNext(
+        guarded(
+            request.getProvider(),
+            s ->
+                ledger.run(
+                    new MutationLedger.Mutation<>(
+                        request.getCtx().getTenantId(),
+                        s,
+                        MutationAttempt.Command.CHANGE,
+                        request.getCtx().getIdempotencyKey(),
+                        request,
+                        request.getCtx().getCorrelationId(),
+                        ChangeOrderResponse.parser(),
+                        ChangeOrderResponse::getExternalOrderId,
+                        a -> a.changeOrder(request)))));
     observer.onCompleted();
   }
 
@@ -130,7 +174,89 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
   public void cancelOrder(
       CancelOrderRequest request, StreamObserver<CancelOrderResponse> observer) {
     RequestContexts.require(request.getCtx());
-    observer.onNext(guarded(request.getProvider(), s -> s.cancelOrder(request)));
+    // Cancellations carry no key of their own: the order being cancelled is the key, so cancelling
+    // twice is one supplier call and one answer.
+    String key =
+        request.getCtx().getIdempotencyKey().isBlank()
+            ? "cancel:" + request.getExternalOrderId()
+            : request.getCtx().getIdempotencyKey();
+    observer.onNext(
+        guarded(
+            request.getProvider(),
+            s ->
+                ledger.run(
+                    new MutationLedger.Mutation<>(
+                        request.getCtx().getTenantId(),
+                        s,
+                        MutationAttempt.Command.CANCEL,
+                        key,
+                        request,
+                        request.getCtx().getCorrelationId(),
+                        CancelOrderResponse.parser(),
+                        CancelOrderResponse::getExternalOrderId,
+                        a -> a.cancelOrder(request)))));
+    observer.onCompleted();
+  }
+
+  // ---------------------------------------------------------------- Phase 4: rail and car
+
+  @Override
+  public void searchRail(SearchRailRequest request, StreamObserver<SearchRailResponse> observer) {
+    RequestContexts.require(request.getCtx());
+    SearchRailResponse.Builder response =
+        SearchRailResponse.newBuilder()
+            .setSearchSessionId(
+                io.travelos.common.ids.Ids.newId(io.travelos.common.ids.IdPrefix.SEARCH_SESSION));
+    List<String> providers = registry.providersOf(RailSupplier.class);
+    if (providers.isEmpty()) {
+      response.addErrors(
+          SupplierError.newBuilder()
+              .setProvider("rail")
+              .setCode("NO_PROVIDER")
+              .setMessage("no rail supplier is registered")
+              .setRetryable(false));
+    }
+    for (String provider : providers) {
+      try {
+        response.addAllOffers(
+            registry
+                .call(provider, RailSupplier.class, s -> s.searchRail(request))
+                .getOffersList());
+      } catch (SupplierException e) {
+        response.addErrors(error(provider, e));
+      }
+    }
+    observer.onNext(response.build());
+    observer.onCompleted();
+  }
+
+  @Override
+  public void searchCars(SearchCarsRequest request, StreamObserver<SearchCarsResponse> observer) {
+    RequestContexts.require(request.getCtx());
+    SearchCarsResponse.Builder response =
+        SearchCarsResponse.newBuilder()
+            .setSearchSessionId(
+                io.travelos.common.ids.Ids.newId(io.travelos.common.ids.IdPrefix.SEARCH_SESSION));
+    List<String> providers = registry.providersOf(CarRentalSupplier.class);
+    if (providers.isEmpty()) {
+      response.addErrors(
+          SupplierError.newBuilder()
+              .setProvider("car")
+              .setCode("NO_PROVIDER")
+              .setMessage("no car-rental supplier is registered")
+              .setRetryable(false));
+    }
+    for (String provider : providers) {
+      try {
+        response.addAllOffers(
+            registry
+                .call(provider, CarRentalSupplier.class, s -> s.searchCars(request))
+                .getOffersList());
+      } catch (SupplierException e) {
+        response.addErrors(error(provider, e));
+      }
+    }
+    observer.onNext(response.build());
     observer.onCompleted();
   }
 
@@ -253,6 +379,10 @@ public class SupplierGatewayGrpcService extends SupplierGatewayGrpc.SupplierGate
           "CHANGE_NOT_SUPPORTED" ->
           Status.FAILED_PRECONDITION.withDescription(description);
       case "NOT_IMPLEMENTED" -> Status.UNIMPLEMENTED.withDescription(description);
+      // Phase 4: the supplier may or may not have acted and nobody may retry: a person reconciles.
+      case "OUTCOME_UNKNOWN" -> Status.ABORTED.withDescription(description);
+      case "IDEMPOTENCY_KEY_REUSED", "IDEMPOTENCY_KEY_REQUIRED" ->
+          Status.INVALID_ARGUMENT.withDescription(description);
       case "PROVIDER_KIND_MISMATCH" -> Status.INVALID_ARGUMENT.withDescription(description);
       case "RATE_LIMITED" -> Status.RESOURCE_EXHAUSTED.withDescription(description);
       default ->

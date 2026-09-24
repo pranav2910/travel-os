@@ -50,6 +50,9 @@ enum OrderItemStatus {
   // Slice 3: confirmed at the supplier but our cancellation failed; the exposure is recorded and
   // a person must act.
   ITEM_CANCEL_FAILED = 7;
+  // Phase 4: the supplier may or may not have booked it (answer lost, no lookup by our key);
+  // never retried by a machine, exposed for a person to reconcile.
+  ITEM_UNKNOWN = 8;
 }
 
 message OrderItem {

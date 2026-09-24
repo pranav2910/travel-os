@@ -54,7 +54,10 @@ apply keycloak-admin -n travelos-infra --from-literal=KC_BOOTSTRAP_ADMIN_PASSWOR
 # application namespace: one Secret per service, only what that service needs
 apply travel-core-secrets -n travelos --from-literal=TRAVEL_CORE_DB_PASSWORD="$TRAVEL_CORE_DB_PASSWORD"
 apply policy-secrets -n travelos --from-literal=POLICY_DB_PASSWORD="$POLICY_DB_PASSWORD"
-apply supplier-gateway-secrets -n travelos --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD" --from-literal=SANDBOX_AIR_WEBHOOK_SECRET="$SANDBOX_AIR_WEBHOOK_SECRET"
+# Phase 4: live supplier credentials come from the shell (never from .secrets.env or git); absent = sandbox only.
+apply supplier-gateway-secrets -n travelos --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD" --from-literal=SANDBOX_AIR_WEBHOOK_SECRET="$SANDBOX_AIR_WEBHOOK_SECRET" \
+  --from-literal=DUFFEL_ACCESS_TOKEN="${DUFFEL_ACCESS_TOKEN:-}" --from-literal=HOTELBEDS_API_KEY="${HOTELBEDS_API_KEY:-}" --from-literal=HOTELBEDS_SECRET="${HOTELBEDS_SECRET:-}"
+if [ -n "${DUFFEL_ACCESS_TOKEN:-}" ] || [ -n "${HOTELBEDS_API_KEY:-}" ]; then echo "supplier-gateway: live supplier credentials taken from your shell (not stored)"; fi
 apply disruption-secrets -n travelos --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
 apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_DB_PASSWORD="$ENTERPRISE_CONTEXT_DB_PASSWORD" --from-literal=SANDBOX_CONNECTOR_WEBHOOK_SECRET="${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-$(openssl rand -hex 16)}" --from-literal=TRAVELOS_FIELD_KEY="$TRAVELOS_FIELD_KEY"
 apply learning-secrets -n travelos --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD"

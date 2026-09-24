@@ -111,3 +111,24 @@ from before (`PLANNING → APPROVED → BOOKING → BOOKED`) and `purchase.basis
 ### Events
 
 `travel.trip.quoted`, `travel.trip.purchase-authorized` (see `contracts/events/trip-events.schema.json`).
+
+## Phase 4 — supplier integrations (Supplier Gateway, gRPC; ADR-0016)
+
+- `SupplierCapabilities` gains `mutations_idempotent`, `negotiated_rates_supported`,
+  `reconciliation_by_key_supported`; `integration` is `SIMULATED` or `LIVE`. Providers: `sandbox-air`,
+  `sandbox-hotel`, `sandbox-ground` (always), `duffel` and `hotelbeds` (only with credentials).
+- `Offer` gains `negotiated`, `rate_code`; `OfferType` gains `RAIL`, `CAR` with `RailOffer` /
+  `CarRentalOffer` details; `SearchRail` / `SearchCars` answer `NO_PROVIDER` until an adapter exists.
+- `Passenger` gains `phone`, `date_of_birth`, `gender`, `title`, `documents[]`, `loyalty_program`;
+  the workflow fills them from Enterprise Context at booking time. The Order service forwards and
+  never stores them.
+- Mutations: a retry with the same `ctx.idempotency_key` is answered from the gateway's ledger;
+  the same key with a different request is `INVALID_ARGUMENT IDEMPOTENCY_KEY_REUSED`; a lost answer
+  the gateway cannot reconcile or safely retry is `ABORTED OUTCOME_UNKNOWN`. The Order service then
+  records the item as `UNKNOWN` with an `OUTCOME_UNKNOWN` exposure (order `PARTIALLY_FAILED`,
+  `compensated=false`) for a person to resolve through the existing exposure resolution endpoint.
+- Configuration (secrets mechanism only): `DUFFEL_ACCESS_TOKEN`, `DUFFEL_BASE_URL`,
+  `HOTELBEDS_API_KEY`, `HOTELBEDS_SECRET`, `HOTELBEDS_BASE_URL`; see
+  `docs/runbooks/supplier-credentials.md`.
+- Locations: `Locations.place(iata)` / `places()` / `distanceKm(a, b)` in `libs/common` (a REST
+  catalog endpoint is a Phase 11 handoff item).

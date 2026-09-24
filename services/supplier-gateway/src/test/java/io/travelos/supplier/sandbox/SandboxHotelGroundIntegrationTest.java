@@ -338,7 +338,9 @@ class SandboxHotelGroundIntegrationTest {
     CancelOrderResponse twice =
         gateway.cancelOrder(cancel(a.getExternalOrderId(), "sandbox-hotel"));
     assertThat(twice.getStatus()).isEqualTo(SupplierOrderStatus.CANCELLED);
-    assertThat(twice.getRefund().getAmountMinor()).isZero();
+    // Phase 4: a repeated cancellation is the same request, so the gateway's ledger gives the
+    // same answer as the first time; nothing is refunded twice at the supplier (one call was made)
+    assertThat(twice).isEqualTo(ra);
     assertThat(
             gateway
                 .getBookingStatus(

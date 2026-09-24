@@ -388,10 +388,61 @@ class ProfileIntegrationTest {
     assertThat(forBob.getPassenger().getDocuments(0).getNumberLast4()).isEqualTo("****6789");
   }
 
-  // ================================================================== 4. restricted projects
+  // ================================================================== 3b. booking by the platform
 
   @Test
   @Order(4)
+  void thePlatformsOwnAgentReadsThePassengerForBookingAndTheReadIsLogged() {
+    // Phase 4: the trip-planner agent, executing an authorized booking, gets what a supplier needs
+    TravelerSnapshotResponse forBooking =
+        context.getTravelerSnapshot(
+            GetTravelerSnapshotRequest.newBuilder()
+                .setCtx(
+                    RequestContext.newBuilder()
+                        .setTenantId("acme")
+                        .setCorrelationId(UUID.randomUUID().toString())
+                        .setPrincipal(
+                            Principal.newBuilder()
+                                .setKind(Principal.Kind.AGENT)
+                                .setId("agent/trip-planner/v1")))
+                .setTravelerId(ALICE)
+                .setIncludeDocuments(true)
+                .setPurpose("BOOKING")
+                .build());
+    assertThat(forBooking.getPassenger().getDateOfBirth()).isEqualTo("1990-04-12");
+    assertThat(forBooking.getPassenger().getPhone()).isEqualTo("+16175550101");
+    assertThat(forBooking.getPassenger().getDocuments(0).getNumber()).isEqualTo("X123456789");
+    JsonNode log =
+        json.readTree(
+            get("/api/v1/travelers/" + ALICE + "/access-log", TestTokens.alice()).getBody());
+    assertThat(log.get(0).get("principal").asString()).isEqualTo("agent/trip-planner/v1");
+    assertThat(log.get(0).get("purpose").asString()).isEqualTo("BOOKING");
+    // the same agent asking for anything but a booking is nobody
+    Assertions.assertThatThrownBy(
+            () ->
+                context.getTravelerSnapshot(
+                    GetTravelerSnapshotRequest.newBuilder()
+                        .setCtx(
+                            RequestContext.newBuilder()
+                                .setTenantId("acme")
+                                .setCorrelationId(UUID.randomUUID().toString())
+                                .setPrincipal(
+                                    Principal.newBuilder()
+                                        .setKind(Principal.Kind.AGENT)
+                                        .setId("agent/trip-planner/v1")))
+                        .setTravelerId(ALICE)
+                        .setIncludeDocuments(true)
+                        .setPurpose("CURIOSITY")
+                        .build()))
+        .isInstanceOf(StatusRuntimeException.class)
+        .extracting(e -> ((StatusRuntimeException) e).getStatus().getCode())
+        .isEqualTo(Status.Code.NOT_FOUND);
+  }
+
+  // ================================================================== 4. restricted projects
+
+  @Test
+  @Order(5)
   void restrictedProjectTravelIsForMembersAndTheirManagersOnly() {
     ResponseEntity<String> created =
         post(
@@ -456,7 +507,7 @@ class ProfileIntegrationTest {
   // ================================================================== 5. guests
 
   @Test
-  @Order(5)
+  @Order(6)
   void guestsAreSponsoredByWhoeverCreatesThem() {
     ResponseEntity<String> guest =
         post(
@@ -487,7 +538,7 @@ class ProfileIntegrationTest {
   // ================================================================== 6. offboarding & retention
 
   @Test
-  @Order(6)
+  @Order(7)
   void deactivationEndsArrangingTravelingAndStartsDocumentRetention() {
     ResponseEntity<String> notAdmin =
         post(

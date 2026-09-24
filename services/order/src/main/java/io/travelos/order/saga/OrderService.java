@@ -231,6 +231,44 @@ public class OrderService {
         bookItem(ctx, command, order, item);
       } catch (StatusRuntimeException e) {
         String code = failureCode(e);
+        if (e.getStatus().getCode() == Status.Code.ABORTED && "OUTCOME_UNKNOWN".equals(code)) {
+          // Phase 4: the supplier may have booked it. Nobody retries; the money is exposed until a
+          // person reconciles (the gateway's ledger keeps the attempt).
+          log.error(
+              "order {} item {}: outcome unknown at {}; exposure recorded for a person",
+              order.orderId(),
+              item.itemId(),
+              item.provider());
+          metrics.booked(item.offerType(), "UNKNOWN");
+          ExposureRecord exposure =
+              new ExposureRecord(
+                  Ids.newId(IdPrefix.EXPOSURE),
+                  order.orderId(),
+                  item.itemId(),
+                  item.componentId(),
+                  item.provider(),
+                  "",
+                  item.total(),
+                  "OUTCOME_UNKNOWN",
+                  e.getStatus().getDescription() == null ? code : e.getStatus().getDescription(),
+                  ExposureRecord.Status.OPEN,
+                  null,
+                  null,
+                  null,
+                  clock.instant(),
+                  null);
+          tx.executeWithoutResult(
+              s -> {
+                orders.updateItem(
+                    item.itemId(), ItemStatus.UNKNOWN, null, null, code, clock.instant());
+                exposures.insert(ctx.tenant(), exposure);
+              });
+          return fail(
+              ctx,
+              order,
+              code,
+              e.getStatus().getDescription() == null ? code : e.getStatus().getDescription());
+        }
         log.warn("order {} item {} failed: {}", order.orderId(), item.itemId(), e.getStatus());
         metrics.booked(item.offerType(), "FAILED");
         tx.executeWithoutResult(
@@ -470,6 +508,16 @@ public class OrderService {
                   item.itemId(), ItemStatus.CANCEL_FAILED, null, null, cancelCode, clock.instant());
               exposures.insert(ctx.tenant(), exposure);
             });
+      }
+    }
+    // Phase 4: an item whose outcome is unknown is money at risk too; its exposure already exists.
+    for (Item item : current.items()) {
+      if (item.status() == ItemStatus.UNKNOWN) {
+        allReleased = false;
+        exposures.byOrder(ctx.tenant(), current.orderId()).stream()
+            .filter(
+                x -> x.itemId().equals(item.itemId()) && x.status() == ExposureRecord.Status.OPEN)
+            .forEach(exposed::add);
       }
     }
     boolean compensated = allReleased;

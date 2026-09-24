@@ -151,6 +151,144 @@ public final class Locations {
           Map.entry("BUE", List.of("EZE")),
           Map.entry("SAO", List.of("GRU")));
 
+  /**
+   * Phase 4: where an airport is, for suppliers that search by coordinates (hotels near the
+   * airport's city) and for distance checks. Curated by hand for the catalog's airports; a fuller
+   * dataset (OurAirports) can replace this map without changing callers.
+   *
+   * @param city the city the airport serves, in English
+   * @param country ISO 3166-1 alpha-2
+   */
+  public record Place(
+      String iata, String city, String country, double latitude, double longitude) {}
+
+  private static final Map<String, Place> PLACES =
+      Map.ofEntries(
+          Map.entry("BOS", new Place("BOS", "Boston", "US", 42.364, -71.005)),
+          Map.entry("BGR", new Place("BGR", "Bangor", "US", 44.807, -68.828)),
+          Map.entry("PWM", new Place("PWM", "Portland", "US", 43.646, -70.309)),
+          Map.entry("JFK", new Place("JFK", "New York", "US", 40.640, -73.779)),
+          Map.entry("EWR", new Place("EWR", "Newark", "US", 40.692, -74.169)),
+          Map.entry("LGA", new Place("LGA", "New York", "US", 40.777, -73.874)),
+          Map.entry("DCA", new Place("DCA", "Washington", "US", 38.852, -77.037)),
+          Map.entry("IAD", new Place("IAD", "Washington", "US", 38.953, -77.456)),
+          Map.entry("BWI", new Place("BWI", "Baltimore", "US", 39.175, -76.668)),
+          Map.entry("PHL", new Place("PHL", "Philadelphia", "US", 39.872, -75.241)),
+          Map.entry("ATL", new Place("ATL", "Atlanta", "US", 33.640, -84.427)),
+          Map.entry("CLT", new Place("CLT", "Charlotte", "US", 35.214, -80.943)),
+          Map.entry("MIA", new Place("MIA", "Miami", "US", 25.796, -80.287)),
+          Map.entry("FLL", new Place("FLL", "Fort Lauderdale", "US", 26.072, -80.153)),
+          Map.entry("MCO", new Place("MCO", "Orlando", "US", 28.429, -81.309)),
+          Map.entry("TPA", new Place("TPA", "Tampa", "US", 27.976, -82.533)),
+          Map.entry("DTW", new Place("DTW", "Detroit", "US", 42.212, -83.353)),
+          Map.entry("ORD", new Place("ORD", "Chicago", "US", 41.978, -87.905)),
+          Map.entry("MDW", new Place("MDW", "Chicago", "US", 41.786, -87.752)),
+          Map.entry("DFW", new Place("DFW", "Dallas", "US", 32.897, -97.038)),
+          Map.entry("IAH", new Place("IAH", "Houston", "US", 29.990, -95.337)),
+          Map.entry("AUS", new Place("AUS", "Austin", "US", 30.194, -97.670)),
+          Map.entry("MSP", new Place("MSP", "Minneapolis", "US", 44.882, -93.222)),
+          Map.entry("STL", new Place("STL", "St Louis", "US", 38.749, -90.370)),
+          Map.entry("MSY", new Place("MSY", "New Orleans", "US", 29.993, -90.258)),
+          Map.entry("DEN", new Place("DEN", "Denver", "US", 39.856, -104.674)),
+          Map.entry("SLC", new Place("SLC", "Salt Lake City", "US", 40.789, -111.978)),
+          Map.entry("PHX", new Place("PHX", "Phoenix", "US", 33.434, -112.012)),
+          Map.entry("LAS", new Place("LAS", "Las Vegas", "US", 36.084, -115.154)),
+          Map.entry("SEA", new Place("SEA", "Seattle", "US", 47.450, -122.309)),
+          Map.entry("SFO", new Place("SFO", "San Francisco", "US", 37.619, -122.375)),
+          Map.entry("SJC", new Place("SJC", "San Jose", "US", 37.363, -121.929)),
+          Map.entry("OAK", new Place("OAK", "Oakland", "US", 37.721, -122.221)),
+          Map.entry("LAX", new Place("LAX", "Los Angeles", "US", 33.942, -118.408)),
+          Map.entry("SAN", new Place("SAN", "San Diego", "US", 32.734, -117.190)),
+          Map.entry("PDX", new Place("PDX", "Portland", "US", 45.589, -122.597)),
+          Map.entry("ANC", new Place("ANC", "Anchorage", "US", 61.174, -149.996)),
+          Map.entry("HNL", new Place("HNL", "Honolulu", "US", 21.319, -157.922)),
+          Map.entry("YYZ", new Place("YYZ", "Toronto", "CA", 43.677, -79.631)),
+          Map.entry("YUL", new Place("YUL", "Montreal", "CA", 45.470, -73.741)),
+          Map.entry("YVR", new Place("YVR", "Vancouver", "CA", 49.195, -123.179)),
+          Map.entry("MEX", new Place("MEX", "Mexico City", "MX", 19.436, -99.072)),
+          Map.entry("CUN", new Place("CUN", "Cancun", "MX", 21.037, -86.877)),
+          Map.entry("LHR", new Place("LHR", "London", "GB", 51.470, -0.454)),
+          Map.entry("LGW", new Place("LGW", "London", "GB", 51.148, -0.190)),
+          Map.entry("DUB", new Place("DUB", "Dublin", "IE", 53.421, -6.270)),
+          Map.entry("CDG", new Place("CDG", "Paris", "FR", 49.010, 2.548)),
+          Map.entry("ORY", new Place("ORY", "Paris", "FR", 48.723, 2.379)),
+          Map.entry("AMS", new Place("AMS", "Amsterdam", "NL", 52.310, 4.768)),
+          Map.entry("BRU", new Place("BRU", "Brussels", "BE", 50.901, 4.484)),
+          Map.entry("FRA", new Place("FRA", "Frankfurt", "DE", 50.033, 8.571)),
+          Map.entry("MUC", new Place("MUC", "Munich", "DE", 48.354, 11.786)),
+          Map.entry("BER", new Place("BER", "Berlin", "DE", 52.362, 13.501)),
+          Map.entry("ZRH", new Place("ZRH", "Zurich", "CH", 47.458, 8.555)),
+          Map.entry("VIE", new Place("VIE", "Vienna", "AT", 48.110, 16.570)),
+          Map.entry("MAD", new Place("MAD", "Madrid", "ES", 40.472, -3.561)),
+          Map.entry("BCN", new Place("BCN", "Barcelona", "ES", 41.297, 2.078)),
+          Map.entry("LIS", new Place("LIS", "Lisbon", "PT", 38.774, -9.134)),
+          Map.entry("FCO", new Place("FCO", "Rome", "IT", 41.800, 12.239)),
+          Map.entry("MXP", new Place("MXP", "Milan", "IT", 45.630, 8.723)),
+          Map.entry("CPH", new Place("CPH", "Copenhagen", "DK", 55.618, 12.656)),
+          Map.entry("ARN", new Place("ARN", "Stockholm", "SE", 59.650, 17.919)),
+          Map.entry("OSL", new Place("OSL", "Oslo", "NO", 60.194, 11.100)),
+          Map.entry("HEL", new Place("HEL", "Helsinki", "FI", 60.317, 24.963)),
+          Map.entry("WAW", new Place("WAW", "Warsaw", "PL", 52.166, 20.967)),
+          Map.entry("ATH", new Place("ATH", "Athens", "GR", 37.936, 23.945)),
+          Map.entry("IST", new Place("IST", "Istanbul", "TR", 41.275, 28.752)),
+          Map.entry("DXB", new Place("DXB", "Dubai", "AE", 25.253, 55.366)),
+          Map.entry("AUH", new Place("AUH", "Abu Dhabi", "AE", 24.433, 54.651)),
+          Map.entry("DOH", new Place("DOH", "Doha", "QA", 25.273, 51.608)),
+          Map.entry("TLV", new Place("TLV", "Tel Aviv", "IL", 32.009, 34.883)),
+          Map.entry("JNB", new Place("JNB", "Johannesburg", "ZA", -26.139, 28.246)),
+          Map.entry("CAI", new Place("CAI", "Cairo", "EG", 30.122, 31.406)),
+          Map.entry("NBO", new Place("NBO", "Nairobi", "KE", -1.319, 36.928)),
+          Map.entry("DEL", new Place("DEL", "Delhi", "IN", 28.556, 77.100)),
+          Map.entry("BOM", new Place("BOM", "Mumbai", "IN", 19.089, 72.868)),
+          Map.entry("BLR", new Place("BLR", "Bengaluru", "IN", 13.199, 77.706)),
+          Map.entry("SIN", new Place("SIN", "Singapore", "SG", 1.364, 103.991)),
+          Map.entry("KUL", new Place("KUL", "Kuala Lumpur", "MY", 2.746, 101.710)),
+          Map.entry("BKK", new Place("BKK", "Bangkok", "TH", 13.690, 100.750)),
+          Map.entry("HKG", new Place("HKG", "Hong Kong", "HK", 22.308, 113.918)),
+          Map.entry("PVG", new Place("PVG", "Shanghai", "CN", 31.143, 121.805)),
+          Map.entry("PEK", new Place("PEK", "Beijing", "CN", 40.080, 116.585)),
+          Map.entry("TPE", new Place("TPE", "Taipei", "TW", 25.078, 121.233)),
+          Map.entry("ICN", new Place("ICN", "Seoul", "KR", 37.460, 126.441)),
+          Map.entry("NRT", new Place("NRT", "Tokyo", "JP", 35.772, 140.393)),
+          Map.entry("HND", new Place("HND", "Tokyo", "JP", 35.549, 139.780)),
+          Map.entry("KIX", new Place("KIX", "Osaka", "JP", 34.434, 135.244)),
+          Map.entry("SYD", new Place("SYD", "Sydney", "AU", -33.946, 151.177)),
+          Map.entry("MEL", new Place("MEL", "Melbourne", "AU", -37.673, 144.843)),
+          Map.entry("BNE", new Place("BNE", "Brisbane", "AU", -27.384, 153.117)),
+          Map.entry("PER", new Place("PER", "Perth", "AU", -31.940, 115.967)),
+          Map.entry("AKL", new Place("AKL", "Auckland", "NZ", -37.008, 174.792)),
+          Map.entry("GRU", new Place("GRU", "Sao Paulo", "BR", -23.432, -46.469)),
+          Map.entry("EZE", new Place("EZE", "Buenos Aires", "AR", -34.822, -58.536)),
+          Map.entry("SCL", new Place("SCL", "Santiago", "CL", -33.393, -70.786)),
+          Map.entry("BOG", new Place("BOG", "Bogota", "CO", 4.701, -74.147)),
+          Map.entry("LIM", new Place("LIM", "Lima", "PE", -12.022, -77.114)));
+
+  public static Optional<Place> place(String iata) {
+    return iata == null ? Optional.empty() : Optional.ofNullable(PLACES.get(iata.toUpperCase()));
+  }
+
+  /** Every catalogued airport with a known position, for suppliers and the frontend. */
+  public static List<Place> places() {
+    return PLACES.values().stream().sorted(java.util.Comparator.comparing(Place::iata)).toList();
+  }
+
+  /** Great-circle distance in kilometres between two catalogued airports; empty when unknown. */
+  public static Optional<Double> distanceKm(String from, String to) {
+    Optional<Place> a = place(from);
+    Optional<Place> b = place(to);
+    if (a.isEmpty() || b.isEmpty()) {
+      return Optional.empty();
+    }
+    double lat1 = Math.toRadians(a.get().latitude());
+    double lat2 = Math.toRadians(b.get().latitude());
+    double dLat = lat2 - lat1;
+    double dLon = Math.toRadians(b.get().longitude() - a.get().longitude());
+    double h =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2)
+            + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return Optional.of(2 * 6371.0 * Math.asin(Math.sqrt(h)));
+  }
+
   /** Hotels hand over rooms at 15:00 and want them back by 11:00, local time. */
   public static final LocalTime HOTEL_CHECK_IN = LocalTime.of(15, 0);
 

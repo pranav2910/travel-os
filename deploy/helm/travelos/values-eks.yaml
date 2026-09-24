@@ -93,9 +93,17 @@ supplier-gateway:
         remoteRef: { key: travelos/ENV/supplier-gateway/db, property: password }
       - secretKey: SANDBOX_AIR_WEBHOOK_SECRET
         remoteRef: { key: travelos/ENV/supplier-gateway/webhooks, property: sandbox_air }
+      # Phase 4: live suppliers (ADR-0016). Create these entries in Secrets Manager to enable an
+      # adapter; leave them absent and the gateway runs on the sandboxes. Test credentials first.
+      - secretKey: DUFFEL_ACCESS_TOKEN
+        remoteRef: { key: travelos/ENV/supplier-gateway/duffel, property: access_token }
+      - secretKey: HOTELBEDS_API_KEY
+        remoteRef: { key: travelos/ENV/supplier-gateway/hotelbeds, property: api_key }
+      - secretKey: HOTELBEDS_SECRET
+        remoteRef: { key: travelos/ENV/supplier-gateway/hotelbeds, property: secret }
   networkPolicy:
     httpFrom: *httpFromVpc
-    extraEgress:
+    extraEgress:   # Phase 4: add api.duffel.com / api.hotelbeds.com (443) here when a live adapter is enabled
       - to: [{ ipBlock: { cidr: 10.0.0.0/8 } }]
         ports: [{ protocol: TCP, port: 5432 }]                 # Aurora
       - to: [{ ipBlock: { cidr: 0.0.0.0/0, except: [10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16] } }]

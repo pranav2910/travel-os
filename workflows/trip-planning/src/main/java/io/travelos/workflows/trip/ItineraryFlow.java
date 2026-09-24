@@ -100,6 +100,9 @@ final class ItineraryFlow {
 
     String paymentToken();
 
+    /** Phase 4: the passenger as suppliers need them, from Enterprise Context at booking time. */
+    Passenger passenger(String tenant, String tripId, Trip trip);
+
     @Nullable String explain(
         String tenant,
         String tripId,
@@ -654,11 +657,7 @@ final class ItineraryFlow {
             .setBundle(plan)
             .setPolicyDecisionId(finalDecision.getDecisionId())
             .setOptimizationRunId(optimized.getOptimizationRunId())
-            .addPassengers(
-                Passenger.newBuilder()
-                    .setGivenName(trip.getTraveler().getGivenName())
-                    .setFamilyName(trip.getTraveler().getFamilyName())
-                    .setEmail(trip.getTraveler().getEmail()))
+            .addPassengers(host.passenger(tenant, tripId, trip))
             .setPaymentToken(host.paymentToken());
     if (approvalId != null) {
       command.setApprovalId(approvalId);

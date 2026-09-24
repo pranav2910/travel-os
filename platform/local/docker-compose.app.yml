@@ -89,6 +89,11 @@ services:
       PORT: 8084
       GRPC_PORT: 9084
       SUPPLIER_GATEWAY_DB_URL: jdbc:postgresql://postgres:5432/supplier_gateway
+      # Phase 4: real suppliers exist only when these are set in the shell; never written here.
+      DUFFEL_ACCESS_TOKEN: ${DUFFEL_ACCESS_TOKEN:-}
+      HOTELBEDS_API_KEY: ${HOTELBEDS_API_KEY:-}
+      HOTELBEDS_SECRET: ${HOTELBEDS_SECRET:-}
+      HOTELBEDS_BASE_URL: ${HOTELBEDS_BASE_URL:-https://api.test.hotelbeds.com}
     ports:
       - "8084:8084"
       - "9084:9084"

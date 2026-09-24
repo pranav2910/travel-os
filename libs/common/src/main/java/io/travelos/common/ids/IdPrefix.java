@@ -49,7 +49,8 @@ public enum IdPrefix {
   SENSITIVE_ACCESS("sacc"),
   PURCHASE_AUTHORIZATION("pau"),
   CONVERSATION("cnv"),
-  MESSAGE("msg");
+  MESSAGE("msg"),
+  SUPPLIER_ATTEMPT("sat");
 
   private final String prefix;
 

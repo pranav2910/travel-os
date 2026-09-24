@@ -71,6 +71,8 @@ public class SandboxAirSupplier implements AirSupplier {
         .setStatusLookupSupported(true)
         .setNotificationsSupported(true)
         .setIntegration("SIMULATED")
+        .setMutationsIdempotent(true)
+        .setReconciliationByKeySupported(true)
         .build();
   }
 

@@ -5,6 +5,10 @@ import io.grpc.StatusRuntimeException;
 import io.temporal.failure.ApplicationFailure;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
+import io.travelos.contracts.context.v1.EnterpriseContextServiceGrpc;
+import io.travelos.contracts.context.v1.GetTravelerSnapshotRequest;
+import io.travelos.contracts.context.v1.PassengerSnapshot;
+import io.travelos.contracts.context.v1.TravelerSnapshotResponse;
 import io.travelos.contracts.llm.v1.ExplainTripRequest;
 import io.travelos.contracts.llm.v1.ExplainTripResponse;
 import io.travelos.contracts.llm.v1.ExtractIntentRequest;
@@ -23,6 +27,8 @@ import io.travelos.contracts.order.v1.OrderServiceGrpc;
 import io.travelos.contracts.policy.v1.EvaluateTripRequest;
 import io.travelos.contracts.policy.v1.EvaluateTripResponse;
 import io.travelos.contracts.policy.v1.PolicyServiceGrpc;
+import io.travelos.contracts.supplier.v1.Passenger;
+import io.travelos.contracts.supplier.v1.PassengerDocument;
 import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
 import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
@@ -102,6 +108,55 @@ public class TripActivitiesImpl implements TripActivities {
   public OptimizeTripResponse optimize(OptimizeTripRequest request) {
     return call(
         () -> stub(OptimizationServiceGrpc::newBlockingStub, "optimization").optimizeTrip(request));
+  }
+
+  @Override
+  public Passenger passenger(String tenantId, String tripId, String travelerId) {
+    TravelerSnapshotResponse snapshot =
+        call(
+            () ->
+                stub(EnterpriseContextServiceGrpc::newBlockingStub, "enterprise-context")
+                    .getTravelerSnapshot(
+                        GetTravelerSnapshotRequest.newBuilder()
+                            .setCtx(
+                                RequestContext.newBuilder()
+                                    .setTenantId(tenantId)
+                                    .setCorrelationId(tripId)
+                                    .setPrincipal(
+                                        io.travelos.contracts.common.v1.Principal.newBuilder()
+                                            .setKind(
+                                                io.travelos.contracts.common.v1.Principal.Kind
+                                                    .AGENT)
+                                            .setId(TripWorkflowImpl.PRINCIPAL)))
+                            .setTravelerId(travelerId)
+                            .setIncludeDocuments(true)
+                            .setPurpose("BOOKING")
+                            .build()));
+    PassengerSnapshot p = snapshot.getPassenger();
+    Passenger.Builder b =
+        Passenger.newBuilder()
+            .setGivenName(p.getGivenName())
+            .setFamilyName(p.getFamilyName())
+            .setEmail(p.getEmail())
+            .setPhone(p.getPhone())
+            .setDateOfBirth(p.getDateOfBirth())
+            .setGender(p.getGender());
+    if (p.getLoyaltyCount() > 0) {
+      b.setLoyaltyProgram(p.getLoyalty(0).getProgram())
+          .setLoyaltyNumber(p.getLoyalty(0).getMemberNumber());
+    }
+    for (io.travelos.contracts.context.v1.TravelDocument d : p.getDocumentsList()) {
+      if (!d.getNumber().isBlank()) {
+        b.addDocuments(
+            PassengerDocument.newBuilder()
+                .setType(d.getType())
+                .setNumber(d.getNumber())
+                .setIssuingCountry(d.getIssuingCountry())
+                .setNationality(d.getNationality())
+                .setExpiresOn(d.getExpiresOn()));
+      }
+    }
+    return b.build();
   }
 
   @Override

@@ -15,6 +15,7 @@ import io.travelos.contracts.order.v1.GetOrderRequest;
 import io.travelos.contracts.order.v1.Order;
 import io.travelos.contracts.policy.v1.EvaluateTripRequest;
 import io.travelos.contracts.policy.v1.EvaluateTripResponse;
+import io.travelos.contracts.supplier.v1.Passenger;
 import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
 import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
@@ -57,6 +58,13 @@ public interface TripActivities {
   ExplainTripResponse explain(ExplainTripRequest request);
 
   Order createOrder(CreateOrderCommand command);
+
+  /**
+   * Phase 4: the passenger as the suppliers need them (names as on documents, contact, date of
+   * birth, documents), read from Enterprise Context at booking time under the platform's own
+   * machine identity with purpose BOOKING, and logged there. Never stored by the workflow.
+   */
+  Passenger passenger(String tenantId, String tripId, String travelerId);
 
   // ---------------------------------------------------------------- Slice 3
 

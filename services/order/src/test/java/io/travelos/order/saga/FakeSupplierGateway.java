@@ -93,6 +93,14 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
       observer.onError(Status.UNAVAILABLE.withDescription("simulated blip").asRuntimeException());
       return;
     }
+    if (id.startsWith("unknown-")) {
+      // Phase 4: the gateway's ledger found a lost answer it can neither reconcile nor retry
+      observer.onError(
+          Status.ABORTED
+              .withDescription("OUTCOME_UNKNOWN: the supplier may or may not have booked it")
+              .asRuntimeException());
+      return;
+    }
     if (id.startsWith("soldout-")) {
       observer.onError(
           Status.FAILED_PRECONDITION

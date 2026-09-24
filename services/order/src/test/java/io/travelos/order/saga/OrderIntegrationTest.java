@@ -741,6 +741,31 @@ class OrderIntegrationTest {
   }
 
   @Test
+  @org.junit.jupiter.api.Order(15)
+  void anUnknownOutcomeIsNeitherFailedNorConfirmedButExposedForAPerson() {
+    // Phase 4 (ADR-0016): the gateway's ledger could neither reconcile nor safely retry
+    Order order =
+        orders.createOrder(
+            command(
+                TRIP + ":CREATE-ORDER:" + ATTEMPT.incrementAndGet(),
+                itinerary("bdl_01ARZ3NDEKTSV4RRFFQ69G5FB9", "ok-DL170", "unknown-hotel-SEA")));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.PARTIALLY_FAILED);
+    assertThat(order.getCompensated()).as("money may be committed at the hotel").isFalse();
+    assertThat(order.getItems(1).getStatus().name()).isEqualTo("ITEM_UNKNOWN");
+    assertThat(order.getItems(0).getStatus())
+        .as("the confirmed leg was released")
+        .isEqualTo(OrderItemStatus.ITEM_CANCELLED);
+    assertThat(order.getExposuresList())
+        .anySatisfy(
+            x -> {
+              assertThat(x.getReason()).isEqualTo("OUTCOME_UNKNOWN");
+              assertThat(x.getStatus()).isEqualTo("OPEN");
+              assertThat(x.getAmount()).isEqualTo(order.getItems(1).getTotal());
+            });
+    assertThat(order.getFailureCode()).isEqualTo("OUTCOME_UNKNOWN");
+  }
+
+  @Test
   @org.junit.jupiter.api.Order(16)
   void aLaterFailureCompensatesInReverseOrderAndExposesWhatCannotBeReleased() {
     int before = SUPPLIER.cancelAttempts.size();

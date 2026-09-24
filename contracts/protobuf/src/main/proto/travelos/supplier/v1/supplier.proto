@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package travelos.supplier.v1;
 
+import "google/protobuf/timestamp.proto";
 import "travelos/common/v1/common.proto";
 import "travelos/offer/v1/offer.proto";
 
@@ -31,6 +32,10 @@ service SupplierGateway {
   rpc GetBookingStatus(GetBookingStatusRequest) returns (BookingStatus);
   // What an adapter can do, so callers change what can be changed and cancel + rebook the rest.
   rpc GetCapabilities(GetCapabilitiesRequest) returns (SupplierCapabilities);
+  // Phase 4: rail and car rental are distinct kinds with their own adapters (none SIMULATED yet:
+  // the search answers with an empty result and a NO_PROVIDER error until one is registered).
+  rpc SearchRail(SearchRailRequest) returns (SearchRailResponse);
+  rpc SearchCars(SearchCarsRequest) returns (SearchCarsResponse);
 }
 
 message SearchAirRequest {
@@ -76,6 +81,23 @@ message Passenger {
   string family_name = 2;
   string email = 3;
   string loyalty_number = 4;
+  // Phase 4: what real suppliers need to ticket. Fetched from Enterprise Context at booking time
+  // (purpose BOOKING, logged) and passed through; never persisted by the Order service or the
+  // gateway. Empty when the profile does not know them.
+  string phone = 5;
+  string date_of_birth = 6;           // YYYY-MM-DD
+  string gender = 7;                  // M | F | X
+  string title = 8;                   // mr | ms | mrs | dr as the supplier wants it
+  repeated PassengerDocument documents = 9;
+  string loyalty_program = 10;        // airline / hotel program code the loyalty_number belongs to
+}
+
+message PassengerDocument {
+  string type = 1;                    // PASSPORT | NATIONAL_ID | VISA
+  string number = 2;
+  string issuing_country = 3;         // ISO 3166-1 alpha-2
+  string nationality = 4;
+  string expires_on = 5;              // YYYY-MM-DD
 }
 
 enum SupplierOrderStatus {
@@ -220,4 +242,43 @@ message SupplierCapabilities {
   bool notifications_supported = 6;
   // SIMULATED | LIVE: the sandbox adapters are simulations and say so.
   string integration = 7;
+  // Phase 4. Whether the supplier honours our idempotency key on mutations (then a retry with the
+  // same key is safe at the supplier); when false the gateway's mutation ledger is the only
+  // protection and a lost answer is reconciled by lookup or reported as OUTCOME_UNKNOWN.
+  bool mutations_idempotent = 8;
+  // The adapter can search under corporate / negotiated agreements (private fares, rate codes).
+  bool negotiated_rates_supported = 9;
+  // A lost answer can be reconciled by our key or reference (GetBookingStatus by idempotency_key).
+  bool reconciliation_by_key_supported = 10;
+}
+
+// ---------------------------------------------------------------- Phase 4: rail and car
+
+message SearchRailRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string origin = 2;                  // station or city code as the platform's catalog names it
+  string destination = 3;
+  travelos.common.v1.TimeWindow departure = 4;
+  int32 passengers = 5;
+}
+
+message SearchRailResponse {
+  string search_session_id = 1;
+  repeated travelos.offer.v1.Offer offers = 2;
+  repeated SupplierError errors = 3;
+}
+
+message SearchCarsRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string pickup_location = 2;         // IATA airport / city code
+  string dropoff_location = 3;
+  google.protobuf.Timestamp pickup = 4;
+  google.protobuf.Timestamp dropoff = 5;
+  string vehicle_class = 6;           // optional ACRISS category
+}
+
+message SearchCarsResponse {
+  string search_session_id = 1;
+  repeated travelos.offer.v1.Offer offers = 2;
+  repeated SupplierError errors = 3;
 }
