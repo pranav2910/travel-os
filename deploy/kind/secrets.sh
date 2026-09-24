@@ -72,7 +72,8 @@ apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_D
   --from-literal=SALESFORCE_INSTANCE_URL="${SALESFORCE_INSTANCE_URL:-}" --from-literal=SALESFORCE_CLIENT_ID="${SALESFORCE_CLIENT_ID:-}" --from-literal=SALESFORCE_CLIENT_SECRET="${SALESFORCE_CLIENT_SECRET:-}" \
   --from-literal=CONCUR_CLIENT_ID="${CONCUR_CLIENT_ID:-}" --from-literal=CONCUR_CLIENT_SECRET="${CONCUR_CLIENT_SECRET:-}" --from-literal=CONCUR_REFRESH_TOKEN="${CONCUR_REFRESH_TOKEN:-}"
 apply learning-secrets -n travelos --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD"
-apply assistance-secrets -n travelos --from-literal=ASSISTANCE_DB_PASSWORD="$ASSISTANCE_DB_PASSWORD"
+apply assistance-secrets -n travelos --from-literal=ASSISTANCE_DB_PASSWORD="$ASSISTANCE_DB_PASSWORD" \
+  --from-literal=SENDGRID_API_KEY="${SENDGRID_API_KEY:-}" --from-literal=NOTIFICATIONS_FROM_ADDRESS="${NOTIFICATIONS_FROM_ADDRESS:-}" --from-literal=SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL:-}"
 apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD" --from-literal=STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
 apply audit-secrets -n travelos --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"
 apply trip-planning-secrets -n travelos --from-literal=PAYMENT_TOKEN="$PAYMENT_TOKEN"

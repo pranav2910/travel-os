@@ -60,6 +60,15 @@ travelos:
     # travel admin group, level 3: finance and travel admins together; nothing escalates past 3).
     escalation-sweep: ${ASSISTANCE_ESCALATION_SWEEP:1m}
     max-escalation-level: 3
+    # Phase 8: notification channels (credential-gated; in-app always) and traveler safety.
+    notifications:
+      sendgrid-api-key: ${SENDGRID_API_KEY:}
+      from-address: ${NOTIFICATIONS_FROM_ADDRESS:}
+      slack-webhook-url: ${SLACK_WEBHOOK_URL:}
+      dispatch-interval: ${NOTIFICATIONS_DISPATCH_INTERVAL:5s}
+      max-attempts: 5
+    safety:
+      checkin-grace: ${SAFETY_CHECKIN_GRACE:4h}
 
 management:
   tracing:

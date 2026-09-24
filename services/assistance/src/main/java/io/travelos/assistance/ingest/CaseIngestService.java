@@ -37,16 +37,19 @@ public class CaseIngestService {
   private final ProcessedEventRepository processed;
   private final TripIndexRepository trips;
   private final CaseService cases;
+  private final io.travelos.assistance.notify.NotificationRules notifications;
   private final Clock clock;
 
   public CaseIngestService(
       ProcessedEventRepository processed,
       TripIndexRepository trips,
       CaseService cases,
+      io.travelos.assistance.notify.NotificationRules notifications,
       Clock clock) {
     this.processed = processed;
     this.trips = trips;
     this.cases = cases;
+    this.notifications = notifications;
     this.clock = clock;
   }
 
@@ -60,9 +63,61 @@ public class CaseIngestService {
     Map<String, Object> d = event.data();
     String tripId = str(d.get("tripId"));
     String orderId = str(d.get("orderId"));
-    if (tripId != null && (str(d.get("travelerId")) != null || orderId != null)) {
-      trips.upsert(tenant, tripId, str(d.get("travelerId")), orderId, now);
+    if (tripId != null) {
+      // Phase 8: the index learns who travels, where and when, from what the events say
+      String status =
+          switch (event.eventType()) {
+            case "travel.trip.booked" -> "BOOKED";
+            case "travel.trip.cancelled" -> "CANCELLED";
+            case "travel.trip.failed" -> "FAILED";
+            case "travel.trip.completed" -> "COMPLETED";
+            case "travel.trip.created" -> "SUBMITTED";
+            default -> null;
+          };
+      java.util.List<String> cities = null;
+      if (d.get("cities") instanceof java.util.List<?> l) {
+        cities = l.stream().map(String::valueOf).toList();
+      }
+      trips.upsert(
+          tenant,
+          tripId,
+          str(d.get("travelerId")),
+          orderId,
+          new TripIndexRepository.Journey(
+              str(d.get("travelerEmail")),
+              str(d.get("travelerName")),
+              status,
+              str(d.get("origin")),
+              str(d.get("destination")),
+              instant(d.get("departsAt")),
+              instant(d.get("returnsAt")),
+              cities),
+          now);
     }
+    Result result = route(event, tenant, d, tripId, orderId);
+    // Phase 8: what people should hear about, in the same transaction as the fact
+    notifications.apply(event);
+    return result;
+  }
+
+  private static java.time.@Nullable Instant instant(@Nullable Object value) {
+    String s = str(value);
+    if (s == null) {
+      return null;
+    }
+    try {
+      return Instant.parse(s);
+    } catch (RuntimeException e) {
+      return null;
+    }
+  }
+
+  private Result route(
+      EventEnvelope event,
+      TenantId tenant,
+      Map<String, Object> d,
+      @Nullable String tripId,
+      @Nullable String orderId) {
     return switch (event.eventType()) {
       case "travel.order.compensation-failed" ->
           exposures(

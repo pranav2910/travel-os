@@ -268,4 +268,6 @@ ingress:
     - { path: /scim/v2, service: enterprise-context, port: 8090, pathType: Prefix }
     - { path: /api/v1/learning, service: learning, port: 8091, pathType: Prefix }
     - { path: /api/v1/cases, service: assistance, port: 8092, pathType: Prefix }
+    - { path: /api/v1/notifications, service: assistance, port: 8092, pathType: Prefix }
+    - { path: /api/v1/safety, service: assistance, port: 8092, pathType: Prefix }
     - { path: /, service: web, port: 8080, pathType: Prefix }   # the app itself (deep links -> index.html)

@@ -1,0 +1,16 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7TC",
+  "eventType": "travel.assistance.checkin-recorded",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-24T07:30:12Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "producer": "assistance",
+  "data": {
+    "advisoryId": "adv_01K4Q0N7S6Z2X8G5H3J9M1P7TB",
+    "travelerId": "emp_1001",
+    "status": "SAFE",
+    "note": "at the hotel, flights unaffected",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB"
+  }
+}

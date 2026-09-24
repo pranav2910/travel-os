@@ -43,6 +43,32 @@
           "description": "what the trip was made from, e.g. the demand candidate id (Slice 4)",
           "minLength": 1,
           "maxLength": 128
+        },
+        "travelerEmail": {
+          "type": "string"
+        },
+        "travelerName": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string"
+        },
+        "destination": {
+          "type": "string"
+        },
+        "departsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "returnsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -116,6 +142,32 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/component"
+          }
+        },
+        "travelerEmail": {
+          "type": "string"
+        },
+        "travelerName": {
+          "type": "string"
+        },
+        "origin": {
+          "type": "string"
+        },
+        "destination": {
+          "type": "string"
+        },
+        "departsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "returnsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }

@@ -61,6 +61,11 @@ public enum IdPrefix {
   /** Phase 6: assistance cases and their history. */
   ASSISTANCE_CASE("cas"),
   CASE_EVENT("cev"),
+  /** Phase 8: notifications, deliveries and safety advisories. */
+  NOTIFICATION("ntf"),
+  NOTIFICATION_DELIVERY("ndl"),
+  SAFETY_ADVISORY("adv"),
+  SAFETY_CHECKIN("chk"),
   /** Phase 7: governance. */
   POLICY_SCOPE("psc"),
   BUDGET("bud"),

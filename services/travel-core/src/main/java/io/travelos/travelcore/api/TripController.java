@@ -6,6 +6,7 @@ import io.travelos.spring.web.error.ApiException;
 import io.travelos.spring.web.idempotency.IdempotencyKeyHeader;
 import io.travelos.travelcore.trip.AgentDecision;
 import io.travelos.travelcore.trip.IntentRejectedException;
+import io.travelos.travelcore.trip.ItineraryExport;
 import io.travelos.travelcore.trip.TravelIntent;
 import io.travelos.travelcore.trip.Trip;
 import io.travelos.travelcore.trip.TripRepository;
@@ -192,6 +193,29 @@ public class TripController {
         trips.components(trip.tenantId(), trip.tripId()),
         trips.allocation(trip.tenantId(), trip.tripId()).orElse(null),
         trips.activePurchase(trip.tenantId(), trip.tripId()).orElse(null));
+  }
+
+  /** Phase 8: the itinerary as a traveler carries it (JSON). */
+  @GetMapping("/{tripId}/itinerary")
+  public ItineraryExport.Summary itinerary(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    Trip trip = trips.get(me, tripId);
+    return ItineraryExport.summary(trip, trips.components(trip.tenantId(), trip.tripId()));
+  }
+
+  /** Phase 8: the itinerary as an iCalendar file for the traveler's own calendar. */
+  @GetMapping(path = "/{tripId}/itinerary.ics", produces = "text/calendar")
+  public ResponseEntity<String> itineraryCalendar(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    Trip trip = trips.get(me, tripId);
+    String ics =
+        ItineraryExport.ics(
+            trip, trips.components(trip.tenantId(), trip.tripId()), java.time.Instant.now());
+    return ResponseEntity.ok()
+        .contentType(
+            org.springframework.http.MediaType.parseMediaType("text/calendar; charset=utf-8"))
+        .header("Content-Disposition", "attachment; filename=\"" + tripId + ".ics\"")
+        .body(ics);
   }
 
   /** Slice 3: component status, total and supplier references, one row per leg/stay/transfer. */

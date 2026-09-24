@@ -265,3 +265,35 @@ environment credentials exist (`docs/runbooks/enterprise-federation.md`).
 The trip's allocation scope is on every policy evaluation; the approval chain and expiry reach
 Travel Core; the budget is reserved before BOOKING (`BUDGET_EXCEEDED` fails a trip a hard budget no
 longer fits); negotiated rates from the agreements go to supplier searches.
+
+## Phase 8 — notifications, safety, itinerary export (ADR-0020)
+
+### Assistance (port 8092; nginx routes `/api/v1/notifications`, `/api/v1/safety`)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `GET /api/v1/notifications?unread=&limit=` | anyone | — | `[NotificationView {notificationId, category (TRIP, APPROVAL, DISRUPTION, CASE, SAFETY, FINANCE), kind, title, body, linkKind, linkId, tripId, priority, recipientRole, createdAt, readAt}]`: addressed to me, plus to roles I hold |
+| `POST /api/v1/notifications/{id}/read`, `POST /api/v1/notifications/read-all` | the recipient | — | `NotificationView` / `{marked}` |
+| `GET /api/v1/notifications/{id}/deliveries` | the recipient, TRAVEL_ADMIN | — | `[DeliveryView {channel (IN_APP, EMAIL, CHAT), address (masked), status (PENDING, SENT, FAILED, SKIPPED), attempts, lastError, providerRef, sentAt}]` |
+| `GET /api/v1/notifications/deliveries/failed` | TRAVEL_ADMIN | — | `[DeliveryView]` |
+| `GET /api/v1/notifications/preferences`, `PUT …/preferences` | anyone | `{email?, chatHandle?, channels {CATEGORY: [IN_APP, EMAIL, CHAT]}}`; 422 `IN_APP_REQUIRED`, `CHANNELS_INVALID` | `PreferenceView` |
+| `GET /api/v1/safety/advisories?active=` | TRAVEL_ADMIN/FINANCE (all); a traveler (those affecting them) | — | `[AdvisoryView]` |
+| `POST /api/v1/safety/advisories` (`Idempotency-Key`) | TRAVEL_ADMIN, FINANCE | `{title, severity (LOW, MEDIUM, HIGH, CRITICAL), countries[], cities[] (IATA), startsAt, endsAt, text, source?}`; 422 `PLACE_REQUIRED`, `WINDOW_INVALID` | 201 `DetailView {advisory, affected[{travelerId, tripId, notifiedAt, caseId, checkin, checkedInAt}], checkedIn, needHelp}` |
+| `GET /api/v1/safety/advisories/{id}` | as above (a traveler sees only their own row) | — | `DetailView` |
+| `POST /api/v1/safety/advisories/{id}/checkin` (`Idempotency-Key`) | an affected traveler | `{status (SAFE, NEEDS_HELP), note?}` | `CheckinView`; NEEDS_HELP opens a CRITICAL SAFETY case at once |
+| `DELETE /api/v1/safety/advisories/{id}` | TRAVEL_ADMIN, FINANCE | — | 204 (closed) |
+
+Configuration: `SENDGRID_API_KEY`, `NOTIFICATIONS_FROM_ADDRESS`, `SLACK_WEBHOOK_URL` (secrets
+mechanism; absent = in-app only), `travelos.assistance.notifications.dispatch-interval` (5s),
+`max-attempts` (5), `travelos.assistance.safety.checkin-grace` (4h). Events:
+`travel.assistance.notification-sent`, `advisory-issued`, `checkin-recorded`.
+Event additions consumed here: `travel.trip.created/booked` carry `travelerEmail`, `travelerName`,
+`origin`, `destination`, `departsAt`, `returnsAt`, `cities`; `travel.approval.requested` carries
+`requestedFrom` = the allocation's manager employee id when known (else `role:<ROLE>`), `travelerId`, `travelerEmail`.
+
+### Travel Core (port 8081)
+
+| Method & path | Who | Returns |
+|---|---|---|
+| `GET /api/v1/trips/{id}/itinerary` | whoever sees the trip | `Summary {tripId, status, traveler, purpose, items[{kind (FLIGHT, STAY, TRANSFER), componentId, title, location, start, end, startDate, endDate, status, provider, reference, summary}]}` |
+| `GET /api/v1/trips/{id}/itinerary.ics` | whoever sees the trip | `text/calendar` (RFC 5545; one VEVENT per item; STATUS CONFIRMED/TENTATIVE/CANCELLED from the component) |

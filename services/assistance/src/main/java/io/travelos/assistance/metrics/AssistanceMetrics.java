@@ -32,6 +32,13 @@ public class AssistanceMetrics {
     count("travelos.assistance.actions", Tags.of("action", action, "result", result));
   }
 
+  /** Phase 8: {@code travelos_assistance_notifications_total{category,channel,result}}. */
+  public void notification(String category, String channel, String result) {
+    count(
+        "travelos.assistance.notifications",
+        Tags.of("category", category, "channel", channel, "result", result));
+  }
+
   public void escalation(int level) {
     count("travelos.assistance.escalations", Tags.of("level", String.valueOf(level)));
   }

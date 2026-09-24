@@ -53,6 +53,8 @@ server {
     location /scim/v2/                { set $u ${ENTERPRISE_CONTEXT_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
     location /api/v1/learning         { set $u ${LEARNING_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
     location /api/v1/cases            { set $u ${ASSISTANCE_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
+    location /api/v1/notifications    { set $u ${ASSISTANCE_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
+    location /api/v1/safety           { set $u ${ASSISTANCE_URL}; proxy_pass $u; include /tmp/travelos-proxy.conf; }
     location /api/ { include /tmp/travelos-headers.conf; default_type application/problem+json; return 404 '{"type":"about:blank","title":"Not Found","status":404,"code":"ROUTE_UNKNOWN","detail":"no such API route on this edge"}'; }
 
     # Hashed assets are immutable; the documents are not.

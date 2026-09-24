@@ -535,6 +535,150 @@
           "$ref": "common.schema.json#/$defs/principal"
         }
       }
+    },
+    "travel.assistance.notification-sent": {
+      "description": "Phase 8: a notification left the platform on one channel (or was kept in-app).",
+      "type": "object",
+      "required": [
+        "notificationId",
+        "recipient",
+        "category",
+        "kind",
+        "channel",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "notificationId": {
+          "type": "string",
+          "pattern": "^ntf_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "recipient": {
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "TRIP",
+            "APPROVAL",
+            "DISRUPTION",
+            "CASE",
+            "SAFETY",
+            "FINANCE"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "channel": {
+          "enum": [
+            "IN_APP",
+            "EMAIL",
+            "CHAT"
+          ]
+        },
+        "status": {
+          "enum": [
+            "SENT",
+            "SKIPPED",
+            "FAILED"
+          ]
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "providerRef": {
+          "type": "string"
+        }
+      }
+    },
+    "travel.assistance.advisory-issued": {
+      "description": "Phase 8: a travel safety advisory was issued; the affected booked travelers were notified and asked to check in.",
+      "type": "object",
+      "required": [
+        "advisoryId",
+        "title",
+        "severity",
+        "affectedTravelers",
+        "issuedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "advisoryId": {
+          "type": "string",
+          "pattern": "^adv_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "severity": {
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        },
+        "countries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "from": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "until": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "affectedTravelers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "issuedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    },
+    "travel.assistance.checkin-recorded": {
+      "description": "Phase 8: a traveler answered a safety advisory.",
+      "type": "object",
+      "required": [
+        "advisoryId",
+        "travelerId",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "advisoryId": {
+          "type": "string",
+          "pattern": "^adv_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "SAFE",
+            "NEEDS_HELP"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        }
+      }
     }
   }
 }

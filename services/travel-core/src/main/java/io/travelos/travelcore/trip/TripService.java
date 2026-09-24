@@ -903,7 +903,15 @@ public class TripService {
                   clock));
         }
         outbox.append(TripEvents.planned(next, true, t.causationId(), clock));
-        outbox.append(TripEvents.approvalRequested(next, approval, clock));
+        outbox.append(
+            TripEvents.approvalRequested(
+                next,
+                approval,
+                allocations
+                    .find(tenant, trip.tripId())
+                    .map(TripAllocation::managerEmployeeId)
+                    .orElse(null),
+                clock));
       }
       case APPROVED -> {
         if (trip.status() == TripStatus.PLANNING || trip.status() == TripStatus.QUOTED) {
@@ -1333,7 +1341,12 @@ public class TripService {
           trip.withEvidence(
               trip.evidence().merge(null, null, null, nextStep.approvalId(), null), null);
       trips.update(withStep, trip.version());
-      outbox.append(TripEvents.approvalRequested(withStep, nextStep, clock));
+      outbox.append(
+          TripEvents.approvalRequested(
+              withStep,
+              nextStep,
+              allocation.map(TripAllocation::managerEmployeeId).orElse(null),
+              clock));
       noteConversation(
           trip,
           "STATUS",

@@ -63,6 +63,12 @@
               "FINANCE"
             ]
           }
+        },
+        "travelerEmail": {
+          "type": "string"
+        },
+        "travelerId": {
+          "type": "string"
         }
       }
     },

@@ -152,3 +152,17 @@ shapes Okta and Entra ID send but no real IdP cycle ran; federation is a Keycloa
 (syntax-checked, not exercised); the five enterprise adapters are contract-tested against scripted
 provider responses and have not been run against any live tenant (no credentials here). Nothing in
 this phase claims a live verification it did not perform.
+
+## Phase 8 — notifications, safety, itinerary export (ADR-0020)
+
+| Command | Result |
+|---|---|
+| `./gradlew --offline :libs:events:test` | 88 run, 88 passed (`travel.assistance.notification-sent / advisory-issued / checkin-recorded`; journey and contact fields on `travel.trip.created/booked` and `travel.approval.requested`) |
+| `./gradlew --offline :services:assistance:test` | 9 run, 9 passed: `NotificationsAndSafetyIntegrationTest` 4 (a trip's story reaches the traveler once in the inbox and by email through a recording channel, the same event again adds nothing, a colleague sees nothing, deliveries per channel with masked addresses, read state per person; the allocation's manager is addressed directly and a role step reaches everyone with the role, the traveler is not told about internal steps, email switched off per category stays in-app only, in-app cannot be switched off, a provider outage is retried then given up and visible to a travel admin; an advisory finds the booked traveler in its city and window and not the cancelled or Boston trips, tells them as CRITICAL safety, a stranger sees no advisory, the silent traveler becomes a SAFETY case when the 2s test grace ends, a SAFE check-in settles it, NEEDS_HELP opens one at once; every `travel.assistance.*` event contract-valid), existing 5 |
+| `./gradlew --offline :services:travel-core:test --tests '*ItineraryApiIntegrationTest'` | 8 run, 8 passed (`theItineraryExportsAsACalendarAndAsJson…`: 7 VEVENTs for 3 legs, 2 stays, 2 transfers; the confirmed leg's supplier reference and STATUS; all-day stays; lines folded at 75 octets; the JSON summary; 404 for another tenant) |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`, Docker stack down) | BUILD SUCCESSFUL in 4m 59s; every module green (travel-core 92, trip-planning 70, policy 48, supplier-gateway 42 + 2 skipped, order 36, enterprise-context 23, learning 14, assistance 9, disruption 7, events 88, both Python suites) |
+
+Status distinction: in-app notifications, preferences, deliveries with retry, safety advisories,
+check-ins and the itinerary export are implemented and test-verified; email (SendGrid) and chat
+(Slack webhook) channels are implemented and provider-test-blocked (no key or webhook in this
+repository; the tests prove the delivery machinery through a recording channel, not a provider).

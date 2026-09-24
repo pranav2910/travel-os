@@ -1,0 +1,19 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7T9",
+  "eventType": "travel.assistance.notification-sent",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-24T07:30:12Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "producer": "assistance",
+  "data": {
+    "notificationId": "ntf_01K4Q0N7S6Z2X8G5H3J9M1P7TA",
+    "recipient": "emp_1001",
+    "category": "TRIP",
+    "kind": "travel.trip.booked",
+    "channel": "EMAIL",
+    "status": "SENT",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "providerRef": "sg-msg-1"
+  }
+}

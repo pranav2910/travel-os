@@ -67,7 +67,7 @@ topics:
 
   - name: travel.assistance
     slice: 6
-    events: [travel.assistance.case-opened, travel.assistance.case-assigned, travel.assistance.case-escalated, travel.assistance.case-resolved, travel.assistance.case-closed]
+    events: [travel.assistance.case-opened, travel.assistance.case-assigned, travel.assistance.case-escalated, travel.assistance.case-resolved, travel.assistance.case-closed, travel.assistance.notification-sent, travel.assistance.advisory-issued, travel.assistance.checkin-recorded]
 
   - name: travel.audit
     slice: 1

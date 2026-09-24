@@ -43,6 +43,79 @@ public final class AssistanceEvents {
     return envelope("travel.assistance.case-closed", c, data, clock);
   }
 
+  /** Phase 8: a notification left on a channel (or failed for good). */
+  public static EventEnvelope notificationSent(
+      io.travelos.assistance.notify.NotificationRecords.Notification n,
+      String channel,
+      String status,
+      @Nullable String providerRef,
+      Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("notificationId", n.notificationId());
+    data.put(
+        "recipient",
+        n.recipientEmployeeId() != null ? n.recipientEmployeeId() : "role:" + n.recipientRole());
+    data.put("category", n.category().name());
+    data.put("kind", n.kind());
+    data.put("channel", channel);
+    data.put("status", status);
+    put(data, "tripId", n.tripId());
+    put(data, "providerRef", providerRef);
+    return EventEnvelope.create(
+        "travel.assistance.notification-sent",
+        1,
+        n.tenant(),
+        n.tripId() != null ? n.tripId() : n.notificationId(),
+        n.sourceEventId(),
+        PRODUCER,
+        data,
+        clock);
+  }
+
+  /** Phase 8: a safety advisory was issued. */
+  public static EventEnvelope advisoryIssued(
+      io.travelos.assistance.safety.SafetyRecords.Advisory a, int affected, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("advisoryId", a.advisoryId());
+    data.put("title", a.title());
+    data.put("severity", a.severity().name());
+    data.put("countries", a.countries());
+    data.put("cities", a.cities());
+    data.put("from", a.startsAt().toString());
+    data.put("until", a.endsAt().toString());
+    data.put("affectedTravelers", affected);
+    data.put("issuedBy", a.issuedBy());
+    return EventEnvelope.create(
+        "travel.assistance.advisory-issued",
+        1,
+        a.tenant(),
+        a.advisoryId(),
+        null,
+        PRODUCER,
+        data,
+        clock);
+  }
+
+  /** Phase 8: a traveler answered an advisory. */
+  public static EventEnvelope checkinRecorded(
+      io.travelos.assistance.safety.SafetyRecords.Checkin c, @Nullable String tripId, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("advisoryId", c.advisoryId());
+    data.put("travelerId", c.travelerId());
+    data.put("status", c.status().name());
+    put(data, "note", c.note());
+    put(data, "tripId", tripId);
+    return EventEnvelope.create(
+        "travel.assistance.checkin-recorded",
+        1,
+        c.tenant(),
+        tripId != null ? tripId : c.advisoryId(),
+        null,
+        PRODUCER,
+        data,
+        clock);
+  }
+
   private static Map<String, Object> base(AssistanceCase c) {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("caseId", c.caseId());

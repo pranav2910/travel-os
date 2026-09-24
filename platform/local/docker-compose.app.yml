@@ -237,6 +237,10 @@ services:
       <<: *java-env
       PORT: 8092
       ASSISTANCE_DB_URL: jdbc:postgresql://postgres:5432/assistance
+      # Phase 8: delivery channels are credential-gated (from the shell); absent = in-app only.
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      NOTIFICATIONS_FROM_ADDRESS: ${NOTIFICATIONS_FROM_ADDRESS:-}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
     ports:
       - "8092:8092"
     depends_on:

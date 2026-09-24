@@ -30,7 +30,61 @@ final class TripEvents {
     if (trip.sourceReference() != null) {
       data.put("sourceReference", trip.sourceReference());
     }
+    // Phase 8: who to reach and where the trip goes, for notifications and traveler safety
+    journey(trip, data);
     return envelope("travel.trip.created", trip, causationId, data, clock);
+  }
+
+  /** Phase 8: traveler contact and the trip's window and places, from the frozen intent. */
+  static void journey(Trip trip, Map<String, Object> data) {
+    if (trip.traveler() != null) {
+      if (trip.traveler().email() != null && !trip.traveler().email().isBlank()) {
+        data.put("travelerEmail", trip.traveler().email());
+      }
+      String name = (trip.traveler().givenName() + " " + trip.traveler().familyName()).trim();
+      if (!name.isBlank()) {
+        data.put("travelerName", name);
+      }
+    }
+    TravelIntent intent = trip.intent();
+    if (intent == null) {
+      return;
+    }
+    java.util.LinkedHashSet<String> cities = new java.util.LinkedHashSet<>();
+    java.time.Instant departs = intent.earliestDeparture();
+    java.time.Instant returns =
+        intent.latestReturn() != null ? intent.latestReturn() : intent.arrivalDeadline();
+    if (intent.itinerary() != null && !intent.itinerary().legs().isEmpty()) {
+      for (Itinerary.Leg leg : intent.itinerary().legs()) {
+        cities.add(leg.destination());
+        if (departs == null || leg.earliestDeparture().isBefore(departs)) {
+          departs = leg.earliestDeparture();
+        }
+        if (returns == null || leg.arrivalDeadline().isAfter(returns)) {
+          returns = leg.arrivalDeadline();
+        }
+      }
+      for (Itinerary.Stay stay : intent.itinerary().stays()) {
+        cities.add(stay.city());
+      }
+    } else if (intent.destination() != null && !intent.destination().isBlank()) {
+      cities.add(intent.destination());
+    }
+    if (intent.origin() != null && !intent.origin().isBlank()) {
+      data.put("origin", intent.origin());
+    }
+    if (intent.destination() != null && !intent.destination().isBlank()) {
+      data.put("destination", intent.destination());
+    }
+    if (departs != null) {
+      data.put("departsAt", departs.toString());
+    }
+    if (returns != null) {
+      data.put("returnsAt", returns.toString());
+    }
+    if (!cities.isEmpty()) {
+      data.put("cities", new java.util.ArrayList<>(cities));
+    }
   }
 
   static EventEnvelope planned(
@@ -105,6 +159,7 @@ final class TripEvents {
     if (!components.isEmpty()) {
       data.put("components", components(components));
     }
+    journey(trip, data);
     return envelope("travel.trip.booked", trip, causationId, data, clock);
   }
 
@@ -259,10 +314,26 @@ final class TripEvents {
   }
 
   static EventEnvelope approvalRequested(Trip trip, Approval approval, Clock clock) {
+    return approvalRequested(trip, approval, null, clock);
+  }
+
+  /** Phase 8: {@code requestedFrom} names the manager when the allocation knows one. */
+  static EventEnvelope approvalRequested(
+      Trip trip, Approval approval, @Nullable String managerEmployeeId, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("approvalId", approval.approvalId());
     data.put("tripId", trip.tripId());
-    data.put("requestedFrom", "role:" + approval.requiredRole());
+    data.put(
+        "requestedFrom",
+        "MANAGER".equals(approval.requiredRole())
+                && managerEmployeeId != null
+                && !managerEmployeeId.isBlank()
+            ? managerEmployeeId
+            : "role:" + approval.requiredRole());
+    if (trip.traveler() != null && trip.traveler().email() != null) {
+      data.put("travelerEmail", trip.traveler().email());
+    }
+    data.put("travelerId", trip.travelerId());
     data.put("role", approval.requiredRole());
     data.put("policyDecisionId", approval.policyDecisionId());
     data.put("total", money(trip.total()));

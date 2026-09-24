@@ -571,6 +571,61 @@ class ItineraryApiIntegrationTest {
     assertThat(unknown.getStatusCode().value()).isEqualTo(404);
   }
 
+  @Test
+  void theItineraryExportsAsACalendarAndAsJsonForWhoeverMaySeeTheTrip() {
+    String tripId =
+        json.readTree(post(TestTokens.alice(), ITINERARY).getBody()).get("tripId").asString();
+    Trip proto =
+        core.getTrip(GetTripRequest.newBuilder().setCtx(ctx("acme")).setTripId(tripId).build());
+    String leg1 = proto.getIntent().getItinerary().getLegs(0).getComponentId();
+    core.updateComponents(
+        UpdateComponentsRequest.newBuilder()
+            .setCtx(ctx("acme"))
+            .setTripId(tripId)
+            .addComponents(
+                ComponentState.newBuilder()
+                    .setComponentId(leg1)
+                    .setType("AIR")
+                    .setStatus("CONFIRMED")
+                    .setProvider("sandbox-air")
+                    .setExternalRef("SBX-1")
+                    .setTotal(usd(31200))
+                    .setSummary("DL240 BOS-SEA 06 Oct"))
+            .build());
+    ResponseEntity<String> ics =
+        http.get()
+            .uri("/api/v1/trips/" + tripId + "/itinerary.ics")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer " + TestTokens.alice())
+            .retrieve()
+            .toEntity(String.class);
+    assertThat(ics.getStatusCode().value()).isEqualTo(200);
+    assertThat(ics.getHeaders().getContentType().toString()).startsWith("text/calendar");
+    String body = ics.getBody();
+    assertThat(body).startsWith("BEGIN:VCALENDAR\r\n").endsWith("END:VCALENDAR\r\n");
+    assertThat(body.split("BEGIN:VEVENT")).as("3 legs, 2 stays, 2 transfers").hasSize(8);
+    assertThat(body)
+        .contains("SUMMARY:Flight BOS to SEA (DL240 BOS-SEA 06 Oct)")
+        .contains("STATUS:CONFIRMED")
+        .contains("Reference: SBX-1 (sandbox-air)")
+        .contains("DTSTART;VALUE=DATE:20261006")
+        .contains("STATUS:TENTATIVE");
+    assertThat(body.lines().filter(l -> l.getBytes().length > 75))
+        .as("folded at 75 octets")
+        .isEmpty();
+    JsonNode summary =
+        json.readTree(get("/api/v1/trips/" + tripId + "/itinerary", TestTokens.alice()).getBody());
+    assertThat(summary.get("items")).hasSize(7);
+    assertThat(summary.get("items").get(0).get("kind").asString()).isEqualTo("FLIGHT");
+    assertThat(summary.get("items").get(0).get("reference").asString()).isEqualTo("SBX-1");
+    assertThat(summary.get("items").get(3).get("kind").asString()).isEqualTo("STAY");
+    assertThat(summary.get("traveler").asString()).contains("Alice");
+    assertThat(
+            get("/api/v1/trips/" + tripId + "/itinerary.ics", TestTokens.zoe())
+                .getStatusCode()
+                .value())
+        .isEqualTo(404);
+  }
+
   private ResponseEntity<String> postJson(String path, String token, String key, String body) {
     return http.post()
         .uri(path)

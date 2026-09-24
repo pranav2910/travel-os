@@ -212,6 +212,13 @@ assistance:
     data:
       - secretKey: ASSISTANCE_DB_PASSWORD
         remoteRef: { key: travelos/ENV/assistance/db, property: password }
+      # Phase 8: notification channels; an absent value means in-app only.
+      - secretKey: SENDGRID_API_KEY
+        remoteRef: { key: travelos/ENV/assistance/notifications, property: sendgrid_api_key }
+      - secretKey: NOTIFICATIONS_FROM_ADDRESS
+        remoteRef: { key: travelos/ENV/assistance/notifications, property: from_address }
+      - secretKey: SLACK_WEBHOOK_URL
+        remoteRef: { key: travelos/ENV/assistance/notifications, property: slack_webhook_url }
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress: *awsEgress

@@ -24,3 +24,8 @@ travelos:
       normal: 24h
       low: 72h
     escalation-sweep: 500ms
+    notifications:
+      dispatch-interval: 300ms
+      max-attempts: 2
+    safety:
+      checkin-grace: 2s
