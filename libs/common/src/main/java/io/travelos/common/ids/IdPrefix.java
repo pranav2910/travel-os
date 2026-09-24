@@ -50,7 +50,12 @@ public enum IdPrefix {
   PURCHASE_AUTHORIZATION("pau"),
   CONVERSATION("cnv"),
   MESSAGE("msg"),
-  SUPPLIER_ATTEMPT("sat");
+  SUPPLIER_ATTEMPT("sat"),
+  PAYMENT_INSTRUMENT("pmi"),
+  PAYMENT("pay"),
+  PAYMENT_EVENT("pev"),
+  PAYABLE("pyb"),
+  TRAVEL_CREDIT("crd");
 
   private final String prefix;
 

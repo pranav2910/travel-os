@@ -166,8 +166,18 @@ class SupplierGatewayIntegrationTest {
                 .setExternalOrderId(first.getExternalOrderId())
                 .build());
     assertThat(cancelled.getStatus()).isEqualTo(SupplierOrderStatus.CANCELLED);
-    assertThat(cancelled.getRefund().getAmountMinor())
-        .isBetween(offer.getTotal().getAmountMinor() - 7500, offer.getTotal().getAmountMinor());
+    if (offer.getRefundable()) {
+      assertThat(cancelled.getRefund().getAmountMinor())
+          .isEqualTo(offer.getTotal().getAmountMinor());
+      assertThat(cancelled.hasCredit()).isFalse();
+    } else {
+      // Phase 5: a non-refundable fare returns no money; the airline keeps a credit (fare - fee)
+      assertThat(cancelled.getRefund().getAmountMinor()).isZero();
+      assertThat(cancelled.getCredit().getAmountMinor())
+          .isEqualTo(offer.getTotal().getAmountMinor() - 7500);
+      assertThat(cancelled.getCreditReference()).startsWith("VCH-");
+      assertThat(cancelled.getCreditExpiresAt().getSeconds()).isPositive();
+    }
     CancelOrderResponse again =
         gateway.cancelOrder(
             CancelOrderRequest.newBuilder()

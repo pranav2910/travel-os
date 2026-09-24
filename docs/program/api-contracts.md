@@ -132,3 +132,25 @@ from before (`PLANNING → APPROVED → BOOKING → BOOKED`) and `purchase.basis
   `docs/runbooks/supplier-credentials.md`.
 - Locations: `Locations.place(iata)` / `places()` / `distanceKm(a, b)` in `libs/common` (a REST
   catalog endpoint is a Phase 11 handoff item).
+
+## Phase 5 — finance ledger (Order service, port 8085; ADR-0017)
+
+| Method & path | Who | Body / query | Returns |
+|---|---|---|---|
+| `GET /api/v1/orders/{id}/receipt` | the traveler, MANAGER/TRAVEL_ADMIN/FINANCE | — | `Receipt {orderId, tripId, travelerId, status, total, payment{paymentId, provider, providerRef, status, currency, authorizedMinor, capturedMinor, refundedMinor, failureCode, fx{settlementCurrency, settlementMinor, rate, source, quotedAt}}, paymentEvents[{kind, amount, providerRef, succeeded, detail, itemId, occurredAt}], instrument{kind, provider, label, last4, currency}, payables[], credits[], issuedAt}` |
+| `GET /api/v1/finance/instruments` | FINANCE, TRAVEL_ADMIN | — | `[InstrumentView]` (tokens are never echoed in full; last4 only) |
+| `POST /api/v1/finance/instruments` | FINANCE, TRAVEL_ADMIN | `{kind (CORPORATE_CARD|VIRTUAL_CARD|CENTRAL_BILL), provider (sandbox-payments|stripe), token, label?, last4?, currency, ownerEmployeeId?}`; 422 `PAN_NOT_ACCEPTED` for a card number | 201 `InstrumentView` |
+| `DELETE /api/v1/finance/instruments/{id}` | FINANCE, TRAVEL_ADMIN | — | 204 (deactivated) |
+| `GET /api/v1/finance/payables?provider=&status=&limit=` | FINANCE, TRAVEL_ADMIN | status SETTLED|DUE|INVOICED|PAID | `[PayableView {payableId, orderId, itemId, provider, externalRef, amount, method, status, invoiceReference, settledBy, settledAt}]` |
+| `GET /api/v1/finance/balances` | FINANCE, TRAVEL_ADMIN | — | `{provider: {currency: amountMinor}}` of DUE + INVOICED |
+| `POST /api/v1/finance/payables/{id}/settlement` (`Idempotency-Key`) | FINANCE | `{status: INVOICED|PAID, invoiceReference?, tripId?}`; 409 `PAYABLE_NOT_OPEN` | `PayableView` |
+| `GET /api/v1/finance/credits?travelerId=&status=` | traveler (own); FINANCE/TRAVEL_ADMIN (tenant) | — | `[CreditView {creditId, travelerId, provider, reference, orderId, itemId, amount, status, expiresAt, appliedToOrderId, appliedBy, appliedAt, note}]` |
+| `POST /api/v1/finance/credits/{id}/application` (`Idempotency-Key`) | FINANCE | `{orderId, note?}`; 409 `CREDIT_NOT_AVAILABLE` | `CreditView` (moves no money) |
+| `GET /api/v1/finance/reconciliation?from=&to=` | FINANCE | ISO instants, ≤ 92 days | `{matched, mismatched, missingAtProvider, missingLocally, lines[{provider, providerRef, kind, local, atProvider, match, paymentId}]}` |
+
+Order behaviour: `travel.order.failed` with `reasonCode PAYMENT_DECLINED` when the instrument
+declines before any supplier is called; the payment token on `CreateOrderCommand` is either a
+registered instrument's token or the legacy opaque token (an implicit sandbox instrument).
+Configuration: `STRIPE_SECRET_KEY` (secrets mechanism; absent = sandbox only),
+`travelos.finance.settlement.<provider>` = CARD_AT_SUPPLIER | BALANCE | INVOICE.
+Events: topic `travel.finance` (schema `contracts/events/finance-events.schema.json`).

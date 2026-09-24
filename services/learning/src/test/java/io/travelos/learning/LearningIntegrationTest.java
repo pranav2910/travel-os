@@ -259,6 +259,35 @@ class LearningIntegrationTest {
         .contains("CANCELLED_BY_TRAVELER")
         .doesNotContain("REFUND_SETTLED");
 
+    // Phase 5 (ADR-0017): a refund the finance ledger settled IS the settled refund
+    Map<String, Object> fr = new LinkedHashMap<>();
+    fr.put("paymentId", "pay_01K4Q0N7S6Z2X8G5H3J9M1P7RH");
+    fr.put("orderId", orders.get(t5));
+    fr.put("tripId", t5);
+    fr.put("provider", "sandbox-payments");
+    fr.put("instrumentId", "pmi_01K4Q0N7S6Z2X8G5H3J9M1P7RJ");
+    fr.put("amount", money(52000));
+    fr.put("status", "PARTIALLY_REFUNDED");
+    fr.put("refundedTotal", money(30000));
+    fr.put("reason", "cancellation refund from sandbox-air");
+    send(event("travel.finance.payment-refunded", t5, "order", fr));
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(outcomes(t5, TestTokens.alice()))
+                    .extracting(o -> o.get("kind").asString())
+                    .contains("REFUND_SETTLED"));
+    assertThat(outcomes(t5, TestTokens.alice()))
+        .filteredOn(o -> o.get("kind").asString().equals("REFUND_SETTLED"))
+        .singleElement()
+        .satisfies(
+            o -> {
+              assertThat(o.get("provenance").get("recordedBy").asString())
+                  .isEqualTo("finance-ledger");
+              assertThat(o.get("provenance").get("amountMinor").asLong()).isEqualTo(30000);
+            });
+
     // who may read: the traveler, admins, finance; nobody else, and never another tenant
     assertThat(
             get("/api/v1/learning/outcomes?tripId=" + t1, TestTokens.dan()).getStatusCode().value())

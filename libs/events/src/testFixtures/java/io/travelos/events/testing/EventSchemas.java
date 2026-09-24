@@ -99,7 +99,8 @@ public final class EventSchemas {
         "intent-events.schema.json",
         "disruption-events.schema.json",
         "demand-events.schema.json",
-        "learning-events.schema.json");
+        "learning-events.schema.json",
+        "finance-events.schema.json");
   }
 
   private static Schema schema(String location) {

@@ -1,0 +1,654 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.travelos.io/events/finance-events.schema.json",
+  "title": "FinanceEvents",
+  "description": "Data payloads for topic travel.finance (Phase 5, ADR-0017): payments on the corporate instrument, what is owed to suppliers, and travel credits. Amounts are integer minor units in an explicit currency; fx records the provider's conversion with its provenance and is never computed by the platform.",
+  "$defs": {
+    "fx": {
+      "type": "object",
+      "required": [
+        "settlementCurrency",
+        "settlementAmountMinor",
+        "rate",
+        "source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "settlementCurrency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "settlementAmountMinor": {
+          "type": "integer"
+        },
+        "rate": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "quotedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "travel.finance.payment-authorized": {
+      "type": "object",
+      "required": [
+        "paymentId",
+        "orderId",
+        "provider",
+        "amount",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "paymentId": {
+          "type": "string",
+          "pattern": "^pay_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerRef": {
+          "type": "string"
+        },
+        "instrumentId": {
+          "type": "string",
+          "pattern": "^pmi_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "AUTHORIZED",
+            "CAPTURED",
+            "VOIDED",
+            "PARTIALLY_REFUNDED",
+            "REFUNDED",
+            "DECLINED",
+            "FAILED"
+          ]
+        },
+        "fx": {
+          "type": "object",
+          "required": [
+            "settlementCurrency",
+            "settlementAmountMinor",
+            "rate",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "settlementCurrency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "settlementAmountMinor": {
+              "type": "integer"
+            },
+            "rate": {
+              "type": "number"
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "quotedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    "travel.finance.payment-captured": {
+      "type": "object",
+      "required": [
+        "paymentId",
+        "orderId",
+        "provider",
+        "amount",
+        "status",
+        "capturedTotal"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "paymentId": {
+          "type": "string",
+          "pattern": "^pay_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerRef": {
+          "type": "string"
+        },
+        "instrumentId": {
+          "type": "string",
+          "pattern": "^pmi_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "AUTHORIZED",
+            "CAPTURED",
+            "VOIDED",
+            "PARTIALLY_REFUNDED",
+            "REFUNDED",
+            "DECLINED",
+            "FAILED"
+          ]
+        },
+        "fx": {
+          "type": "object",
+          "required": [
+            "settlementCurrency",
+            "settlementAmountMinor",
+            "rate",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "settlementCurrency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "settlementAmountMinor": {
+              "type": "integer"
+            },
+            "rate": {
+              "type": "number"
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "quotedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "capturedTotal": {
+          "$ref": "common.schema.json#/$defs/money"
+        }
+      }
+    },
+    "travel.finance.payment-voided": {
+      "type": "object",
+      "required": [
+        "paymentId",
+        "orderId",
+        "provider",
+        "amount",
+        "status",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "paymentId": {
+          "type": "string",
+          "pattern": "^pay_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerRef": {
+          "type": "string"
+        },
+        "instrumentId": {
+          "type": "string",
+          "pattern": "^pmi_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "AUTHORIZED",
+            "CAPTURED",
+            "VOIDED",
+            "PARTIALLY_REFUNDED",
+            "REFUNDED",
+            "DECLINED",
+            "FAILED"
+          ]
+        },
+        "fx": {
+          "type": "object",
+          "required": [
+            "settlementCurrency",
+            "settlementAmountMinor",
+            "rate",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "settlementCurrency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "settlementAmountMinor": {
+              "type": "integer"
+            },
+            "rate": {
+              "type": "number"
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "quotedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "travel.finance.payment-refunded": {
+      "type": "object",
+      "required": [
+        "paymentId",
+        "orderId",
+        "provider",
+        "amount",
+        "status",
+        "refundedTotal",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "paymentId": {
+          "type": "string",
+          "pattern": "^pay_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerRef": {
+          "type": "string"
+        },
+        "instrumentId": {
+          "type": "string",
+          "pattern": "^pmi_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "AUTHORIZED",
+            "CAPTURED",
+            "VOIDED",
+            "PARTIALLY_REFUNDED",
+            "REFUNDED",
+            "DECLINED",
+            "FAILED"
+          ]
+        },
+        "fx": {
+          "type": "object",
+          "required": [
+            "settlementCurrency",
+            "settlementAmountMinor",
+            "rate",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "settlementCurrency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "settlementAmountMinor": {
+              "type": "integer"
+            },
+            "rate": {
+              "type": "number"
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "quotedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "refundedTotal": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "itemId": {
+          "type": "string",
+          "pattern": "^itm_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "travel.finance.payment-declined": {
+      "type": "object",
+      "required": [
+        "paymentId",
+        "orderId",
+        "provider",
+        "amount",
+        "status",
+        "reasonCode"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "paymentId": {
+          "type": "string",
+          "pattern": "^pay_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "providerRef": {
+          "type": "string"
+        },
+        "instrumentId": {
+          "type": "string",
+          "pattern": "^pmi_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "AUTHORIZED",
+            "CAPTURED",
+            "VOIDED",
+            "PARTIALLY_REFUNDED",
+            "REFUNDED",
+            "DECLINED",
+            "FAILED"
+          ]
+        },
+        "fx": {
+          "type": "object",
+          "required": [
+            "settlementCurrency",
+            "settlementAmountMinor",
+            "rate",
+            "source"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "settlementCurrency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "settlementAmountMinor": {
+              "type": "integer"
+            },
+            "rate": {
+              "type": "number"
+            },
+            "source": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "quotedAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "reasonCode": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "travel.finance.payable-recorded": {
+      "type": "object",
+      "required": [
+        "payableId",
+        "orderId",
+        "itemId",
+        "provider",
+        "amount",
+        "method",
+        "status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "payableId": {
+          "type": "string",
+          "pattern": "^pyb_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "itemId": {
+          "type": "string",
+          "pattern": "^itm_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "externalRef": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "method": {
+          "enum": [
+            "CARD_AT_SUPPLIER",
+            "BALANCE",
+            "INVOICE"
+          ]
+        },
+        "status": {
+          "enum": [
+            "SETTLED",
+            "DUE",
+            "INVOICED",
+            "PAID"
+          ]
+        }
+      }
+    },
+    "travel.finance.payable-settled": {
+      "type": "object",
+      "required": [
+        "payableId",
+        "orderId",
+        "provider",
+        "amount",
+        "status",
+        "settledBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "payableId": {
+          "type": "string",
+          "pattern": "^pyb_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "status": {
+          "enum": [
+            "INVOICED",
+            "PAID"
+          ]
+        },
+        "invoiceReference": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "settledBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    },
+    "travel.finance.credit-issued": {
+      "type": "object",
+      "required": [
+        "creditId",
+        "travelerId",
+        "provider",
+        "amount",
+        "expiresAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "creditId": {
+          "type": "string",
+          "pattern": "^crd_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "orderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "itemId": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "travel.finance.credit-applied": {
+      "type": "object",
+      "required": [
+        "creditId",
+        "travelerId",
+        "provider",
+        "amount",
+        "appliedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "creditId": {
+          "type": "string",
+          "pattern": "^crd_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "appliedToOrderId": {
+          "$ref": "common.schema.json#/$defs/orderId"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "appliedBy": {
+          "$ref": "common.schema.json#/$defs/principal"
+        }
+      }
+    },
+    "travel.finance.credit-expired": {
+      "type": "object",
+      "required": [
+        "creditId",
+        "travelerId",
+        "provider",
+        "amount"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "creditId": {
+          "type": "string",
+          "pattern": "^crd_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "travelerId": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "common.schema.json#/$defs/money"
+        }
+      }
+    }
+  }
+}

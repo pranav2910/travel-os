@@ -119,6 +119,9 @@ order:
     data:
       - secretKey: ORDER_DB_PASSWORD
         remoteRef: { key: travelos/ENV/order/db, property: password }
+      # Phase 5: live payment provider (ADR-0017); absent = SIMULATED sandbox-payments only.
+      - secretKey: STRIPE_SECRET_KEY
+        remoteRef: { key: travelos/ENV/order/stripe, property: secret_key }
 audit:
   <<: *prodScale
   networkPolicy:

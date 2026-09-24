@@ -50,6 +50,20 @@ travelos:
   outbox:
     poll-interval: 500ms
     batch-size: 100
+  # Phase 5 (ADR-0017): the finance ledger. How each supplier is settled, and the live payment
+  # provider (present only when its secret is; the SIMULATED sandbox-payments provider is always
+  # there and says so).
+  finance:
+    settlement:
+      sandbox-air: CARD_AT_SUPPLIER
+      sandbox-hotel: CARD_AT_SUPPLIER
+      sandbox-ground: CARD_AT_SUPPLIER
+      duffel: BALANCE
+      hotelbeds: INVOICE
+    stripe:
+      secret-key: ${STRIPE_SECRET_KEY:}
+      base-url: ${STRIPE_BASE_URL:https://api.stripe.com}
+    credit-sweep: 1h
 
 management:
   tracing:

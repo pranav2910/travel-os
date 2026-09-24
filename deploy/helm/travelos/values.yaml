@@ -64,7 +64,7 @@ supplier-gateway:
 order:
   name: order
   ports: { http: 8085, grpc: 9085 }
-  secretRef: order-secrets
+  secretRef: order-secrets                    # DB password (+ STRIPE_SECRET_KEY when a live provider is enabled)
   env:
     ORDER_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/orders
     ORDER_DB_USER: orders_app

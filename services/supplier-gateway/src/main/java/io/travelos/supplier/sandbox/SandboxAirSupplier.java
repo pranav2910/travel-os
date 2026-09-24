@@ -511,21 +511,31 @@ public class SandboxAirSupplier implements AirSupplier {
       throw new SupplierException(
           "ORDER_UNKNOWN", "no such order: " + request.getExternalOrderId(), false);
     }
-    long refund = order.chargedMinor();
+    // Refundable fares: the money comes back. Non-refundable fares (Phase 5): nothing comes back;
+    // the airline keeps the fare minus its USD 75.00 fee as a credit for future travel, valid a
+    // year. The gateway's ledger answers a repeated cancellation, so this runs once per order.
+    SandboxOfferId id = SandboxOfferId.decode(order.providerOfferId());
+    boolean refundable = baseSchedule(id).refundable();
+    long refund = refundable ? order.chargedMinor() : 0;
+    long credit = refundable ? 0 : Math.max(0, order.chargedMinor() - 7500);
     if (!"CANCELLED".equals(order.status())) {
-      SandboxOfferId id = SandboxOfferId.decode(order.providerOfferId());
-      refund =
-          baseSchedule(id).refundable()
-              ? order.chargedMinor()
-              : Math.max(0, order.chargedMinor() - 7500);
       orders.updateStatus(
           order.externalOrderId(), "CANCELLED", order.chargedMinor() - refund, clock.instant());
     }
-    return CancelOrderResponse.newBuilder()
-        .setExternalOrderId(order.externalOrderId())
-        .setStatus(SupplierOrderStatus.CANCELLED)
-        .setRefund(SandboxInventory.usd(refund))
-        .build();
+    CancelOrderResponse.Builder response =
+        CancelOrderResponse.newBuilder()
+            .setExternalOrderId(order.externalOrderId())
+            .setStatus(SupplierOrderStatus.CANCELLED)
+            .setRefund(SandboxInventory.usd(refund));
+    if (credit > 0) {
+      java.time.Instant expires = clock.instant().plus(java.time.Duration.ofDays(365));
+      response
+          .setCredit(SandboxInventory.usd(credit))
+          .setCreditReference("VCH-" + SandboxCodes.confirmation(order.externalOrderId()))
+          .setCreditExpiresAt(
+              com.google.protobuf.Timestamp.newBuilder().setSeconds(expires.getEpochSecond()));
+    }
+    return response.build();
   }
 
   private static CreateOrderResponse response(SandboxOrderRepository.SandboxOrder order) {

@@ -143,6 +143,9 @@ public class OutcomeIngestService {
                           "refundQuoted", d.get("refund"),
                           "note", "a quoted refund is not a settled refund")));
           case "travel.order.compensation-failed" -> compensationFailed(tenant, event, now);
+          // Phase 5 (ADR-0017): a refund the finance ledger settled is the authoritative refund
+          // outcome; the manual Finance statement stays for refunds the platform did not process.
+          case "travel.finance.payment-refunded" -> financeRefund(tenant, event);
           case "travel.order.exposure-resolved" ->
               record(
                   outcome(
@@ -506,6 +509,52 @@ public class OutcomeIngestService {
                 event.eventId()));
     metrics.decision(fresh ? "RECORDED" : "DUPLICATE");
     return fresh;
+  }
+
+  private boolean financeRefund(TenantId tenant, EventEnvelope event) {
+    Map<String, Object> d = event.data();
+    String orderId = str(d, "orderId");
+    String itemId = d.get("itemId") == null ? null : str(d, "itemId");
+    String tripId = str(d, "tripId");
+    String key = "refund:" + orderId + ":" + (itemId == null ? "order" : itemId);
+    Optional<Outcome> current = outcomes.current(tenant, key);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> refunded = (Map<String, Object>) d.get("refundedTotal");
+    Map<String, Object> provenance =
+        provenance(
+            "amountMinor",
+            refunded == null ? null : refunded.get("amountMinor"),
+            "currency",
+            refunded == null ? null : refunded.get("currency"),
+            "reference",
+            str(d, "paymentId"),
+            "recordedBy",
+            "finance-ledger");
+    if (current.isPresent()
+        && java.util.Objects.equals(
+            String.valueOf(current.get().provenance().get("amountMinor")),
+            String.valueOf(provenance.get("amountMinor")))) {
+      return false;
+    }
+    Optional<OrderItemRef> item =
+        itemId == null ? Optional.empty() : trips.item(tenant, orderId, itemId);
+    String provider = item.map(OrderItemRef::provider).orElse(null);
+    Outcome o =
+        outcome(
+            tenant,
+            key,
+            OutcomeKind.REFUND_SETTLED,
+            item.map(OrderItemRef::supplierKey).orElse(null),
+            provider,
+            provider == null ? tripClass(tenant, tripId) : EvidenceClass.ofProvider(provider),
+            tripId,
+            orderId,
+            itemId,
+            item.map(OrderItemRef::componentId).orElse(null),
+            null,
+            event,
+            provenance);
+    return record(withRevision(o, current.map(c -> c.revision() + 1).orElse(1)));
   }
 
   // ------------------------------------------------------------------ helpers

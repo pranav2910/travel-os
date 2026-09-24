@@ -113,6 +113,8 @@ services:
       GRPC_PORT: 9085
       ORDER_DB_URL: jdbc:postgresql://postgres:5432/orders
       SUPPLIER_GATEWAY_ADDRESS: supplier-gateway:9084
+      # Phase 5: the live payment provider exists only when this is set in the shell (sk_test_ first).
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
     ports:
       - "8085:8085"
       - "9085:9085"

@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *   <li>{@code hotel-*} / {@code ground-*}: quoted as HOTEL / GROUND offers
  * </ul>
  */
-final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplBase {
+public final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplBase {
 
   final Map<String, CreateOrderResponse> ordersByKey = new ConcurrentHashMap<>();
   final Map<String, String> offerByExternalId = new ConcurrentHashMap<>();
@@ -50,17 +50,17 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
   final List<String> cancelled = new ArrayList<>();
   final Map<String, ChangeOrderResponse> changesByKey = new ConcurrentHashMap<>();
   final Map<String, AtomicInteger> changeAttempts = new ConcurrentHashMap<>();
-  final List<String> createLog = new ArrayList<>();
+  public final List<String> createLog = new ArrayList<>();
   final List<String> cancelAttempts = new ArrayList<>();
   final AtomicInteger statusLookups = new AtomicInteger();
   private Server server;
 
-  int start() throws IOException {
+  public int start() throws IOException {
     server = ServerBuilder.forPort(0).addService(this).build().start();
     return server.getPort();
   }
 
-  void stop() {
+  public void stop() {
     server.shutdownNow();
   }
 
@@ -190,6 +190,24 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
     synchronized (cancelled) {
       cancelled.add(external);
     }
+    String offer = offerByExternalId.getOrDefault(external, "");
+    if (offer.startsWith("credit-")) {
+      // Phase 5: a non-refundable fare: no money back, a credit for the fare minus the fee
+      observer.onNext(
+          CancelOrderResponse.newBuilder()
+              .setExternalOrderId(external)
+              .setStatus(SupplierOrderStatus.CANCELLED)
+              .setRefund(usd(0))
+              .setCredit(usd(cents(offer) - 7500))
+              .setCreditReference("VCH-" + external)
+              .setCreditExpiresAt(
+                  com.google.protobuf.Timestamp.newBuilder()
+                      .setSeconds(
+                          java.time.Instant.now().plusSeconds(86_400L * 365).getEpochSecond()))
+              .build());
+      observer.onCompleted();
+      return;
+    }
     observer.onNext(
         CancelOrderResponse.newBuilder()
             .setExternalOrderId(external)
@@ -236,7 +254,7 @@ final class FakeSupplierGateway extends SupplierGatewayGrpc.SupplierGatewayImplB
     observer.onCompleted();
   }
 
-  static long cents(String providerOfferId) {
+  public static long cents(String providerOfferId) {
     return 40000 + Math.floorMod(providerOfferId.hashCode(), 20000);
   }
 

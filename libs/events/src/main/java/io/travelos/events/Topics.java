@@ -20,6 +20,12 @@ public final class Topics {
   public static final String DEMAND = "travel.demand";
   public static final String LEARNING = "travel.learning";
   public static final String AGENT = "travel.agent";
+
+  /**
+   * Phase 5: payments, supplier payables and travel credits (the Order service's finance ledger).
+   */
+  public static final String FINANCE = "travel.finance";
+
   public static final String AUDIT = "travel.audit";
 
   public static final List<String> ALL =
@@ -36,6 +42,7 @@ public final class Topics {
           DEMAND,
           LEARNING,
           AGENT,
+          FINANCE,
           AUDIT);
 
   private Topics() {}

@@ -61,7 +61,7 @@ if [ -n "${DUFFEL_ACCESS_TOKEN:-}" ] || [ -n "${HOTELBEDS_API_KEY:-}" ]; then ec
 apply disruption-secrets -n travelos --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
 apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_DB_PASSWORD="$ENTERPRISE_CONTEXT_DB_PASSWORD" --from-literal=SANDBOX_CONNECTOR_WEBHOOK_SECRET="${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-$(openssl rand -hex 16)}" --from-literal=TRAVELOS_FIELD_KEY="$TRAVELOS_FIELD_KEY"
 apply learning-secrets -n travelos --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD"
-apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD"
+apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD" --from-literal=STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-}"
 apply audit-secrets -n travelos --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"
 apply trip-planning-secrets -n travelos --from-literal=PAYMENT_TOKEN="$PAYMENT_TOKEN"
 if [ -n "${ANTHROPIC_API_KEY:-}" ]; then

@@ -76,6 +76,7 @@ public class OrderService {
   private final TransactionTemplate tx;
   private final Clock clock;
   private final OrderMetrics metrics;
+  private final io.travelos.order.finance.FinanceService finance;
 
   public OrderService(
       OrderRepository orders,
@@ -85,7 +86,8 @@ public class OrderService {
       Outbox outbox,
       TransactionTemplate tx,
       Clock clock,
-      OrderMetrics metrics) {
+      OrderMetrics metrics,
+      io.travelos.order.finance.FinanceService finance) {
     this.orders = orders;
     this.changes = changes;
     this.exposures = exposures;
@@ -94,6 +96,7 @@ public class OrderService {
     this.tx = tx;
     this.clock = clock;
     this.metrics = metrics;
+    this.finance = finance;
   }
 
   public OrderRecord create(CreateOrderCommand command) {
@@ -223,6 +226,19 @@ public class OrderService {
 
   private OrderRecord runSaga(
       RequestContexts.Validated ctx, CreateOrderCommand command, OrderRecord order) {
+    // Phase 5 (ADR-0017): the order total is authorized on the instrument before any supplier
+    // hears of the order; a decline fails it here, with nothing to compensate.
+    io.travelos.order.finance.FinanceRecords.Payment payment =
+        finance.authorize(order, command.getPaymentToken(), ctx.principal());
+    if (payment.status() == io.travelos.order.finance.FinanceRecords.PaymentStatus.DECLINED) {
+      return fail(
+          ctx,
+          order,
+          "PAYMENT_DECLINED",
+          payment.failureCode()
+              + ": "
+              + (payment.failureMessage() == null ? "declined" : payment.failureMessage()));
+    }
     for (Item item : order.items()) {
       if (item.status() == ItemStatus.CONFIRMED) {
         continue;
@@ -284,6 +300,15 @@ public class OrderService {
     }
     OrderRecord confirmed = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
     String external = confirmed.items().getFirst().externalRef();
+    // Everything is confirmed: capture what the suppliers charged (never more than authorized).
+    Money charged = Money.of(confirmed.total().currency(), 0);
+    for (Item item : confirmed.items()) {
+      if (item.status() == ItemStatus.CONFIRMED
+          && item.total().currency().equals(charged.currency())) {
+        charged = charged.plus(item.total());
+      }
+    }
+    finance.capture(confirmed, charged);
     return tx.execute(
         s -> {
           OrderRecord current = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
@@ -354,6 +379,14 @@ public class OrderService {
                 confirmed.getRecordLocator(),
                 null,
                 clock.instant()));
+    // What the platform now owes the supplier for this item, by the provider's settlement method.
+    finance.recordPayable(
+        order,
+        item,
+        confirmed.hasCharged() && !confirmed.getCharged().getCurrency().isBlank()
+            ? money(confirmed.getCharged())
+            : item.total(),
+        confirmed.getExternalOrderId());
     metrics.booked(item.offerType(), reconciledByLookup ? "RECONCILED" : "CONFIRMED");
   }
 
@@ -521,6 +554,10 @@ public class OrderService {
       }
     }
     boolean compensated = allReleased;
+    if (compensated) {
+      // nothing is held at any supplier: the authorization is released too
+      finance.release(current, code);
+    }
     return tx.execute(
         s -> {
           OrderRecord fresh = orders.find(ctx.tenant(), order.orderId()).orElseThrow();
@@ -536,6 +573,12 @@ public class OrderService {
           }
           return failed;
         });
+  }
+
+  // ------------------------------------------------------------------ Phase 5: finance
+
+  public io.travelos.order.finance.FinanceService.Receipt receipt(OrderRecord order) {
+    return finance.receipt(order);
   }
 
   // ------------------------------------------------------------------ Slice 3: exposures
@@ -747,6 +790,21 @@ public class OrderService {
                 item.itemId(), ItemStatus.CANCELLED, null, null, null, clock.instant());
             orders.recordItemRefund(item.itemId(), itemRefund, clock.instant());
           });
+      // Phase 5: the supplier's refund goes back to the instrument; a credit is value kept.
+      finance.refund(
+          current, item.itemId(), itemRefund, "cancellation refund from " + item.provider(), "1");
+      if (response.hasCredit() && response.getCredit().getAmountMinor() > 0) {
+        finance.issueCredit(
+            current,
+            item,
+            money(response.getCredit()),
+            response.getCreditReference().isBlank()
+                ? item.externalRef() + ":credit"
+                : response.getCreditReference(),
+            response.hasCreditExpiresAt()
+                ? Instant.ofEpochSecond(response.getCreditExpiresAt().getSeconds())
+                : null);
+      }
     }
     return tx.execute(
         s -> {
@@ -1031,6 +1089,18 @@ public class OrderService {
     }
     Money finalIncremental = incremental;
     String finalExternal = externalOrderId;
+    // Phase 5: the difference is charged or refunded on the instrument, once per change.
+    if (finalIncremental.amountMinor() > 0) {
+      finance.captureAdditional(
+          order, finalIncremental, change.changeId(), command.getPaymentToken(), ctx.principal());
+    } else if (finalIncremental.amountMinor() < 0) {
+      finance.refund(
+          order,
+          null,
+          Money.of(finalIncremental.currency(), -finalIncremental.amountMinor()),
+          "change " + change.changeId() + " cost less",
+          change.changeId());
+    }
     Instant now = clock.instant();
     return tx.execute(
         s -> {

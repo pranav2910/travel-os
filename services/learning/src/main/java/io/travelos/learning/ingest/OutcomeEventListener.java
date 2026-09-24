@@ -26,7 +26,13 @@ public class OutcomeEventListener {
 
   @KafkaListener(
       id = "learning-outcomes",
-      topics = {"travel.trip", "travel.order", "travel.disruption", "travel.optimization"},
+      topics = {
+        "travel.trip",
+        "travel.order",
+        "travel.disruption",
+        "travel.optimization",
+        "travel.finance"
+      },
       groupId = "${spring.kafka.consumer.group-id}")
   public void onRecord(ConsumerRecord<String, String> record) {
     EventEnvelope event;

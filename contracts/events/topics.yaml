@@ -61,6 +61,10 @@ topics:
     slice: 1
     events: [travel.agent.action.requested, travel.agent.action.completed, travel.agent.action.rejected]
 
+  - name: travel.finance
+    slice: 6
+    events: [travel.finance.payment-authorized, travel.finance.payment-captured, travel.finance.payment-voided, travel.finance.payment-refunded, travel.finance.payment-declined, travel.finance.payable-recorded, travel.finance.payable-settled, travel.finance.credit-issued, travel.finance.credit-applied, travel.finance.credit-expired]
+
   - name: travel.audit
     slice: 1
     retention_ms: 2592000000   # 30 days on the bus; durable copy lives in the Audit service (OpenSearch + S3)

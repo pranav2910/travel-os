@@ -1,0 +1,25 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RE",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:12:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "eventType": "travel.finance.payment-declined",
+  "data": {
+    "paymentId": "pay_01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "provider": "sandbox-payments",
+    "providerRef": "spi_ab12",
+    "instrumentId": "pmi_01K4Q0N7S6Z2X8G5H3J9M1P7RJ",
+    "amount": {
+      "currency": "USD",
+      "amountMinor": 82000
+    },
+    "status": "DECLINED",
+    "reasonCode": "CARD_DECLINED",
+    "message": "the issuer declined the authorization"
+  }
+}

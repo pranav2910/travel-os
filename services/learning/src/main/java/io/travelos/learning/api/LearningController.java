@@ -387,6 +387,12 @@ public class LearningController {
     return outcomes.byTrip(me, tripId).stream().map(OutcomeView::from).toList();
   }
 
+  /**
+   * A Finance statement for the learning ledger about a refund the platform did not process itself
+   * (a phone negotiation, a supplier's goodwill). It moves no money and is not the finance record:
+   * refunds the platform settles reach this ledger from travel.finance.payment-refunded (ADR-0017);
+   * a statement here about the same item is a revision of that outcome.
+   */
   @PostMapping(path = "/outcomes/refunds", consumes = "application/json")
   public OutcomeView refund(
       @AuthenticationPrincipal RequestPrincipal me,

@@ -99,3 +99,18 @@ Status distinction for this phase, as the request demands it:
   because no `DUFFEL_ACCESS_TOKEN` / `HOTELBEDS_API_KEY` is available in this environment. No
   result in this repository is a live supplier result.
 - **Absent**: rail and car adapters (simulated or live), Duffel webhooks, Duffel order changes.
+
+## Phase 5 — finance ledger (ADR-0017)
+
+| Command | Result |
+|---|---|
+| `./gradlew --offline :libs:events:test` | 75 run, 75 passed (topic `travel.finance`, 10 event types with examples) |
+| `./gradlew --offline :services:order:test` | 35 run, 35 passed: `FinanceIntegrationTest` 8 (card number refused; authorize → capture with events and provider refs; decline fails before any supplier call; failed booking voids; cancellation refunds per item, credit kept as value; credits applied by Finance and swept on expiry; payables by settlement method and their settlement; reconciliation against the sandbox provider's ledger; EUR instrument with FX provenance), `StripePaymentProviderTest` 6 (scripted HTTP contract), existing 21 |
+| `./gradlew --offline :services:learning:test` | 14 run, 14 passed (a `travel.finance.payment-refunded` event becomes the REFUND_SETTLED outcome with `recordedBy: finance-ledger`) |
+| `./gradlew --offline :services:supplier-gateway:test` | 44 run, 42 passed, 2 skipped (sandbox airline now issues credits for non-refundable fares) |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`) | BUILD SUCCESSFUL in 3m 33s; every module green (travel-core 87, trip-planning 66, supplier-gateway 42 + 2 skipped, policy 41, order 35, enterprise-context 17, learning 14, events 75, both Python suites) |
+
+Status distinction: sandbox-payments flows are implemented and test-verified; Stripe is implemented
+and provider-test-blocked (contract tests only; no `STRIPE_SECRET_KEY` in this environment; nothing
+here is a live payment); invoice documents (PDF) and automatic credit application at suppliers are
+absent.

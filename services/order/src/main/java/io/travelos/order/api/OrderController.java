@@ -314,6 +314,19 @@ public class OrderController {
     }
   }
 
+  /**
+   * Phase 5: the receipt from the finance ledger: what was charged, refunded, owed and credited.
+   */
+  @GetMapping("/{orderId}/receipt")
+  public io.travelos.order.finance.FinanceService.Receipt receipt(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String orderId) {
+    OrderRecord order = orders.get(me.tenant(), orderId);
+    if (!order.travelerId().equals(me.employeeId()) && !me.hasAnyRole(TENANT_WIDE)) {
+      throw new ApiException.NotFound("order", orderId);
+    }
+    return orders.receipt(order);
+  }
+
   @GetMapping("/{orderId}")
   public OrderResponse get(
       @AuthenticationPrincipal RequestPrincipal me, @PathVariable String orderId) {

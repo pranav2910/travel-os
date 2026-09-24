@@ -158,6 +158,11 @@ message CancelOrderResponse {
   string external_order_id = 1;
   SupplierOrderStatus status = 2;
   travelos.common.v1.Money refund = 3;
+  // Phase 5: what the supplier keeps as a credit for future travel instead of money back (an
+  // airline voucher for a non-refundable fare). Distinct from a refund: it is not money moved.
+  travelos.common.v1.Money credit = 4;
+  string credit_reference = 5;
+  google.protobuf.Timestamp credit_expires_at = 6;
 }
 
 // ---------------------------------------------------------------- Slice 3

@@ -1,0 +1,24 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RH",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:12:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "eventType": "travel.finance.credit-issued",
+  "data": {
+    "creditId": "crd_01K4Q0N7S6Z2X8G5H3J9M1P7RM",
+    "travelerId": "emp_1001",
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "tripId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+    "itemId": "itm_01K4Q0N7S6Z2X8G5H3J9M1P7RN",
+    "provider": "sandbox-air",
+    "reference": "VCH-7F3K2",
+    "amount": {
+      "currency": "USD",
+      "amountMinor": 40000
+    },
+    "expiresAt": "2027-09-09T20:12:52Z"
+  }
+}

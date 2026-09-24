@@ -1,0 +1,19 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RK",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:12:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "eventType": "travel.finance.credit-expired",
+  "data": {
+    "creditId": "crd_01K4Q0N7S6Z2X8G5H3J9M1P7RM",
+    "travelerId": "emp_1001",
+    "provider": "sandbox-air",
+    "amount": {
+      "currency": "USD",
+      "amountMinor": 40000
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "eventId": "evt_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+  "eventVersion": 1,
+  "occurredAt": "2026-09-09T20:12:52Z",
+  "tenantId": "acme",
+  "correlationId": "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RB",
+  "causationId": "cmd_01K4Q0N7S6Z2X8G5H3J9M1P7RC",
+  "producer": "order",
+  "eventType": "travel.finance.payable-settled",
+  "data": {
+    "payableId": "pyb_01K4Q0N7S6Z2X8G5H3J9M1P7RM",
+    "orderId": "ord_01K4Q0N7S6Z2X8G5H3J9M1P7RG",
+    "provider": "hotelbeds",
+    "amount": {
+      "currency": "USD",
+      "amountMinor": 50000
+    },
+    "status": "PAID",
+    "invoiceReference": "HB-INV-2026-0912",
+    "settledBy": "human/carol"
+  }
+}
