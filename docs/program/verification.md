@@ -166,3 +166,15 @@ Status distinction: in-app notifications, preferences, deliveries with retry, sa
 check-ins and the itinerary export are implemented and test-verified; email (SendGrid) and chat
 (Slack webhook) channels are implemented and provider-test-blocked (no key or webhook in this
 repository; the tests prove the delivery machinery through a recording channel, not a provider).
+
+## Phase 9 — reporting (ADR-0021)
+
+| Command | Result |
+|---|---|
+| `./gradlew --offline :libs:events:test` | 88 run, 88 passed (`allocation` on `travel.trip.created/booked`) |
+| `./gradlew --offline :services:audit:test` | 6 run, 6 passed: `reportsSumWhatTheEventsSaidByCostCenterAndCountTheExceptions` (a trip's life from contract examples with an allocation, booked 1200.00, captured, 200.00 refunded, a disruption recovered for 73.00 more, a policy violation, an approval requested, escalated and approved, a case opened and resolved: spend by cost center and by project with net = captured + increment − refund, CSV export byte-exact, a traveler and a manager refused, an unknown grouping 422, outcomes with the median time to book and the autonomous recovery share, exceptions with violation reasons, approval and case durations, suppliers, an inverted period 422), existing 5 |
+| `./gradlew --offline :services:travel-core:test --tests '*TripLifecycleIntegrationTest' --tests '*TripArrangerIntegrationTest'` | 19 run, 19 passed (events with the allocation stay contract-valid) |
+| `./gradlew --offline check --continue` (whole repository, after `spotlessApply`, Docker stack down) | BUILD SUCCESSFUL in 4m 38s; every module green (travel-core 92, trip-planning 70, policy 48, supplier-gateway 42 + 2 skipped, order 36, enterprise-context 23, learning 14, assistance 9, disruption 7, audit 6, events 88, both Python suites) |
+
+Status distinction: reports are implemented and test-verified from contract-example events; they
+are exactly as complete as the events the services emit (nothing is estimated or converted).

@@ -260,6 +260,7 @@ ingress:
     - { path: /api/v1/policy-decisions, service: policy, port: 8082 }
     - { path: /api/v1/orders, service: order, port: 8085 }
     - { path: /api/v1/audit, service: audit, port: 8088 }
+    - { path: /api/v1/reports, service: audit, port: 8088, pathType: Prefix }
     - { path: /api/v1/disruptions, service: disruption, port: 8089 }
     - { path: /api/v1/trips, service: travel-core, port: 8081, pathType: Prefix }
     - { path: /api/v1/suppliers, service: supplier-gateway, port: 8084 }

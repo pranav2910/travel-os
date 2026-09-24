@@ -30,8 +30,15 @@ public class AuditIngestService {
   private final Counter duplicates;
   private final Counter quarantined;
 
+  private final io.travelos.audit.report.ReportFacts facts;
+
   public AuditIngestService(
-      AuditRepository repository, EventCodec codec, Clock clock, MeterRegistry meters) {
+      AuditRepository repository,
+      EventCodec codec,
+      Clock clock,
+      MeterRegistry meters,
+      io.travelos.audit.report.ReportFacts facts) {
+    this.facts = facts;
     this.repository = repository;
     this.codec = codec;
     this.clock = clock;
@@ -85,6 +92,8 @@ public class AuditIngestService {
             event.occurredAt());
       }
     }
+    // Phase 9: the reporting facts, in the same transaction as the stored event
+    facts.apply(event, now);
     stored.increment();
     return Outcome.STORED;
   }

@@ -21,6 +21,12 @@ final class TripEvents {
   private TripEvents() {}
 
   static EventEnvelope created(Trip trip, @Nullable String causationId, Clock clock) {
+    return created(trip, null, causationId, clock);
+  }
+
+  /** Phase 9: with the allocation snapshot, so reports can group spend by where it belongs. */
+  static EventEnvelope created(
+      Trip trip, @Nullable TripAllocation allocation, @Nullable String causationId, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("tripId", trip.tripId());
     data.put("travelerId", trip.travelerId());
@@ -32,7 +38,37 @@ final class TripEvents {
     }
     // Phase 8: who to reach and where the trip goes, for notifications and traveler safety
     journey(trip, data);
+    allocation(allocation, data);
     return envelope("travel.trip.created", trip, causationId, data, clock);
+  }
+
+  /** Phase 9: the cost allocation as a small object; absent when the trip has none. */
+  static void allocation(@Nullable TripAllocation a, Map<String, Object> data) {
+    if (a == null) {
+      return;
+    }
+    Map<String, Object> m = new LinkedHashMap<>();
+    if (a.departmentId() != null) {
+      m.put("departmentId", a.departmentId());
+    }
+    if (a.costCenterId() != null) {
+      m.put("costCenterId", a.costCenterId());
+    }
+    if (a.projectId() != null) {
+      m.put("projectId", a.projectId());
+    }
+    if (a.legalEntityId() != null) {
+      m.put("legalEntityId", a.legalEntityId());
+    }
+    if (a.officeId() != null) {
+      m.put("officeId", a.officeId());
+    }
+    if (a.managerEmployeeId() != null) {
+      m.put("managerEmployeeId", a.managerEmployeeId());
+    }
+    if (!m.isEmpty()) {
+      data.put("allocation", m);
+    }
   }
 
   /** Phase 8: traveler contact and the trip's window and places, from the frozen intent. */
@@ -149,6 +185,15 @@ final class TripEvents {
 
   static EventEnvelope booked(
       Trip trip, List<TripComponent> components, @Nullable String causationId, Clock clock) {
+    return booked(trip, components, null, causationId, clock);
+  }
+
+  static EventEnvelope booked(
+      Trip trip,
+      List<TripComponent> components,
+      @Nullable TripAllocation allocation,
+      @Nullable String causationId,
+      Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();
     data.put("tripId", trip.tripId());
     data.put("orderId", trip.evidence().orderId());
@@ -160,6 +205,7 @@ final class TripEvents {
       data.put("components", components(components));
     }
     journey(trip, data);
+    allocation(allocation, data);
     return envelope("travel.trip.booked", trip, causationId, data, clock);
   }
 

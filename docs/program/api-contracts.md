@@ -297,3 +297,16 @@ Event additions consumed here: `travel.trip.created/booked` carry `travelerEmail
 |---|---|---|
 | `GET /api/v1/trips/{id}/itinerary` | whoever sees the trip | `Summary {tripId, status, traveler, purpose, items[{kind (FLIGHT, STAY, TRANSFER), componentId, title, location, start, end, startDate, endDate, status, provider, reference, summary}]}` |
 | `GET /api/v1/trips/{id}/itinerary.ics` | whoever sees the trip | `text/calendar` (RFC 5545; one VEVENT per item; STATUS CONFIRMED/TENTATIVE/CANCELLED from the component) |
+
+## Phase 9 — reporting (Audit service, port 8088; ADR-0021)
+
+| Method & path | Who | Query | Returns |
+|---|---|---|---|
+| `GET /api/v1/reports/spend?from=&to=&groupBy=&format=` | FINANCE, TRAVEL_ADMIN | `groupBy` costCenter (default), project, department, legalEntity, office, traveler, destination, month; `format` json (default) or csv; period defaults to the last 90 days, at most 400 days (422 `PERIOD_INVALID`, `PERIOD_TOO_LONG`, `GROUP_BY_UNKNOWN`) | `{from, to, groupBy, rows[{key, trips, currency, bookedMinor, capturedMinor, refundedMinor, creditMinor, incrementalMinor, netMinor}]}` (net = captured + incremental − refunded); CSV with the same columns |
+| `GET /api/v1/reports/outcomes?from=&to=&format=` | FINANCE, TRAVEL_ADMIN | as above | `{from, to, outcomes{created, booked, cancelled, failed, completed, bookingRate, medianHoursToBook, disruptions, recoveriesResolved, recoveriesFailed, autonomousRecoveries, avgRecoverySeconds, advisories, checkins}}` |
+| `GET /api/v1/reports/exceptions?from=&to=&format=` | FINANCE, TRAVEL_ADMIN | as above | `{from, to, exceptions{policyViolationsByReason[{key, count}], approvalsRequested, approvalsApproved, approvalsRejected, approvalsEscalated, approvalsExpired, avgApprovalHours, budgetExceeded, casesByKind[], casesByQueue[], casesResolved, avgCaseResolutionHours, notificationsFailed, exposures}}` |
+| `GET /api/v1/reports/suppliers?from=&to=&format=` | FINANCE, TRAVEL_ADMIN | as above | `{from, to, rows[{provider, ordersConfirmed, itemsConfirmed, itemsReleased, cancellationsRefused, disruptions, creditsIssued, creditMinor}]}` |
+
+Event additions: `travel.trip.created/booked` carry `allocation {departmentId, costCenterId,
+projectId, legalEntityId, officeId, managerEmployeeId}` when the trip has one. Routes: nginx and the
+ingress send `/api/v1/reports` to the audit service.

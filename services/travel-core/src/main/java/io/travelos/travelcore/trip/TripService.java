@@ -213,7 +213,9 @@ public class TripService {
     trips.appendHistory(trip, null, initial, null, me.principal(), now);
     if (!command.draft()) {
       // A draft is not a request yet: nothing is planned, nothing is announced, until submission.
-      outbox.append(TripEvents.created(trip, null, clock));
+      outbox.append(
+          TripEvents.created(
+              trip, allocations.find(me.tenant(), trip.tripId()).orElse(null), null, clock));
     }
     return trip;
   }
@@ -235,7 +237,9 @@ public class TripService {
     }
     trips.appendHistory(
         trip, TripStatus.DRAFT, TripStatus.SUBMITTED, "submitted", me.principal(), now);
-    outbox.append(TripEvents.created(submitted, null, clock));
+    outbox.append(
+        TripEvents.created(
+            submitted, allocations.find(me.tenant(), trip.tripId()).orElse(null), null, clock));
     return submitted;
   }
 
@@ -935,7 +939,11 @@ public class TripService {
       case BOOKED -> {
         outbox.append(
             TripEvents.booked(
-                next, components.list(tenant, trip.tripId()), t.causationId(), clock));
+                next,
+                components.list(tenant, trip.tripId()),
+                allocations.find(tenant, trip.tripId()).orElse(null),
+                t.causationId(),
+                clock));
         noteConversation(
             next,
             "STATUS",

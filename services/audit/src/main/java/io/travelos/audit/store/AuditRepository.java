@@ -137,6 +137,11 @@ public class AuditRepository {
         .list();
   }
 
+  /** Phase 9: the stored data column as a map, for the reports. */
+  public static Map<String, Object> data(String json) {
+    return JSON.readValue(json, OBJECT);
+  }
+
   public long quarantined() {
     Long n = jdbc.sql("SELECT count(*) FROM audit_quarantine").query(Long.class).single();
     return n == null ? 0 : n;

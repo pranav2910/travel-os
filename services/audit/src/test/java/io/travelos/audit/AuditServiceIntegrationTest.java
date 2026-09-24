@@ -299,6 +299,207 @@ class AuditServiceIntegrationTest {
         .anySatisfy(n -> assertThat(n).contains("resolved by human/carol"));
   }
 
+  // ------------------------------------------------------------------ Phase 9: reports
+
+  @Test
+  @org.junit.jupiter.api.Order(6)
+  void reportsSumWhatTheEventsSaidByCostCenterAndCountTheExceptions() throws Exception {
+    // a second trip: created with an allocation, booked, paid, partly refunded, disrupted and
+    // recovered at a cost, a case opened and resolved, an approval escalated
+    String trip = "trip_01K4Q0N7S6Z2X8G5H3J9M1P7RZ";
+    java.util.function.BiFunction<String, java.util.function.Consumer<ObjectNode>, String> ev =
+        (type, edit) -> {
+          ObjectNode node = (ObjectNode) json.readTree(EventSchemas.example(type));
+          clock = clock.plusSeconds(60);
+          node.put("eventId", Ids.newId(IdPrefix.EVENT));
+          node.put("occurredAt", clock.toString());
+          node.put("correlationId", trip);
+          ((ObjectNode) node.get("data")).put("tripId", trip);
+          edit.accept((ObjectNode) node.get("data"));
+          String payload = json.writeValueAsString(node);
+          assertThat(EventSchemas.violations(payload)).as(type).isEmpty();
+          return payload;
+        };
+    Instant start = clock;
+    publishRaw(
+        "travel.trip.created",
+        trip,
+        ev.apply(
+            "travel.trip.created",
+            d -> {
+              d.put("travelerId", "emp_1004");
+              d.put("destination", "SEA");
+              ObjectNode a = d.putObject("allocation");
+              a.put("costCenterId", "cc_sales");
+              a.put("projectId", "prj_apollo");
+              a.put("departmentId", "dep_sales");
+            }));
+    publishRaw("travel.policy.violation", trip, ev.apply("travel.policy.violation", d -> {}));
+    publishRaw(
+        "travel.approval.requested",
+        trip,
+        ev.apply(
+            "travel.approval.requested",
+            d -> d.put("approvalId", "apr_01K4Q0N7S6Z2X8G5H3J9M1P7RZ")));
+    publishRaw(
+        "travel.approval.escalated",
+        trip,
+        ev.apply(
+            "travel.approval.escalated",
+            d -> d.put("approvalId", "apr_01K4Q0N7S6Z2X8G5H3J9M1P7RZ")));
+    publishRaw(
+        "travel.approval.approved",
+        trip,
+        ev.apply(
+            "travel.approval.approved",
+            d -> d.put("approvalId", "apr_01K4Q0N7S6Z2X8G5H3J9M1P7RZ")));
+    publishRaw(
+        "travel.trip.booked",
+        trip,
+        ev.apply(
+            "travel.trip.booked",
+            d -> {
+              d.putObject("total").put("currency", "USD").put("amountMinor", 120000);
+              d.putObject("allocation").put("costCenterId", "cc_sales");
+            }));
+    publishRaw(
+        "travel.finance.payment-captured",
+        trip,
+        ev.apply(
+            "travel.finance.payment-captured",
+            d -> d.putObject("amount").put("currency", "USD").put("amountMinor", 120000)));
+    publishRaw(
+        "travel.finance.payment-refunded",
+        trip,
+        ev.apply(
+            "travel.finance.payment-refunded",
+            d -> d.putObject("amount").put("currency", "USD").put("amountMinor", 20000)));
+    publishRaw(
+        "travel.disruption.impact-confirmed",
+        trip,
+        ev.apply("travel.disruption.impact-confirmed", d -> {}));
+    publishRaw(
+        "travel.disruption.resolved",
+        trip,
+        ev.apply(
+            "travel.disruption.resolved",
+            d -> d.putObject("incrementalCost").put("currency", "USD").put("amountMinor", 7300)));
+    publishRaw(
+        "travel.assistance.case-opened",
+        trip,
+        ev.apply(
+            "travel.assistance.case-opened",
+            d -> d.put("caseId", "cas_01K4Q0N7S6Z2X8G5H3J9M1P7TZ")));
+    publishRaw(
+        "travel.assistance.case-resolved",
+        trip,
+        ev.apply(
+            "travel.assistance.case-resolved",
+            d -> d.put("caseId", "cas_01K4Q0N7S6Z2X8G5H3J9M1P7TZ")));
+    producer.flush();
+    await()
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(() -> assertThat(repository.trail(TenantId.of("acme"), trip)).hasSize(12));
+    Instant end = clock.plusSeconds(1);
+    String window = "from=" + start.minusSeconds(1) + "&to=" + end;
+
+    // spend by cost center: the trip landed where its allocation says, with what money moved
+    ResponseEntity<String> spend =
+        get("/api/v1/reports/spend?groupBy=costCenter&" + window, TestTokens.carol());
+    assertThat(spend.getStatusCode().value()).as(spend.getBody()).isEqualTo(200);
+    JsonNode rows = json.readTree(spend.getBody()).get("rows");
+    JsonNode sales = null;
+    for (JsonNode r : rows) {
+      if (r.get("key").asString().equals("cc_sales")) {
+        sales = r;
+      }
+    }
+    assertThat(sales).as(spend.getBody()).isNotNull();
+    assertThat(sales.get("trips").asLong()).isEqualTo(1);
+    assertThat(sales.get("bookedMinor").asLong()).isEqualTo(120000);
+    assertThat(sales.get("capturedMinor").asLong()).isEqualTo(120000);
+    assertThat(sales.get("refundedMinor").asLong()).isEqualTo(20000);
+    assertThat(sales.get("incrementalMinor").asLong()).isEqualTo(7300);
+    assertThat(sales.get("netMinor").asLong()).isEqualTo(107300);
+    JsonNode byProject =
+        json.readTree(
+                get("/api/v1/reports/spend?groupBy=project&" + window, TestTokens.carol())
+                    .getBody())
+            .get("rows");
+    assertThat(byProject.valueStream().map(r -> r.get("key").asString()).toList())
+        .contains("prj_apollo");
+    assertThat(
+            get("/api/v1/reports/spend?groupBy=colour", TestTokens.carol()).getStatusCode().value())
+        .isEqualTo(422);
+    assertThat(get("/api/v1/reports/spend", TestTokens.alice()).getStatusCode().value())
+        .as("a traveler reads no reports")
+        .isEqualTo(403);
+    assertThat(get("/api/v1/reports/spend", TestTokens.bob()).getStatusCode().value())
+        .as("a manager neither")
+        .isEqualTo(403);
+    // CSV export
+    ResponseEntity<String> csv =
+        get("/api/v1/reports/spend?groupBy=costCenter&format=csv&" + window, TestTokens.carol());
+    assertThat(csv.getHeaders().getContentType().toString()).startsWith("text/csv");
+    assertThat(csv.getBody())
+        .startsWith("costCenter,trips,currency,bookedMinor")
+        .contains("\r\ncc_sales,1,USD,120000,120000,20000,0,7300,107300\r\n");
+
+    // outcomes and exceptions count what happened
+    ResponseEntity<String> outcomesResponse =
+        get("/api/v1/reports/outcomes?" + window, TestTokens.carol());
+    assertThat(outcomesResponse.getStatusCode().value())
+        .as(outcomesResponse.getBody())
+        .isEqualTo(200);
+    JsonNode outcomes = json.readTree(outcomesResponse.getBody()).get("outcomes");
+    assertThat(outcomes.get("booked").asLong()).isGreaterThanOrEqualTo(1);
+    assertThat(outcomes.get("disruptions").asLong()).isEqualTo(1);
+    assertThat(outcomes.get("recoveriesResolved").asLong()).isEqualTo(1);
+    assertThat(outcomes.get("autonomousRecoveries").asLong()).isEqualTo(1);
+    assertThat(outcomes.get("avgRecoverySeconds").asDouble())
+        .isCloseTo(4.18, org.assertj.core.data.Offset.offset(0.01));
+    assertThat(outcomes.get("medianHoursToBook").asDouble())
+        .isCloseTo(5.0 / 60.0, org.assertj.core.data.Offset.offset(0.01));
+    ResponseEntity<String> exceptionsResponse =
+        get("/api/v1/reports/exceptions?" + window, TestTokens.carol());
+    assertThat(exceptionsResponse.getStatusCode().value())
+        .as(exceptionsResponse.getBody())
+        .isEqualTo(200);
+    JsonNode x = json.readTree(exceptionsResponse.getBody()).get("exceptions");
+    assertThat(x.get("policyViolationsByReason").get(0).get("key").asString())
+        .isEqualTo("CABIN_NOT_PERMITTED");
+    assertThat(x.get("approvalsRequested").asLong()).isEqualTo(1);
+    assertThat(x.get("approvalsEscalated").asLong()).isEqualTo(1);
+    assertThat(x.get("approvalsApproved").asLong()).isEqualTo(1);
+    assertThat(x.get("avgApprovalHours").asDouble())
+        .isCloseTo(2.0 / 60.0, org.assertj.core.data.Offset.offset(0.01));
+    assertThat(x.get("casesByKind").get(0).get("key").asString()).isEqualTo("EXPOSURE");
+    assertThat(x.get("casesResolved").asLong()).isEqualTo(1);
+    assertThat(x.get("avgCaseResolutionHours").asDouble())
+        .isCloseTo(1.0 / 60.0, org.assertj.core.data.Offset.offset(0.01));
+    ResponseEntity<String> suppliersResponse =
+        get("/api/v1/reports/suppliers?" + window, TestTokens.carol());
+    assertThat(suppliersResponse.getStatusCode().value())
+        .as(suppliersResponse.getBody())
+        .isEqualTo(200);
+    JsonNode suppliers = json.readTree(suppliersResponse.getBody()).get("rows");
+    assertThat(suppliers.valueStream().map(r -> r.get("provider").asString()).toList())
+        .contains("sandbox-air");
+    assertThat(
+            json.readTree(
+                    get(
+                            "/api/v1/reports/exceptions?format=json&from=" + end + "&to=" + start,
+                            TestTokens.carol())
+                        .getBody())
+                .get("code")
+                .asString())
+        .isEqualTo("PERIOD_INVALID");
+  }
+
+  private void publishRaw(String type, String key, String payload) throws Exception {
+    producer.send(new ProducerRecord<>(Topics.topicFor(type), key, payload)).get();
+  }
+
   private String example(String type) {
     ObjectNode node = (ObjectNode) json.readTree(EventSchemas.example(type));
     clock = clock.plusSeconds(1);

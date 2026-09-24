@@ -69,6 +69,30 @@
           "items": {
             "type": "string"
           }
+        },
+        "allocation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "departmentId": {
+              "type": "string"
+            },
+            "costCenterId": {
+              "type": "string"
+            },
+            "projectId": {
+              "type": "string"
+            },
+            "legalEntityId": {
+              "type": "string"
+            },
+            "officeId": {
+              "type": "string"
+            },
+            "managerEmployeeId": {
+              "type": "string"
+            }
+          }
         }
       }
     },
@@ -168,6 +192,30 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "allocation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "departmentId": {
+              "type": "string"
+            },
+            "costCenterId": {
+              "type": "string"
+            },
+            "projectId": {
+              "type": "string"
+            },
+            "legalEntityId": {
+              "type": "string"
+            },
+            "officeId": {
+              "type": "string"
+            },
+            "managerEmployeeId": {
+              "type": "string"
+            }
           }
         }
       }
