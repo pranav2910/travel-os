@@ -30,7 +30,32 @@ public record IntentRequest(
     @Nullable @Size(max = 500) String purpose,
     @Nullable Boolean hotelRequired,
     @Nullable Integer travelers,
-    @Nullable @Valid ItineraryRequest itinerary) {
+    @Nullable @Valid ItineraryRequest itinerary,
+    /** Phase 3: what to look for; policy still judges every offer. */
+    @Nullable @Valid PreferencesRequest preferences) {
+
+  public record PreferencesRequest(
+      @Nullable @Pattern(regexp = "^(ECONOMY|PREMIUM_ECONOMY|BUSINESS|FIRST)$") String cabin,
+      @Nullable Boolean nonstopOnly,
+      @Nullable Boolean refundableOnly,
+      @Nullable List<@Pattern(regexp = "^[A-Z0-9]{2}$") String> preferredCarriers,
+      @Nullable Integer maxStops) {
+    TravelIntent.SearchPreferences toDomain() {
+      return new TravelIntent.SearchPreferences(
+          cabin,
+          Boolean.TRUE.equals(nonstopOnly),
+          Boolean.TRUE.equals(refundableOnly),
+          preferredCarriers == null ? List.of() : preferredCarriers,
+          maxStops);
+    }
+
+    static @Nullable PreferencesRequest from(TravelIntent.@Nullable SearchPreferences p) {
+      return p == null
+          ? null
+          : new PreferencesRequest(
+              p.cabin(), p.nonstopOnly(), p.refundableOnly(), p.preferredCarriers(), p.maxStops());
+    }
+  }
 
   /**
    * Slice 3: ordered components. Times are instants (UTC); stay dates are the property's local
@@ -66,6 +91,11 @@ public record IntentRequest(
       @Nullable Boolean required) {}
 
   public TravelIntent toDomain() {
+    TravelIntent base = toDomainWithoutPreferences();
+    return preferences == null ? base : base.withPreferences(preferences.toDomain());
+  }
+
+  private TravelIntent toDomainWithoutPreferences() {
     int travelerCount = travelers == null ? 1 : travelers;
     if (itinerary != null) {
       if (origin != null
@@ -179,6 +209,7 @@ public record IntentRequest(
         intent.purpose(),
         intent.hotelRequired(),
         intent.travelers(),
-        itinerary);
+        itinerary,
+        PreferencesRequest.from(intent.preferences()));
   }
 }

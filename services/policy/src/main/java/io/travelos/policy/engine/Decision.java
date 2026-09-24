@@ -16,7 +16,40 @@ public record Decision(
     List<Violation> violations,
     boolean requiresApproval,
     List<String> approverRoles,
-    Economics economics) {
+    Economics economics,
+    boolean autonomousPurchase,
+    @Nullable Money autonomousPurchaseLimit) {
+
+  public Decision(
+      Outcome outcome,
+      List<String> rulesEvaluated,
+      List<Violation> violations,
+      boolean requiresApproval,
+      List<String> approverRoles,
+      Economics economics) {
+    this(
+        outcome,
+        rulesEvaluated,
+        violations,
+        requiresApproval,
+        approverRoles,
+        economics,
+        false,
+        null);
+  }
+
+  /** Phase 3: whether the policy document alone authorizes purchasing this plan. */
+  Decision withPurchaseAutonomy(boolean allowed, @Nullable Money limit) {
+    return new Decision(
+        outcome,
+        rulesEvaluated,
+        violations,
+        requiresApproval,
+        approverRoles,
+        economics,
+        allowed,
+        limit);
+  }
 
   public enum Outcome {
     ALLOW,

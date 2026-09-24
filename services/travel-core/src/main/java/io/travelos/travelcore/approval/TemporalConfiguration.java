@@ -79,15 +79,32 @@ class TemporalConfiguration {
 
       @Override
       public void cancelled(String tripId) {
+        courtesy(tripId, TripPlanning.SIGNAL_CANCELLED, "cancelled by the requester");
+      }
+
+      @Override
+      public void purchaseAuthorized(String tripId, TripPlanning.PurchaseAuthorized authorized) {
+        courtesy(tripId, TripPlanning.SIGNAL_PURCHASE_AUTHORIZED, authorized);
+      }
+
+      @Override
+      public void selectionChanged(String tripId, TripPlanning.SelectionChanged selection) {
+        courtesy(tripId, TripPlanning.SIGNAL_SELECTION_CHANGED, selection);
+      }
+
+      @Override
+      public void refreshQuote(String tripId, String reason) {
+        courtesy(tripId, TripPlanning.SIGNAL_QUOTE_REFRESH, reason);
+      }
+
+      /** The fact is durable and the workflow re-reads the trip; the signal only hurries it. */
+      private void courtesy(String tripId, String signal, Object payload) {
         try {
-          client
-              .newUntypedWorkflowStub(TripPlanning.workflowId(tripId))
-              .signal(TripPlanning.SIGNAL_CANCELLED, "cancelled by the requester");
+          client.newUntypedWorkflowStub(TripPlanning.workflowId(tripId)).signal(signal, payload);
         } catch (WorkflowNotFoundException e) {
-          log.info("no running workflow for {}; cancellation recorded without signal", tripId);
+          log.info("no running workflow for {}; {} recorded without signal", tripId, signal);
         } catch (RuntimeException e) {
-          // CANCELLED is durable and the workflow re-reads the trip; the signal is a courtesy.
-          log.warn("could not signal the workflow of {}: {}", tripId, e.getMessage());
+          log.warn("could not signal {} to the workflow of {}: {}", signal, tripId, e.getMessage());
         }
       }
     };

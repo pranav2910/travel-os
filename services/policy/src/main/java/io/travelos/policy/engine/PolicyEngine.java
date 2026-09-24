@@ -29,6 +29,8 @@ public final class PolicyEngine {
   static final String RULE_HOTEL = "HOTEL_NIGHTLY_LIMIT";
   static final String RULE_GROUND = "GROUND_TRANSFER_LIMIT";
   static final String RULE_TRIP_BUDGET = "TRIP_BUDGET";
+  static final String RULE_BOOKING_HORIZON = "BOOKING_HORIZON";
+  static final String RULE_PURCHASE_AUTONOMY = "PURCHASE_AUTONOMY";
   static final String RULE_MANAGER_THRESHOLD = "MANAGER_APPROVAL_THRESHOLD";
   static final String RULE_INCENTIVE = "INCENTIVE_SHARE";
   static final String RULE_AGENT_REBOOKING = "AGENT_REBOOKING_AUTONOMY";
@@ -50,6 +52,7 @@ public final class PolicyEngine {
           new HotelNightlyLimitRule(),
           new GroundTransferLimitRule(),
           new TripBudgetRule(),
+          new BookingHorizonRule(),
           new ManagerApprovalThresholdRule());
 
   /** Facts shared by every candidate of one evaluation: the benchmark fare and the ceiling. */
@@ -276,7 +279,91 @@ public final class PolicyEngine {
     if (policy.incentives().enabled()) {
       rules.add(RULE_INCENTIVE);
     }
-    return Decision.of(rules, violations, economics);
+    // Phase 3: purchase authority. Policy may authorize the purchase on its own only when its
+    // autonomy.purchase section allows it, the plan is not denied and the total is within the
+    // section's limit. A required approval stays a person's decision either way.
+    rules.add(RULE_PURCHASE_AUTONOMY);
+    Decision decision = Decision.of(rules, violations, economics);
+    PolicyDocument.Purchase purchase = policy.autonomy().purchase();
+    Money limit =
+        purchase.maxTotal() == null ? null : Money.of(policy.currency(), purchase.maxTotal());
+    boolean withinLimit =
+        limit == null
+            || (candidate.total().currency().equals(limit.currency())
+                && candidate.total().compareTo(limit) <= 0);
+    boolean autonomous =
+        purchase.enabled() && decision.outcome() != Decision.Outcome.DENY && withinLimit;
+    return decision.withPurchaseAutonomy(autonomous, limit);
+  }
+
+  /**
+   * Phase 3: booking horizon and trip length, judged against the reference time the evaluation was
+   * asked with (never the engine's own clock). Absent facts mean nothing to judge.
+   */
+  private static final class BookingHorizonRule implements TripRule {
+    @Override
+    public String id() {
+      return RULE_BOOKING_HORIZON;
+    }
+
+    @Override
+    public Optional<Violation> evaluate(
+        PolicyDocument policy, Trip trip, Candidate c, Context ctx) {
+      PolicyDocument.TripBudget rules = policy.trip();
+      Consequence consequence = rules.horizonConsequence();
+      if (trip.referenceTime() != null && trip.earliestDeparture() != null) {
+        java.time.Duration ahead =
+            java.time.Duration.between(trip.referenceTime(), trip.earliestDeparture());
+        if (rules.maxAdvanceDays() != null
+            && ahead.compareTo(java.time.Duration.ofDays(rules.maxAdvanceDays())) > 0) {
+          return Optional.of(
+              new Violation(
+                  RULE_BOOKING_HORIZON,
+                  "BOOKING_HORIZON_EXCEEDED",
+                  "departure is "
+                      + ahead.toDays()
+                      + " days ahead, beyond the "
+                      + rules.maxAdvanceDays()
+                      + "-day booking horizon",
+                  consequence,
+                  approverFor(consequence)));
+        }
+        if (rules.minLeadHours() != null
+            && ahead.compareTo(java.time.Duration.ofHours(rules.minLeadHours())) < 0) {
+          return Optional.of(
+              new Violation(
+                  RULE_BOOKING_HORIZON,
+                  "LEAD_TIME_TOO_SHORT",
+                  "departure is "
+                      + Math.max(0, ahead.toHours())
+                      + " hours away, less than the "
+                      + rules.minLeadHours()
+                      + "-hour minimum notice",
+                  consequence,
+                  approverFor(consequence)));
+        }
+      }
+      if (rules.maxDurationDays() != null
+          && trip.earliestDeparture() != null
+          && trip.latestReturn() != null) {
+        java.time.Duration length =
+            java.time.Duration.between(trip.earliestDeparture(), trip.latestReturn());
+        if (length.compareTo(java.time.Duration.ofDays(rules.maxDurationDays())) > 0) {
+          return Optional.of(
+              new Violation(
+                  RULE_BOOKING_HORIZON,
+                  "TRIP_TOO_LONG",
+                  "the trip spans "
+                      + length.toDays()
+                      + " days, more than the "
+                      + rules.maxDurationDays()
+                      + "-day maximum",
+                  consequence,
+                  approverFor(consequence)));
+        }
+      }
+      return Optional.empty();
+    }
   }
 
   /**

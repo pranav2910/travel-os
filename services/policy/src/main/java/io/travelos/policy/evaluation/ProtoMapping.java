@@ -189,8 +189,11 @@ final class ProtoMapping {
     return null;
   }
 
-  private static Instant instant(com.google.protobuf.Timestamp ts) {
-    return Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
+  /** Null for an unset timestamp (proto3 default), so absent facts stay absent. */
+  static @Nullable Instant instant(com.google.protobuf.Timestamp ts) {
+    return ts == null || (ts.getSeconds() == 0 && ts.getNanos() == 0)
+        ? null
+        : Instant.ofEpochSecond(ts.getSeconds(), ts.getNanos());
   }
 
   static Facts.Trip trip(
@@ -203,6 +206,28 @@ final class ProtoMapping {
         tripId, travelerId, origin, destination, route.international(), route.note());
   }
 
+  /** Phase 3: with the times the booking-horizon rules need. */
+  static Facts.Trip trip(
+      String tripId,
+      String travelerId,
+      String origin,
+      String destination,
+      RouteClassifier.Classification route,
+      @Nullable Instant referenceTime,
+      @Nullable Instant earliestDeparture,
+      @Nullable Instant latestReturn) {
+    return new Facts.Trip(
+        tripId,
+        travelerId,
+        origin,
+        destination,
+        route.international(),
+        route.note(),
+        referenceTime,
+        earliestDeparture,
+        latestReturn);
+  }
+
   static PolicyDecision decision(
       String decisionId, String policyId, int policyVersion, Decision decision, Instant at) {
     PolicyDecision.Builder builder =
@@ -213,6 +238,7 @@ final class ProtoMapping {
             .setOutcome(outcome(decision.outcome()))
             .addAllRulesEvaluated(decision.rulesEvaluated())
             .setRequiresApproval(decision.requiresApproval())
+            .setAutonomousPurchase(decision.autonomousPurchase())
             .setEvaluatedAt(
                 Timestamp.newBuilder().setSeconds(at.getEpochSecond()).setNanos(at.getNano()))
             .setEconomics(
@@ -221,6 +247,9 @@ final class ProtoMapping {
                     .setInPolicyCeiling(money(decision.economics().inPolicyCeiling()))
                     .setTravelerIncentive(money(decision.economics().travelerIncentive()))
                     .setTravelerPays(money(decision.economics().travelerPays())));
+    if (decision.autonomousPurchaseLimit() != null) {
+      builder.setAutonomousPurchaseLimit(money(decision.autonomousPurchaseLimit()));
+    }
     for (Decision.Violation v : decision.violations()) {
       builder.addReasons(
           ReasonCode.newBuilder().setCode(v.code()).setRuleId(v.ruleId()).setMessage(v.message()));

@@ -21,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -59,7 +60,9 @@ public class TripController {
               request.traveler() == null ? null : request.traveler().toDomain(),
               request.projectId() == null || request.projectId().isBlank()
                   ? null
-                  : request.projectId());
+                  : request.projectId(),
+              request.purchaseMode(),
+              Boolean.TRUE.equals(request.draft()));
     } catch (TravelIntent.HotelRequestException e) {
       throw new ApiException.Unprocessable(e.code(), e.getMessage());
     } catch (IntentRejectedException e) {
@@ -80,6 +83,96 @@ public class TripController {
         .body(TripResponse.from(trip));
   }
 
+  /** Phase 3: a draft becomes a request and planning starts; idempotent by state. */
+  @PostMapping(path = "/{tripId}/submission")
+  public ResponseEntity<TripResponse> submit(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @IdempotencyKeyHeader String idempotencyKey) {
+    return ResponseEntity.accepted().body(TripResponse.from(trips.submitDraft(me, tripId)));
+  }
+
+  /** Phase 3: change a draft before submitting it (request text, intent, purchase mode). */
+  @PutMapping(path = "/{tripId}/draft", consumes = "application/json")
+  public TripResponse updateDraft(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @Valid @RequestBody CreateTripRequest request) {
+    TripService.CreateTrip changes;
+    try {
+      changes =
+          new TripService.CreateTrip(
+              null,
+              request.source() == null ? TripSource.API : request.source(),
+              request.request(),
+              request.intent() == null ? null : request.intent().toDomain(),
+              null,
+              null,
+              request.purchaseMode(),
+              true);
+    } catch (IntentRejectedException e) {
+      throw new ApiException.Unprocessable(e.code(), e.getMessage());
+    } catch (IllegalArgumentException e) {
+      throw new ApiException.Unprocessable("INTENT_INVALID", e.getMessage());
+    }
+    try {
+      return TripResponse.from(trips.updateDraft(me, tripId, changes));
+    } catch (IntentRejectedException e) {
+      throw new ApiException.Unprocessable(e.code(), e.getMessage());
+    }
+  }
+
+  public record PurchaseRequest(@Nullable String bundleId) {}
+
+  /**
+   * Phase 3: the buyer authorizes the purchase of the quoted plan at the quoted price. Bound to the
+   * plan, total, conditions and quote expiry; idempotent (same key or same plan = the same
+   * authorization, one booking attempt). 409 when the trip is not QUOTED, the selection moved on
+   * ({@code SELECTION_CHANGED}) or the quote expired ({@code QUOTE_EXPIRED}).
+   */
+  @PostMapping(path = "/{tripId}/purchase")
+  public TripResponse.PurchaseView purchase(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @RequestBody(required = false) @Nullable PurchaseRequest request) {
+    return TripResponse.PurchaseView.from(
+        trips.authorizePurchase(
+            me, tripId, request == null ? null : request.bundleId(), idempotencyKey));
+  }
+
+  /**
+   * Every purchase authorization the trip held, newest first: who authorized what, and its fate.
+   */
+  @GetMapping("/{tripId}/purchase")
+  public List<TripResponse.PurchaseView> purchases(
+      @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
+    return trips.purchaseHistory(me, tripId).stream().map(TripResponse.PurchaseView::from).toList();
+  }
+
+  public record SelectionRequest(@jakarta.validation.constraints.NotBlank String bundleId) {}
+
+  /** Phase 3: choose another quoted alternative; the workflow re-quotes it. */
+  @PostMapping(path = "/{tripId}/selection", consumes = "application/json")
+  public TripResponse select(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @IdempotencyKeyHeader String idempotencyKey,
+      @Valid @RequestBody SelectionRequest request) {
+    return TripResponse.from(trips.selectAlternative(me, tripId, request.bundleId()));
+  }
+
+  /**
+   * Phase 3: ask for a fresh price on the quoted plan. 202: the workflow answers with a new quote.
+   */
+  @PostMapping(path = "/{tripId}/quote-refresh")
+  public ResponseEntity<TripResponse> refreshQuote(
+      @AuthenticationPrincipal RequestPrincipal me,
+      @PathVariable String tripId,
+      @IdempotencyKeyHeader String idempotencyKey) {
+    return ResponseEntity.accepted().body(TripResponse.from(trips.refreshQuote(me, tripId)));
+  }
+
   @GetMapping("/{tripId}")
   public TripResponse get(
       @AuthenticationPrincipal RequestPrincipal me, @PathVariable String tripId) {
@@ -88,7 +181,8 @@ public class TripController {
         trip,
         trips.latestApproval(trip.tenantId(), trip.tripId()).orElse(null),
         trips.components(trip.tenantId(), trip.tripId()),
-        trips.allocation(trip.tenantId(), trip.tripId()).orElse(null));
+        trips.allocation(trip.tenantId(), trip.tripId()).orElse(null),
+        trips.activePurchase(trip.tenantId(), trip.tripId()).orElse(null));
   }
 
   /** Slice 3: component status, total and supplier references, one row per leg/stay/transfer. */

@@ -23,7 +23,21 @@ public final class Facts {
       String origin,
       String destination,
       boolean international,
-      String routeNote) {}
+      String routeNote,
+      @Nullable Instant referenceTime,
+      @Nullable Instant earliestDeparture,
+      @Nullable Instant latestReturn) {
+    /** Without the times the booking-horizon rules have nothing to say. */
+    public Trip(
+        String tripId,
+        String travelerId,
+        String origin,
+        String destination,
+        boolean international,
+        String routeNote) {
+      this(tripId, travelerId, origin, destination, international, routeNote, null, null, null);
+    }
+  }
 
   /**
    * One bookable plan.

@@ -31,7 +31,8 @@
             "AGENT",
             "CALENDAR",
             "EMAIL",
-            "DEMAND"
+            "DEMAND",
+            "CONVERSATION"
           ]
         },
         "requestedBy": {
@@ -348,6 +349,99 @@
         "message": {
           "type": "string",
           "maxLength": 2000
+        }
+      }
+    },
+    "travel.trip.quoted": {
+      "description": "Phase 3: the trip is planned and priced; nothing is reserved until a purchase authorization exists (a person's confirmation, or policy-granted autonomy recorded as one).",
+      "type": "object",
+      "required": [
+        "tripId",
+        "selectedBundleId",
+        "total",
+        "purchaseMode",
+        "alternatives"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "selectedBundleId": {
+          "$ref": "common.schema.json#/$defs/bundleId"
+        },
+        "policyDecisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "purchaseMode": {
+          "enum": [
+            "POLICY",
+            "CONFIRM"
+          ]
+        },
+        "quoteExpiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "alternatives": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "travel.trip.purchase-authorized": {
+      "description": "Phase 3: a purchase authorization bound to one plan, total, currency and conditions now exists. basis HUMAN = a person confirmed; POLICY_AUTONOMY = the policy document granted autonomous authority (auditable through policyDecisionId).",
+      "type": "object",
+      "required": [
+        "tripId",
+        "authorizationId",
+        "basis",
+        "bundleId",
+        "total",
+        "authorizedBy"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "tripId": {
+          "$ref": "common.schema.json#/$defs/tripId"
+        },
+        "authorizationId": {
+          "type": "string",
+          "pattern": "^pau_[0-9A-HJKMNP-TV-Z]{26}$"
+        },
+        "basis": {
+          "enum": [
+            "HUMAN",
+            "POLICY_AUTONOMY"
+          ]
+        },
+        "bundleId": {
+          "$ref": "common.schema.json#/$defs/bundleId"
+        },
+        "total": {
+          "$ref": "common.schema.json#/$defs/money"
+        },
+        "authorizedBy": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "policyDecisionId": {
+          "$ref": "common.schema.json#/$defs/policyDecisionId"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "supersededAuthorizationId": {
+          "type": "string",
+          "pattern": "^pau_[0-9A-HJKMNP-TV-Z]{26}$"
         }
       }
     }

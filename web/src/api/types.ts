@@ -8,6 +8,7 @@ export type TripStatus =
   | 'DRAFT'
   | 'SUBMITTED'
   | 'PLANNING'
+  | 'QUOTED'
   | 'AWAITING_APPROVAL'
   | 'APPROVED'
   | 'BOOKING'

@@ -23,6 +23,10 @@ enum TripStatus {
   // A booked trip whose cancellation was requested: the reservation is being released at the
   // suppliers; CANCELLED only once that is established (or nothing was left to release).
   CANCELLING = 10;
+  // Phase 3: planned and priced, waiting for an explicit purchase authorization (a person's
+  // confirmation) before any approval or booking. Never reached when policy grants autonomous
+  // purchase authority for the plan and the requester did not ask to confirm.
+  QUOTED = 11;
 }
 
 // What the traveler needs, independent of how it is fulfilled.
@@ -47,6 +51,16 @@ message TravelIntent {
   // and the four timestamps above describe the first leg and the last leg for compatibility, and
   // planning reasons over the itinerary. Absent for Slice 1/2 shaped trips.
   Itinerary itinerary = 10;
+  // Phase 3: what to look for. Preferences narrow the search; policy still judges every offer.
+  SearchPreferences preferences = 11;
+}
+
+message SearchPreferences {
+  string cabin = 1;                    // ECONOMY | PREMIUM_ECONOMY | BUSINESS | FIRST; empty = any
+  bool nonstop_only = 2;
+  bool refundable_only = 3;
+  repeated string preferred_carriers = 4;
+  int32 max_stops = 5;                 // 0 = unconstrained (use nonstop_only for 0 stops)
 }
 
 // Ordered, dependency-linked components with stable ids. Every instant is UTC; every component
@@ -161,6 +175,34 @@ message Trip {
   repeated ComponentState components = 21;
   // Organizational allocation captured at request time (absent on trips from before profiles).
   TripAllocation allocation = 22;
+  // Phase 3: POLICY (book when policy grants autonomous purchase authority) or CONFIRM (a person
+  // confirms the priced plan first, whatever policy allows).
+  string purchase_mode = 23;
+  // The purchase authorization the plan holds, if any (ACTIVE, CONSUMED, SUPERSEDED, REVOKED).
+  PurchaseState purchase = 24;
+  // The ranked plans a person may choose between while the trip is QUOTED.
+  repeated TripAlternative alternatives = 25;
+  google.protobuf.Timestamp quote_expires_at = 26;
+}
+
+message PurchaseState {
+  string authorization_id = 1;
+  string status = 2;                   // ACTIVE | CONSUMED | SUPERSEDED | REVOKED | EXPIRED
+  string basis = 3;                    // HUMAN | POLICY_AUTONOMY
+  string bundle_id = 4;
+  travelos.common.v1.Money total = 5;
+  google.protobuf.Timestamp expires_at = 6;
+  string authorized_by = 7;
+}
+
+message TripAlternative {
+  string bundle_id = 1;
+  travelos.common.v1.Money total = 2;
+  string summary = 3;
+  int32 rank = 4;
+  bool refundable = 5;
+  travelos.common.v1.Money change_penalty = 6;
+  string conditions = 7;               // fare conditions in words, as bound by the authorization
 }
 
 message TravelerSnapshot {
@@ -236,6 +278,15 @@ message TransitionTripRequest {
   // Slice 3: a second AWAITING_APPROVAL after a material change on revalidation names why.
   // QUOTE_EXPIRED | PRICE_CHANGED
   string replan_reason = 14;
+  // Phase 3. Policy granted autonomous purchase authority for this plan and total: Travel Core
+  // records a POLICY_AUTONOMY purchase authorization bound to selected_bundle_id + total (and
+  // consumes it when the move is to BOOKING). Without it, BOOKING needs an ACTIVE authorization a
+  // person gave for exactly this plan and total.
+  bool autonomous_purchase = 15;
+  google.protobuf.Timestamp quote_expires_at = 16;
+  repeated TripAlternative alternatives = 17;
+  // Fare conditions of the selected plan, in words; bound by the authorization.
+  string conditions = 18;
 }
 
 message ApplyIntentExtractionRequest {
@@ -266,6 +317,7 @@ message CreateTripRequest {
   TravelerIdentity traveler = 9;
   // The client/project the trip is charged to (validated against the traveler's projects).
   string project_id = 10;
+  string purchase_mode = 11;           // POLICY (default) | CONFIRM
 }
 
 message TravelerIdentity {

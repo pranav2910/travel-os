@@ -29,7 +29,8 @@ public class TripRepository {
       selected_bundle_id, optimization_run_id, policy_decision_id, approval_id, order_id,
       created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
       traveler_given_name, traveler_family_name, traveler_email, total_currency, total_minor,
-      failure_stage, failure_code, explanation, itinerary, source_reference
+      failure_stage, failure_code, explanation, itinerary, source_reference,
+      purchase_mode, quote_expires_at, alternatives, search_preferences
       """;
 
   private final JdbcClient jdbc;
@@ -49,14 +50,20 @@ public class TripRepository {
               origin, destination, earliest_departure, arrival_deadline, return_after, latest_return,
               purpose, hotel_required, travelers,
               created_by, idempotency_key, request_fingerprint, version, created_at, updated_at,
-              traveler_given_name, traveler_family_name, traveler_email, itinerary, source_reference)
+              traveler_given_name, traveler_family_name, traveler_email, itinerary, source_reference,
+              purchase_mode, quote_expires_at, alternatives, search_preferences)
             VALUES (:tripId, :tenantId, :travelerId, :status, :source, :requestText,
               :origin, :destination, :earliestDeparture, :arrivalDeadline, :returnAfter, :latestReturn,
               :purpose, :hotelRequired, :travelers,
               :createdBy, :idempotencyKey, :requestFingerprint, :version, :createdAt, :updatedAt,
-              :givenName, :familyName, :email, CAST(:itinerary AS jsonb), :sourceReference)
+              :givenName, :familyName, :email, CAST(:itinerary AS jsonb), :sourceReference,
+              :purchaseMode, :quoteExpiresAt, CAST(:alternatives AS jsonb), CAST(:preferences AS jsonb))
             ON CONFLICT ON CONSTRAINT trip_idempotency DO NOTHING
             """)
+        .param("purchaseMode", trip.purchaseMode())
+        .param("quoteExpiresAt", ts(trip.quoteExpiresAt()))
+        .param("alternatives", TripJson.alternatives(trip.alternatives()))
+        .param("preferences", TripJson.preferences(intent == null ? null : intent.preferences()))
         .param("sourceReference", trip.sourceReference())
         .param(
             "itinerary",
@@ -196,9 +203,18 @@ public class TripRepository {
                   policy_decision_id = :policyDecision, approval_id = :approval, order_id = :orderId,
                   total_currency = :currency, total_minor = :totalMinor,
                   failure_stage = :failureStage, failure_code = :failureCode,
-                  explanation = :explanation, itinerary = CAST(:itinerary AS jsonb)
+                  explanation = :explanation, itinerary = CAST(:itinerary AS jsonb),
+                  request_text = :requestText, purchase_mode = :purchaseMode,
+                  quote_expires_at = :quoteExpiresAt, alternatives = CAST(:alternatives AS jsonb),
+                  search_preferences = CAST(:preferences AS jsonb)
                 WHERE tenant_id = :tenantId AND trip_id = :tripId AND version = :expectedVersion
                 """)
+            .param("requestText", updated.requestText())
+            .param("purchaseMode", updated.purchaseMode())
+            .param("quoteExpiresAt", ts(updated.quoteExpiresAt()))
+            .param("alternatives", TripJson.alternatives(updated.alternatives()))
+            .param(
+                "preferences", TripJson.preferences(intent == null ? null : intent.preferences()))
             .param(
                 "itinerary",
                 intent == null || intent.itinerary() == null
@@ -300,7 +316,8 @@ public class TripRepository {
                 rs.getString("purpose"),
                 rs.getBoolean("hotel_required"),
                 rs.getInt("travelers"),
-                ItineraryCodec.fromJson(rs.getString("itinerary")));
+                ItineraryCodec.fromJson(rs.getString("itinerary")),
+                TripJson.preferences(rs.getString("search_preferences")));
     String currency = rs.getString("total_currency");
     Money total = currency == null ? null : Money.of(currency, rs.getLong("total_minor"));
     return new Trip(
@@ -332,7 +349,10 @@ public class TripRepository {
         rs.getString("failure_stage"),
         rs.getString("failure_code"),
         rs.getString("explanation"),
-        rs.getString("source_reference"));
+        rs.getString("source_reference"),
+        rs.getString("purchase_mode"),
+        instant(rs, "quote_expires_at"),
+        TripJson.alternatives(rs.getString("alternatives")));
   }
 
   private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {

@@ -30,6 +30,18 @@ public interface TripWorkflow {
   @SignalMethod(name = TripPlanning.SIGNAL_CANCELLED)
   void cancelled(String reason);
 
+  /** Phase 3: a person authorized the purchase of the quoted plan (durable in Travel Core). */
+  @SignalMethod(name = TripPlanning.SIGNAL_PURCHASE_AUTHORIZED)
+  void purchaseAuthorized(TripPlanning.PurchaseAuthorized authorized);
+
+  /** Phase 3: a person chose another quoted alternative. */
+  @SignalMethod(name = TripPlanning.SIGNAL_SELECTION_CHANGED)
+  void selectionChanged(TripPlanning.SelectionChanged selection);
+
+  /** Phase 3: a person asked for a fresh price. */
+  @SignalMethod(name = TripPlanning.SIGNAL_QUOTE_REFRESH)
+  void refreshQuote(String reason);
+
   @QueryMethod(name = TripPlanning.QUERY_STAGE)
   TripPlanning.Stage stage();
 }

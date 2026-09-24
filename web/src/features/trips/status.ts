@@ -17,6 +17,7 @@ export function stepState(
     'DRAFT',
     'SUBMITTED',
     'PLANNING',
+    'QUOTED',
     'AWAITING_APPROVAL',
     'APPROVED',
     'BOOKING',

@@ -17,4 +17,15 @@ public interface ApprovalSignaler {
    * a lost signal delays nothing that matters).
    */
   default void cancelled(String tripId) {}
+
+  /**
+   * Phase 3: a person authorized the purchase of the quoted plan (durable before this is called).
+   */
+  default void purchaseAuthorized(String tripId, TripPlanning.PurchaseAuthorized authorized) {}
+
+  /** Phase 3: a person chose another quoted alternative; the workflow re-quotes it. */
+  default void selectionChanged(String tripId, TripPlanning.SelectionChanged selection) {}
+
+  /** Phase 3: a person asked for a fresh price on the quoted plan. */
+  default void refreshQuote(String tripId, String reason) {}
 }

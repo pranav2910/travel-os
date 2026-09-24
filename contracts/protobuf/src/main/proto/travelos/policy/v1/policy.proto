@@ -71,6 +71,11 @@ message PolicyDecision {
 
   // Present for trip/bundle evaluations and for actions that propose a bundle.
   Economics economics = 10;
+  // Phase 3: may the platform purchase this plan without a person's confirmation? True only when
+  // the policy's autonomy.purchase is enabled, the total is within its limit and the plan is not
+  // denied. Approval, when required, is still a person's decision.
+  bool autonomous_purchase = 11;
+  travelos.common.v1.Money autonomous_purchase_limit = 12;
 }
 
 message EvaluateTripRequest {
@@ -79,6 +84,9 @@ message EvaluateTripRequest {
   string traveler_id = 3;
   travelos.trip.v1.TravelIntent intent = 4;
   repeated travelos.offer.v1.Bundle candidates = 5;
+  // Phase 3: "now" for the booking-horizon rules (the workflow's clock); the service's clock
+  // when unset. The engine itself stays clock-free.
+  google.protobuf.Timestamp reference_time = 6;
 }
 
 message CandidateDecision {

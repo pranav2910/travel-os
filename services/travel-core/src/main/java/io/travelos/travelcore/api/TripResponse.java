@@ -3,8 +3,10 @@ package io.travelos.travelcore.api;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.travelos.travelcore.api.ApprovalController.ApprovalResponse;
 import io.travelos.travelcore.approval.Approval;
+import io.travelos.travelcore.trip.PurchaseAuthorization;
 import io.travelos.travelcore.trip.Trip;
 import io.travelos.travelcore.trip.TripAllocation;
+import io.travelos.travelcore.trip.TripAlternative;
 import io.travelos.travelcore.trip.TripComponent;
 import io.travelos.travelcore.trip.TripEvidence;
 import io.travelos.travelcore.trip.TripSource;
@@ -35,7 +37,66 @@ public record TripResponse(
     @Nullable String explanation,
     @Nullable List<ComponentView> components,
     @Nullable String sourceReference,
-    @Nullable AllocationView allocation) {
+    @Nullable AllocationView allocation,
+    String purchaseMode,
+    @Nullable PurchaseView purchase,
+    @Nullable List<AlternativeView> alternatives,
+    @Nullable Instant quoteExpiresAt) {
+
+  /** Phase 3: the purchase authorization the plan holds, or the latest one it held. */
+  public record PurchaseView(
+      String authorizationId,
+      String status,
+      String basis,
+      String authorizedBy,
+      String bundleId,
+      MoneyView total,
+      @Nullable String conditions,
+      @Nullable Instant expiresAt,
+      Instant createdAt,
+      @Nullable String supersededReason) {
+    public static PurchaseView from(PurchaseAuthorization a) {
+      return new PurchaseView(
+          a.authorizationId(),
+          a.status().name(),
+          a.basis().name(),
+          a.authorizedBy(),
+          a.bundleId(),
+          new MoneyView(a.total().currency(), a.total().amountMinor(), a.total().toString()),
+          a.conditions(),
+          a.expiresAt(),
+          a.createdAt(),
+          a.supersededReason());
+    }
+  }
+
+  /** Phase 3: one of the quoted plans a buyer may choose. */
+  public record AlternativeView(
+      String bundleId,
+      MoneyView total,
+      @Nullable String summary,
+      int rank,
+      boolean refundable,
+      @Nullable MoneyView changePenalty,
+      @Nullable String conditions,
+      boolean selected) {
+    static AlternativeView from(TripAlternative a, boolean selected) {
+      return new AlternativeView(
+          a.bundleId(),
+          new MoneyView(a.total().currency(), a.total().amountMinor(), a.total().toString()),
+          a.summary(),
+          a.rank(),
+          a.refundable(),
+          a.changePenalty() == null
+              ? null
+              : new MoneyView(
+                  a.changePenalty().currency(),
+                  a.changePenalty().amountMinor(),
+                  a.changePenalty().toString()),
+          a.conditions(),
+          selected);
+    }
+  }
 
   /** Cost allocation and responsibility captured when the trip was requested (ADR-0014). */
   public record AllocationView(
@@ -116,6 +177,15 @@ public record TripResponse(
       @Nullable Approval approval,
       List<TripComponent> components,
       @Nullable TripAllocation allocation) {
+    return from(trip, approval, components, allocation, null);
+  }
+
+  public static TripResponse from(
+      Trip trip,
+      @Nullable Approval approval,
+      List<TripComponent> components,
+      @Nullable TripAllocation allocation,
+      @Nullable PurchaseAuthorization purchase) {
     return new TripResponse(
         trip.tripId(),
         trip.tenantId().value(),
@@ -144,6 +214,17 @@ public record TripResponse(
         trip.explanation(),
         components.isEmpty() ? null : components.stream().map(ComponentView::from).toList(),
         trip.sourceReference(),
-        allocation == null ? null : AllocationView.from(allocation));
+        allocation == null ? null : AllocationView.from(allocation),
+        trip.purchaseMode(),
+        purchase == null ? null : PurchaseView.from(purchase),
+        trip.alternatives().isEmpty()
+            ? null
+            : trip.alternatives().stream()
+                .map(
+                    a ->
+                        AlternativeView.from(
+                            a, a.bundleId().equals(trip.evidence().selectedBundleId())))
+                .toList(),
+        trip.quoteExpiresAt());
   }
 }

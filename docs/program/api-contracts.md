@@ -69,3 +69,45 @@ Redacted fields are `null` unless revealed.
 
 `AuthorizeArranger`, `GetTravelerSnapshot` — see `contracts/protobuf/.../context/v1/context.proto`.
 `travelos.trip.v1.Trip.allocation` and `CreateTripRequest.project_id` are additive.
+
+## Phase 3 — planning vs purchase authorization (Travel Core, port 8081; ADR-0015)
+
+### Trip request additions
+
+- `POST /api/v1/trips`: `purchaseMode?` (`POLICY` default | `CONFIRM`), `draft?` (boolean),
+  `intent.preferences?` `{cabin, nonstopOnly, refundableOnly, preferredCarriers[], maxStops}`.
+- `TripResponse` gains `purchaseMode`, `purchase?` (the ACTIVE authorization), `alternatives?`
+  `[{bundleId, total, summary, rank, refundable, changePenalty, conditions, selected}]`,
+  `quoteExpiresAt?`, and `intent.preferences?`. New status value: `QUOTED`.
+
+| Method & path | Who | Body / notes | Returns |
+|---|---|---|---|
+| `PUT /api/v1/trips/{id}/draft` | traveler, arranger, TRAVEL_ADMIN | same body as create (request/intent/purchaseMode); 409 `TRIP_NOT_A_DRAFT` | `TripResponse` |
+| `POST /api/v1/trips/{id}/submission` (`Idempotency-Key`) | same | DRAFT → SUBMITTED, planning starts; idempotent by state | 202 `TripResponse` |
+| `POST /api/v1/trips/{id}/purchase` (`Idempotency-Key`) | the buyer: traveler, arranger, TRAVEL_ADMIN (403 `NOT_THE_BUYER` otherwise) | `{bundleId?}`; trip must be `QUOTED` (409 `TRIP_NOT_QUOTED`), the named plan must be the quoted one (409 `SELECTION_CHANGED`), quote not expired (409 `QUOTE_EXPIRED`); idempotent by key and by state | `PurchaseView {authorizationId, status, basis, authorizedBy, bundleId, total, conditions, expiresAt, createdAt, supersededReason}` |
+| `GET /api/v1/trips/{id}/purchase` | anyone who may read the trip | — | `[PurchaseView]` newest first (ACTIVE, CONSUMED, SUPERSEDED, REVOKED) |
+| `POST /api/v1/trips/{id}/selection` (`Idempotency-Key`) | the buyer | `{bundleId}` from `alternatives`; 422 `ALTERNATIVE_UNKNOWN`; supersedes the authorization; the workflow re-quotes | `TripResponse` |
+| `POST /api/v1/trips/{id}/quote-refresh` (`Idempotency-Key`) | the buyer | trip must be `QUOTED`; the workflow answers with a new quote (poll the trip) | 202 `TripResponse` |
+
+Lifecycle a client should expect in `CONFIRM` mode: `SUBMITTED → PLANNING → QUOTED → (purchase) →
+[AWAITING_APPROVAL → APPROVED | APPROVED] → BOOKING → BOOKED`. A higher re-quote before booking
+returns the trip to `QUOTED`. In `POLICY` mode with an in-policy plan the sequence is unchanged
+from before (`PLANNING → APPROVED → BOOKING → BOOKED`) and `purchase.basis` is `POLICY_AUTONOMY`.
+
+### Conversations `/api/v1/conversations`
+
+| Method & path | Who | Body | Returns |
+|---|---|---|---|
+| `POST` (`Idempotency-Key`) | any employee | `{text, purchaseMode?, projectId?}` | 202 `ConversationView {conversationId, travelerId, status (OPEN|AWAITING_USER|PLANNED|CLOSED), currentTripId, messages[{messageId, seq, role (USER|ASSISTANT), text, tripId, kind, createdAt}]}` |
+| `GET` / `GET /{id}` | the traveler, the creator, TRAVEL_ADMIN (404 otherwise) | — | `ConversationView` |
+| `POST /{id}/messages` (`Idempotency-Key`) | same | `{text}`; a new turn cancels an unbought plan of the previous turn and creates a new trip whose request text is the whole transcript | 202 `ConversationView` |
+
+### Policy document additions
+
+`autonomy.purchase {enabled, maxTotal}` (absent = legacy: enabled, unlimited), `trip.maxAdvanceDays`,
+`trip.minLeadHours`, `trip.maxDurationDays`, `trip.onHorizonViolation`. `PolicyDecision` gains
+`autonomous_purchase` and `autonomous_purchase_limit`.
+
+### Events
+
+`travel.trip.quoted`, `travel.trip.purchase-authorized` (see `contracts/events/trip-events.schema.json`).

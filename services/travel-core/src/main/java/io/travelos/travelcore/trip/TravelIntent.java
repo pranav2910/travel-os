@@ -25,7 +25,71 @@ public record TravelIntent(
     @Nullable String purpose,
     boolean hotelRequired,
     int travelers,
-    @Nullable Itinerary itinerary) {
+    @Nullable Itinerary itinerary,
+    @Nullable SearchPreferences preferences) {
+
+  /** Phase 3: what to look for. Narrows the search; policy still judges every offer. */
+  public record SearchPreferences(
+      @Nullable String cabin,
+      boolean nonstopOnly,
+      boolean refundableOnly,
+      List<String> preferredCarriers,
+      @Nullable Integer maxStops) {
+    public SearchPreferences {
+      preferredCarriers = preferredCarriers == null ? List.of() : List.copyOf(preferredCarriers);
+    }
+
+    public String canonical() {
+      return String.join(
+          "/",
+          cabin == null ? "" : cabin,
+          String.valueOf(nonstopOnly),
+          String.valueOf(refundableOnly),
+          String.join(",", preferredCarriers),
+          maxStops == null ? "" : String.valueOf(maxStops));
+    }
+  }
+
+  /** The Slice 3 shape: no search preferences. */
+  public TravelIntent(
+      String origin,
+      String destination,
+      Instant earliestDeparture,
+      Instant arrivalDeadline,
+      @Nullable Instant returnAfter,
+      @Nullable Instant latestReturn,
+      @Nullable String purpose,
+      boolean hotelRequired,
+      int travelers,
+      @Nullable Itinerary itinerary) {
+    this(
+        origin,
+        destination,
+        earliestDeparture,
+        arrivalDeadline,
+        returnAfter,
+        latestReturn,
+        purpose,
+        hotelRequired,
+        travelers,
+        itinerary,
+        null);
+  }
+
+  public TravelIntent withPreferences(@Nullable SearchPreferences p) {
+    return new TravelIntent(
+        origin,
+        destination,
+        earliestDeparture,
+        arrivalDeadline,
+        returnAfter,
+        latestReturn,
+        purpose,
+        hotelRequired,
+        travelers,
+        itinerary,
+        p);
+  }
 
   private static final Pattern IATA = Pattern.compile("^[A-Z]{3}$");
 
@@ -87,7 +151,8 @@ public record TravelIntent(
         purpose == null ? "" : purpose,
         String.valueOf(hotelRequired),
         String.valueOf(travelers),
-        itinerary == null ? "" : itinerary.canonical());
+        itinerary == null ? "" : itinerary.canonical(),
+        preferences == null ? "" : preferences.canonical());
   }
 
   /**
@@ -116,6 +181,11 @@ public record TravelIntent(
    * returned unchanged, so nothing booked before this rule existed is affected.
    */
   public TravelIntent withExplicitStay() {
+    TravelIntent explicit = explicitStay();
+    return explicit == this ? this : explicit.withPreferences(preferences);
+  }
+
+  private TravelIntent explicitStay() {
     if (itinerary != null || !hotelRequired) {
       return this;
     }

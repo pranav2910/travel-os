@@ -46,7 +46,10 @@ public enum IdPrefix {
   ARRANGER_GRANT("arg"),
   ORG_UNIT("orgu"),
   PROJECT("prj"),
-  SENSITIVE_ACCESS("sacc");
+  SENSITIVE_ACCESS("sacc"),
+  PURCHASE_AUTHORIZATION("pau"),
+  CONVERSATION("cnv"),
+  MESSAGE("msg");
 
   private final String prefix;
 

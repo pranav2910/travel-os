@@ -31,6 +31,10 @@
     },
     "cancellation": {
       "enabled": false
+    },
+    "purchase": {
+      "enabled": true,
+      "maxTotal": 400000
     }
   },
   "incentives": {
@@ -44,6 +48,10 @@
   },
   "trip": {
     "maxTotal": 400000,
-    "onViolation": "REQUIRE_APPROVAL"
+    "onViolation": "REQUIRE_APPROVAL",
+    "maxAdvanceDays": 330,
+    "minLeadHours": 2,
+    "maxDurationDays": 30,
+    "onHorizonViolation": "REQUIRE_APPROVAL"
   }
 }

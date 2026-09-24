@@ -681,6 +681,11 @@ class TripLifecycleIntegrationTest {
     TransitionTripRequest.Builder b =
         TransitionTripRequest.newBuilder().setCtx(ctx("acme")).setTripId(trip).setTo(to);
     customize.accept(b);
+    if (to == TripStatus.BOOKING && !b.getAutonomousPurchase()) {
+      // These scenarios simulate the workflow under the seed policy, which grants autonomous
+      // purchase authority (Phase 3); PurchaseApiIntegrationTest covers the gate itself.
+      b.setAutonomousPurchase(true);
+    }
     return core.transitionTrip(b.build());
   }
 

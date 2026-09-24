@@ -82,8 +82,10 @@ class PolicyEngineTest {
               "HOTEL_NIGHTLY_LIMIT",
               "GROUND_TRANSFER_LIMIT",
               "TRIP_BUDGET",
+              "BOOKING_HORIZON",
               "MANAGER_APPROVAL_THRESHOLD",
-              "INCENTIVE_SHARE");
+              "INCENTIVE_SHARE",
+              "PURCHASE_AUTONOMY");
 
       Decision b = result.get(1).decision();
       assertThat(b.outcome())

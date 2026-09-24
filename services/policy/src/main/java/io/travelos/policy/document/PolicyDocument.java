@@ -117,14 +117,59 @@ public record PolicyDocument(
    * @param maxTotal budget for the whole itinerary; null = unconstrained
    * @param onViolation defaults to REQUIRE_APPROVAL
    */
-  public record TripBudget(@Nullable Long maxTotal, @Nullable Consequence onViolation) {
+  /**
+   * @param maxTotal the trip budget; null = unconstrained
+   * @param maxAdvanceDays Phase 3: how far ahead travel may be requested; null = unconstrained
+   * @param minLeadHours Phase 3: the least notice before departure; null = unconstrained
+   * @param maxDurationDays Phase 3: the longest trip (first departure to last return)
+   * @param onHorizonViolation what a horizon or length breach means; defaults to REQUIRE_APPROVAL
+   */
+  public record TripBudget(
+      @Nullable Long maxTotal,
+      @Nullable Consequence onViolation,
+      @Nullable Integer maxAdvanceDays,
+      @Nullable Integer minLeadHours,
+      @Nullable Integer maxDurationDays,
+      @Nullable Consequence onHorizonViolation) {
+    public TripBudget(@Nullable Long maxTotal, @Nullable Consequence onViolation) {
+      this(maxTotal, onViolation, null, null, null, null);
+    }
+
     public Consequence consequence() {
       return onViolation == null ? Consequence.REQUIRE_APPROVAL : onViolation;
     }
+
+    public Consequence horizonConsequence() {
+      return onHorizonViolation == null ? Consequence.REQUIRE_APPROVAL : onHorizonViolation;
+    }
   }
 
-  /** What autonomous agents may do without a human. Defaults are closed. */
-  public record Autonomy(Rebooking flightRebooking, Toggle cancellation) {}
+  /**
+   * What autonomous agents may do without a human. Rebooking and cancellation default to closed.
+   *
+   * @param purchase Phase 3: may the platform purchase a planned, in-policy trip without a person's
+   *     confirmation? Absent in documents from before Phase 3, which means the behaviour those
+   *     tenants already had: yes, without an amount limit (submitting booked). New documents should
+   *     say so explicitly, or disable it so every trip is confirmed by a person.
+   */
+  public record Autonomy(
+      Rebooking flightRebooking, Toggle cancellation, @Nullable Purchase purchase) {
+    public Autonomy {
+      purchase = purchase == null ? new Purchase(true, null) : purchase;
+    }
+
+    public Autonomy(Rebooking flightRebooking, Toggle cancellation) {
+      this(flightRebooking, cancellation, null);
+    }
+  }
+
+  /**
+   * @param enabled whether policy alone may authorize a purchase (a person still approves when a
+   *     rule requires approval)
+   * @param maxTotal the most a plan may cost to be purchased on policy's authority alone; null = no
+   *     amount limit
+   */
+  public record Purchase(boolean enabled, @Nullable Long maxTotal) {}
 
   /**
    * @param enabled may an agent change a flight on its own
@@ -192,6 +237,20 @@ public record PolicyDocument(
     }
     if (trip.maxTotal() != null && trip.maxTotal() < 0) {
       problems.add("trip.maxTotal must be >= 0");
+    }
+    if (trip.maxAdvanceDays() != null && trip.maxAdvanceDays() < 0) {
+      problems.add("trip.maxAdvanceDays must be >= 0");
+    }
+    if (trip.minLeadHours() != null && trip.minLeadHours() < 0) {
+      problems.add("trip.minLeadHours must be >= 0");
+    }
+    if (trip.maxDurationDays() != null && trip.maxDurationDays() < 1) {
+      problems.add("trip.maxDurationDays must be >= 1");
+    }
+    if (autonomy != null
+        && autonomy.purchase().maxTotal() != null
+        && autonomy.purchase().maxTotal() < 0) {
+      problems.add("autonomy.purchase.maxTotal must be >= 0");
     }
     if (approval == null) {
       problems.add("approval section is required");

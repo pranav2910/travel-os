@@ -106,7 +106,10 @@ public class PolicyEvaluationService {
     for (Bundle bundle : bundles) {
       legs.addAll(ProtoMapping.legs(bundle));
     }
-    Facts.Trip trip = tripFacts(request.getTripId(), request.getTravelerId(), intent, legs);
+    Instant referenceTime =
+        request.hasReferenceTime() ? ProtoMapping.instant(request.getReferenceTime()) : now;
+    Facts.Trip trip =
+        tripFacts(request.getTripId(), request.getTravelerId(), intent, legs, referenceTime);
     List<Facts.Candidate> candidates =
         bundles.stream().map(b -> ProtoMapping.candidate(b, pv.document().currency())).toList();
     List<Decision.CandidateEvaluation> evaluations =
@@ -200,6 +203,15 @@ public class PolicyEvaluationService {
 
   private Facts.Trip tripFacts(
       String tripId, String travelerId, @Nullable TravelIntent intent, List<String[]> legs) {
+    return tripFacts(tripId, travelerId, intent, legs, null);
+  }
+
+  private Facts.Trip tripFacts(
+      String tripId,
+      String travelerId,
+      @Nullable TravelIntent intent,
+      List<String[]> legs,
+      @Nullable Instant referenceTime) {
     RouteClassifier.Classification route;
     String origin = intent == null ? "" : intent.getOrigin();
     String destination = intent == null ? "" : intent.getDestination();
@@ -216,7 +228,23 @@ public class PolicyEvaluationService {
           new RouteClassifier.Classification(
               true, "no route information; treated as international");
     }
-    return ProtoMapping.trip(tripId, travelerId, origin, destination, route);
+    Instant earliest = null;
+    Instant latest = null;
+    if (intent != null) {
+      if (intent.hasItinerary() && intent.getItinerary().getLegsCount() > 0) {
+        var legsList = intent.getItinerary().getLegsList();
+        earliest = ProtoMapping.instant(legsList.getFirst().getEarliestDeparture());
+        latest = ProtoMapping.instant(legsList.getLast().getArrivalDeadline());
+      } else {
+        earliest = ProtoMapping.instant(intent.getEarliestDeparture());
+        latest =
+            intent.hasLatestReturn()
+                ? ProtoMapping.instant(intent.getLatestReturn())
+                : ProtoMapping.instant(intent.getArrivalDeadline());
+      }
+    }
+    return ProtoMapping.trip(
+        tripId, travelerId, origin, destination, route, referenceTime, earliest, latest);
   }
 
   private static Decision noPolicy(String tenant) {

@@ -6,7 +6,6 @@ import io.temporal.common.RetryOptions;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
-import io.travelos.contracts.common.v1.Cabin;
 import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.Principal;
 import io.travelos.contracts.common.v1.RequestContext;
@@ -32,12 +31,15 @@ import io.travelos.contracts.policy.v1.EvaluateTripRequest;
 import io.travelos.contracts.policy.v1.EvaluateTripResponse;
 import io.travelos.contracts.policy.v1.PolicyDecision;
 import io.travelos.contracts.supplier.v1.Passenger;
+import io.travelos.contracts.supplier.v1.QuoteOfferRequest;
+import io.travelos.contracts.supplier.v1.QuoteOfferResponse;
 import io.travelos.contracts.supplier.v1.SearchAirRequest;
 import io.travelos.contracts.supplier.v1.SearchAirResponse;
 import io.travelos.contracts.trip.v1.ApplyIntentExtractionRequest;
 import io.travelos.contracts.trip.v1.TransitionTripRequest;
 import io.travelos.contracts.trip.v1.TravelIntent;
 import io.travelos.contracts.trip.v1.Trip;
+import io.travelos.contracts.trip.v1.TripAlternative;
 import io.travelos.contracts.trip.v1.TripStatus;
 import io.travelos.workflows.TripPlanning;
 import io.travelos.workflows.TripPlanning.ApprovalDecision;
@@ -135,8 +137,31 @@ public class TripWorkflowImpl implements TripWorkflow {
   /** Slice 5: learning inputs, resolved once per attempt and pinned by the history (3 tries). */
   private final LearningActivities learning = LearningResolution.stub();
 
+  /** Phase 3: how long a quoted plan waits for a person before the trip fails. */
+  static final Duration PURCHASE_TIMEOUT = Duration.ofHours(72);
+
+  static final Duration PURCHASE_POLL = Duration.ofHours(1);
+
   private TripPlanning.Stage stage = TripPlanning.Stage.LOADING;
   private @Nullable ApprovalDecision decision;
+  private TripPlanning.@Nullable PurchaseAuthorized purchase;
+  private TripPlanning.@Nullable SelectionChanged selection;
+  private boolean refreshRequested;
+
+  /** The plan as it stands while a person decides; mutable because quotes and selections move. */
+  static final class Plan {
+    Bundle selected;
+    PolicyDecision decision;
+    Money total;
+    @Nullable String explanation;
+
+    Plan(Bundle selected, PolicyDecision decision, @Nullable String explanation) {
+      this.selected = selected;
+      this.decision = decision;
+      this.total = selected.getTotal();
+      this.explanation = explanation;
+    }
+  }
 
   /** Set by the cancelled signal: the requester withdrew the trip while it was being planned. */
   private boolean withdrawn;
@@ -235,8 +260,19 @@ public class TripWorkflowImpl implements TripWorkflow {
                 : search.getErrors(0).getProvider() + ": " + search.getErrors(0).getCode();
         return fail(tenant, tripId, "SEARCH", "NO_OFFERS", detail);
       }
+      List<Offer> offers = Purchase.filter(search.getOffersList(), intent);
+      if (offers.isEmpty()) {
+        return fail(
+            tenant,
+            tripId,
+            "SEARCH",
+            "NO_OFFERS_MATCHING_PREFERENCES",
+            search.getOffersCount()
+                + " offer(s) found, none satisfies the stated preferences (nonstop / refundable /"
+                + " stops)");
+      }
       List<Bundle> bundles = new ArrayList<>();
-      for (Offer offer : search.getOffersList()) {
+      for (Offer offer : offers) {
         bundles.add(
             Bundle.newBuilder()
                 .setBundleId("bdl_" + offer.getOfferId().substring("off_".length()))
@@ -292,7 +328,8 @@ public class TripWorkflowImpl implements TripWorkflow {
                                   .setTime(0.25)
                                   .setRisk(0.15)
                                   .setPreference(0.1)
-                                  .setExperience(0.1)))
+                                  .setExperience(0.1))
+                          .addAllPreferredCarriers(Purchase.preferredCarriers(intent)))
                   .setLearning(learned)
                   .build());
       if (optimized.getSelectedBundleId().isBlank()) {
@@ -323,13 +360,49 @@ public class TripWorkflowImpl implements TripWorkflow {
               bundles.size(),
               permitted.size());
 
+      // ---- Phase 3: purchase authority. Either policy granted it for this plan (recorded as a
+      // POLICY_AUTONOMY authorization by Travel Core) or a person confirms the quoted plan first.
+      Plan plan = new Plan(selected, selectedDecision, explanation);
+      boolean confirm = Purchase.confirmRequired(trip, selectedDecision);
+      if (confirm) {
+        String verdict =
+            quoteUntilAuthorized(
+                tenant,
+                tripId,
+                plan,
+                permitted,
+                decisions,
+                optimized,
+                intent,
+                bundles.size(),
+                "planned; a person confirms the purchase");
+        if (verdict == null) {
+          return fail(
+              tenant,
+              tripId,
+              "PURCHASE",
+              "PURCHASE_TIMED_OUT",
+              "no purchase authorization within " + PURCHASE_TIMEOUT);
+        }
+        if ("CANCELLED".equals(verdict)) {
+          stage = TripPlanning.Stage.CANCELLED;
+          return new Outcome(tripId, "CANCELLED", null, null, null);
+        }
+      }
+      final Bundle chosen = plan.selected;
+      final PolicyDecision chosenDecision = plan.decision;
+      final Money chosenTotal = plan.total;
+      final String chosenExplanation = plan.explanation;
+      final boolean autonomous = !confirm && chosenDecision.getAutonomousPurchase();
+      final Timestamp quoteExpiry = Purchase.quoteExpiry(chosen, Workflow.currentTimeMillis());
+
       // ---- approval
       String approvalId = null;
-      if (selectedDecision.getRequiresApproval()) {
+      if (chosenDecision.getRequiresApproval()) {
         stage = TripPlanning.Stage.AWAITING_APPROVAL;
         String role =
-            selectedDecision.getApproversCount() > 0
-                ? selectedDecision.getApprovers(0).getRole()
+            chosenDecision.getApproversCount() > 0
+                ? chosenDecision.getApprovers(0).getRole()
                 : "MANAGER";
         Trip awaiting =
             transition(
@@ -337,14 +410,17 @@ public class TripWorkflowImpl implements TripWorkflow {
                 tripId,
                 TripStatus.AWAITING_APPROVAL,
                 b -> {
-                  b.setSelectedBundleId(selected.getBundleId())
+                  b.setSelectedBundleId(chosen.getBundleId())
                       .setOptimizationRunId(optimized.getOptimizationRunId())
-                      .setPolicyDecisionId(selectedDecision.getDecisionId())
-                      .setTotal(total)
+                      .setPolicyDecisionId(chosenDecision.getDecisionId())
+                      .setTotal(chosenTotal)
                       .setApproverRole(role)
-                      .setReason(reasonSummary(selectedDecision));
-                  if (explanation != null) {
-                    b.setExplanation(explanation);
+                      .setReason(reasonSummary(chosenDecision))
+                      .setAutonomousPurchase(autonomous)
+                      .setQuoteExpiresAt(quoteExpiry)
+                      .setConditions(Purchase.conditions(chosen));
+                  if (chosenExplanation != null) {
+                    b.setExplanation(chosenExplanation);
                   }
                 });
         approvalId = awaiting.getApprovalId();
@@ -381,13 +457,19 @@ public class TripWorkflowImpl implements TripWorkflow {
             tripId,
             TripStatus.APPROVED,
             b -> {
-              b.setSelectedBundleId(selected.getBundleId())
+              b.setSelectedBundleId(chosen.getBundleId())
                   .setOptimizationRunId(optimized.getOptimizationRunId())
-                  .setPolicyDecisionId(selectedDecision.getDecisionId())
-                  .setTotal(total)
-                  .setReason("in policy, no approval required");
-              if (explanation != null) {
-                b.setExplanation(explanation);
+                  .setPolicyDecisionId(chosenDecision.getDecisionId())
+                  .setTotal(chosenTotal)
+                  .setReason(
+                      confirm
+                          ? "purchase authorized; in policy, no approval required"
+                          : "in policy, no approval required")
+                  .setAutonomousPurchase(autonomous)
+                  .setQuoteExpiresAt(quoteExpiry)
+                  .setConditions(Purchase.conditions(chosen));
+              if (chosenExplanation != null) {
+                b.setExplanation(chosenExplanation);
               }
             });
       }
@@ -404,17 +486,52 @@ public class TripWorkflowImpl implements TripWorkflow {
                 + ItineraryFlow.instant(intent.getArrivalDeadline())
                 + " while the trip waited; nothing was booked");
       }
-      if (beginBooking(tenant, tripId, b -> b.setReason("booking")) == null) {
-        stage = TripPlanning.Stage.CANCELLED;
-        return new Outcome(tripId, "CANCELLED", null, null, null);
+      // Travel Core consumes exactly one purchase authorization covering the plan and price here,
+      // or refuses. A refusal (the authorization lapsed) sends the trip back to a person.
+      while (true) {
+        try {
+          if (beginBooking(
+                  tenant, tripId, b -> b.setReason("booking").setAutonomousPurchase(autonomous))
+              == null) {
+            stage = TripPlanning.Stage.CANCELLED;
+            return new Outcome(tripId, "CANCELLED", null, null, null);
+          }
+          break;
+        } catch (ActivityFailure e) {
+          if (!Purchase.notAuthorized(e)) {
+            throw e;
+          }
+          String verdict =
+              quoteUntilAuthorized(
+                  tenant,
+                  tripId,
+                  plan,
+                  permitted,
+                  decisions,
+                  optimized,
+                  intent,
+                  bundles.size(),
+                  "the purchase authorization lapsed before booking; confirm again");
+          if (verdict == null) {
+            return fail(
+                tenant, tripId, "PURCHASE", "PURCHASE_TIMED_OUT", "no purchase authorization");
+          }
+          if ("CANCELLED".equals(verdict)) {
+            stage = TripPlanning.Stage.CANCELLED;
+            return new Outcome(tripId, "CANCELLED", null, null, null);
+          }
+          transition(
+              tenant, tripId, TripStatus.APPROVED, b -> b.setReason("purchase re-authorized"));
+          stage = TripPlanning.Stage.BOOKING;
+        }
       }
       CreateOrderCommand.Builder command =
           CreateOrderCommand.newBuilder()
               .setCtx(ctx(tenant, tripId, tripId + ":CREATE-ORDER:1"))
               .setTripId(tripId)
               .setTravelerId(trip.getTravelerId())
-              .setBundle(selected)
-              .setPolicyDecisionId(selectedDecision.getDecisionId())
+              .setBundle(plan.selected)
+              .setPolicyDecisionId(plan.decision.getDecisionId())
               .setOptimizationRunId(optimized.getOptimizationRunId())
               .addPassengers(
                   Passenger.newBuilder()
@@ -468,6 +585,188 @@ public class TripWorkflowImpl implements TripWorkflow {
   @Override
   public void cancelled(String reason) {
     this.withdrawn = true;
+  }
+
+  @Override
+  public void purchaseAuthorized(TripPlanning.PurchaseAuthorized authorized) {
+    this.purchase = authorized;
+  }
+
+  @Override
+  public void selectionChanged(TripPlanning.SelectionChanged changed) {
+    this.selection = changed;
+  }
+
+  @Override
+  public void refreshQuote(String reason) {
+    this.refreshRequested = true;
+  }
+
+  /**
+   * Phase 3: QUOTED until a person authorizes the purchase, choosing between alternatives or
+   * refreshing the price meanwhile. AUTHORIZED | CANCELLED, or null when nobody acted in time.
+   */
+  private @Nullable String quoteUntilAuthorized(
+      String tenant,
+      String tripId,
+      Plan plan,
+      List<Bundle> permitted,
+      Map<String, PolicyDecision> decisions,
+      OptimizeTripResponse optimized,
+      TravelIntent intent,
+      int searched,
+      String reason) {
+    String why = reason;
+    while (true) {
+      stage = TripPlanning.Stage.AWAITING_PURCHASE;
+      final Bundle current = plan.selected;
+      final PolicyDecision currentDecision = plan.decision;
+      final Money currentTotal = plan.total;
+      final String currentExplanation = plan.explanation;
+      final String currentReason = why;
+      List<TripAlternative> alternatives =
+          Purchase.alternatives(optimized.getRankingList(), permitted, decisions);
+      transition(
+          tenant,
+          tripId,
+          TripStatus.QUOTED,
+          b -> {
+            b.setSelectedBundleId(current.getBundleId())
+                .setOptimizationRunId(optimized.getOptimizationRunId())
+                .setPolicyDecisionId(currentDecision.getDecisionId())
+                .setTotal(currentTotal)
+                .setReason(currentReason)
+                .setQuoteExpiresAt(Purchase.quoteExpiry(current, Workflow.currentTimeMillis()))
+                .setConditions(Purchase.conditions(current))
+                .addAllAlternatives(alternatives);
+            if (currentExplanation != null) {
+              b.setExplanation(currentExplanation);
+            }
+          });
+      String verdict = awaitPurchase(tenant, tripId, current.getBundleId());
+      if (verdict == null || "CANCELLED".equals(verdict) || "AUTHORIZED".equals(verdict)) {
+        return verdict;
+      }
+      if (verdict.startsWith("SELECTION:")) {
+        String bundleId = verdict.substring("SELECTION:".length());
+        Bundle chosen =
+            permitted.stream()
+                .filter(b -> b.getBundleId().equals(bundleId))
+                .findFirst()
+                .orElse(null);
+        if (chosen == null) {
+          why = bundleId + " is not one of the permitted plans; the quote stands";
+          continue;
+        }
+        plan.selected = chosen;
+        plan.decision = decisions.get(chosen.getBundleId());
+        plan.total = chosen.getTotal();
+        plan.explanation =
+            explain(
+                tenant,
+                tripId,
+                intent,
+                chosen,
+                optimized,
+                plan.decision,
+                searched,
+                permitted.size());
+        why = "re-selected " + bundleId;
+        continue;
+      }
+      // REFRESH
+      Bundle fresh = requote(tenant, tripId, plan.selected);
+      if (fresh == null) {
+        why = "the plan could not be re-quoted; the earlier quote stands";
+      } else {
+        plan.selected = fresh;
+        plan.total = fresh.getTotal();
+        why = "quote refreshed";
+      }
+    }
+  }
+
+  /** The plan priced again by its suppliers, or null when any offer can no longer be quoted. */
+  private @Nullable Bundle requote(String tenant, String tripId, Bundle selected) {
+    Bundle.Builder fresh = Bundle.newBuilder().setBundleId(selected.getBundleId());
+    long total = 0;
+    for (Offer o : selected.getOffersList()) {
+      QuoteOfferResponse quote;
+      try {
+        quote =
+            activities.quote(
+                QuoteOfferRequest.newBuilder()
+                    .setCtx(ctx(tenant, tripId, ""))
+                    .setProvider(o.getProvider())
+                    .setProviderOfferId(o.getProviderOfferId())
+                    .build());
+      } catch (ActivityFailure e) {
+        log.warn(
+            "trip {}: offer {} could not be re-quoted ({})",
+            tripId,
+            o.getOfferId(),
+            failureCode(e));
+        return null;
+      }
+      Offer current = ItineraryFlow.requoted(o, quote.getOffer());
+      total += current.getTotal().getAmountMinor();
+      fresh.addOffers(current);
+    }
+    return fresh
+        .setTotal(
+            Money.newBuilder().setCurrency(selected.getTotal().getCurrency()).setAmountMinor(total))
+        .build();
+  }
+
+  /**
+   * Waits for a person: AUTHORIZED | CANCELLED | REFRESH | SELECTION:&lt;bundleId&gt;, or null on
+   * timeout. The trip is re-read on every poll, so a lost signal only delays.
+   */
+  private @Nullable String awaitPurchase(String tenant, String tripId, String selectedBundleId) {
+    Duration waited = Duration.ZERO;
+    while (waited.compareTo(PURCHASE_TIMEOUT) < 0) {
+      Duration slice =
+          PURCHASE_POLL.compareTo(PURCHASE_TIMEOUT.minus(waited)) < 0
+              ? PURCHASE_POLL
+              : PURCHASE_TIMEOUT.minus(waited);
+      Workflow.await(
+          slice, () -> purchase != null || selection != null || refreshRequested || withdrawn);
+      if (withdrawn) {
+        return "CANCELLED";
+      }
+      if (selection != null) {
+        String bundle = selection.bundleId();
+        selection = null;
+        return "SELECTION:" + bundle;
+      }
+      if (refreshRequested) {
+        refreshRequested = false;
+        return "REFRESH";
+      }
+      if (purchase != null) {
+        TripPlanning.PurchaseAuthorized signalled = purchase;
+        purchase = null;
+        if (signalled.bundleId() == null || signalled.bundleId().equals(selectedBundleId)) {
+          return "AUTHORIZED";
+        }
+        // a confirmation of a plan that is no longer the quoted one: keep waiting
+      }
+      waited = waited.plus(slice);
+      Trip current = activities.loadTrip(tenant, tripId);
+      if (current.getStatus() == TripStatus.CANCELLED) {
+        return "CANCELLED";
+      }
+      if (!current.getSelectedBundleId().isBlank()
+          && !current.getSelectedBundleId().equals(selectedBundleId)) {
+        return "SELECTION:" + current.getSelectedBundleId();
+      }
+      if (current.hasPurchase()
+          && "ACTIVE".equals(current.getPurchase().getStatus())
+          && current.getPurchase().getBundleId().equals(selectedBundleId)) {
+        return "AUTHORIZED";
+      }
+    }
+    return null;
   }
 
   /**
@@ -541,6 +840,11 @@ public class TripWorkflowImpl implements TripWorkflow {
     @Override
     public @Nullable String awaitDecision(String tenant, String tripId) {
       return TripWorkflowImpl.this.awaitDecision(tenant, tripId);
+    }
+
+    @Override
+    public @Nullable String awaitPurchase(String tenant, String tripId, String selectedBundleId) {
+      return TripWorkflowImpl.this.awaitPurchase(tenant, tripId, selectedBundleId);
     }
 
     @Override
@@ -748,9 +1052,7 @@ public class TripWorkflowImpl implements TripWorkflow {
             .setOrigin(intent.getOrigin())
             .setDestination(intent.getDestination())
             .setPassengers(Math.max(1, intent.getTravelers()))
-            .addCabins(Cabin.ECONOMY)
-            .addCabins(Cabin.PREMIUM_ECONOMY)
-            .addCabins(Cabin.BUSINESS)
+            .addAllCabins(Purchase.cabins(intent))
             .setOutboundDeparture(
                 TimeWindow.newBuilder()
                     .setNotBefore(intent.getEarliestDeparture())
@@ -811,6 +1113,7 @@ public class TripWorkflowImpl implements TripWorkflow {
       case SEARCHING -> "SEARCH";
       case EVALUATING_POLICY -> "POLICY";
       case OPTIMIZING -> "OPTIMIZATION";
+      case AWAITING_PURCHASE -> "PURCHASE";
       case AWAITING_APPROVAL -> "APPROVAL";
       case REVALIDATING -> "REVALIDATION";
       case COMPENSATING -> "COMPENSATION";

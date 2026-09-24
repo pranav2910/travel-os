@@ -94,7 +94,11 @@ def test_instructions_inside_the_request_have_nowhere_to_go(stub):
         "travelers",
         # Slice 3: legs, stays and transfers with ids and dates; still no cabin, budget or approver
         "itinerary",
+        # Phase 3: search preferences (a cabin code, nonstop/refundable flags, carrier codes, max
+        # stops) that policy still judges; the extractor never fills them from text
+        "preferences",
     }
+    assert not r.intent.HasField("preferences")
     assert r.intent.origin == "BOS" and r.intent.destination == "SEA"
 
 

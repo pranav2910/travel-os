@@ -4,6 +4,7 @@ import io.travelos.travelcore.trip.TravelerIdentity;
 import io.travelos.travelcore.trip.TripSource;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.jspecify.annotations.Nullable;
 
@@ -26,7 +27,14 @@ public record CreateTripRequest(
     @Nullable TripSource source,
     @Nullable @Valid TravelerRequest traveler,
     /** The project the travel is charged to; a restricted project admits its members only. */
-    @Nullable @Size(max = 64) String projectId) {
+    @Nullable @Size(max = 64) String projectId,
+    /**
+     * Phase 3. POLICY (default): book on policy's authority when the policy document grants
+     * autonomous purchase for the plan. CONFIRM: quote first; a person authorizes the purchase.
+     */
+    @Nullable @Pattern(regexp = "^(POLICY|CONFIRM)$") String purchaseMode,
+    /** Phase 3: keep it as a draft; nothing is planned until {@code POST /{tripId}/submission}. */
+    @Nullable Boolean draft) {
 
   public record TravelerRequest(
       @Nullable @Size(max = 100) String givenName,

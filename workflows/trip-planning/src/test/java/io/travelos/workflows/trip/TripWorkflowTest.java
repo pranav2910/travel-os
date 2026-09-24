@@ -203,6 +203,239 @@ class TripWorkflowTest {
         .isEqualTo(2);
   }
 
+  // ---------------------------------------------------------------- Phase 3: purchase authority
+
+  @Test
+  void aConfirmRequestIsQuotedAndBooksNothingUntilAPersonAuthorizesThePurchase() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(
+            trip(TripStatus.SUBMITTED, true).toBuilder().setPurchaseMode("CONFIRM").build());
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    TripWorkflow workflow = start();
+    env.sleep(Duration.ofSeconds(1));
+    assertThat(workflow.stage()).isEqualTo(TripPlanning.Stage.AWAITING_PURCHASE);
+    verify(activities, never()).createOrder(any());
+    TransitionTripRequest quoted = transitions.get(1);
+    assertThat(quoted.getTo()).isEqualTo(TripStatus.QUOTED);
+    assertThat(quoted.getSelectedBundleId()).isEqualTo("bdl_" + OFFER_CHEAP.substring(4));
+    assertThat(quoted.getTotal().getAmountMinor()).isEqualTo(47500);
+    assertThat(quoted.getAutonomousPurchase()).isFalse();
+    assertThat(quoted.getAlternativesList())
+        .as("the permitted plans, ranked; denied ones never offered")
+        .extracting(io.travelos.contracts.trip.v1.TripAlternative::getBundleId)
+        .containsExactly("bdl_" + OFFER_CHEAP.substring(4), "bdl_" + OFFER_PRICEY.substring(4));
+    assertThat(quoted.getConditions()).contains("non-refundable");
+    assertThat(quoted.hasQuoteExpiresAt()).isTrue();
+
+    // the person waits a day and a half, then confirms; then the same signal once more
+    env.sleep(Duration.ofHours(36));
+    verify(activities, never()).createOrder(any());
+    workflow.purchaseAuthorized(
+        new TripPlanning.PurchaseAuthorized(
+            "pau_1", "bdl_" + OFFER_CHEAP.substring(4), "human/alice"));
+    workflow.purchaseAuthorized(
+        new TripPlanning.PurchaseAuthorized(
+            "pau_1", "bdl_" + OFFER_CHEAP.substring(4), "human/alice"));
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING,
+            TripStatus.QUOTED,
+            TripStatus.APPROVED,
+            TripStatus.BOOKING,
+            TripStatus.BOOKED);
+    assertThat(transitions.get(2).getAutonomousPurchase())
+        .as("a person's authority, not policy's")
+        .isFalse();
+    assertThat(transitions.get(3).getAutonomousPurchase()).isFalse();
+    verify(activities, times(1)).createOrder(any());
+  }
+
+  @Test
+  void withoutPolicyAutonomyEvenAnInPolicyTripWaitsForAPerson() {
+    doAnswer(
+            inv -> {
+              EvaluateTripResponse r = policy(inv.getArgument(0), false);
+              EvaluateTripResponse.Builder b = r.toBuilder().clearCandidates();
+              r.getCandidatesList()
+                  .forEach(
+                      c ->
+                          b.addCandidates(
+                              c.toBuilder()
+                                  .setDecision(
+                                      c.getDecision().toBuilder().setAutonomousPurchase(false))));
+              return b.build();
+            })
+        .when(activities)
+        .evaluatePolicy(any());
+    TripWorkflow workflow = start();
+    env.sleep(Duration.ofSeconds(1));
+    assertThat(workflow.stage()).isEqualTo(TripPlanning.Stage.AWAITING_PURCHASE);
+    assertThat(statuses()).containsExactly(TripStatus.PLANNING, TripStatus.QUOTED);
+    verify(activities, never()).createOrder(any());
+    workflow.cancelled("changed my mind");
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("CANCELLED");
+    verify(activities, never()).createOrder(any());
+  }
+
+  @Test
+  void policyAutonomyIsCarriedAsAnAuditableFlagOnTheLifecycleMoves() {
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING, TripStatus.APPROVED, TripStatus.BOOKING, TripStatus.BOOKED);
+    assertThat(transitions.get(1).getAutonomousPurchase()).isTrue();
+    assertThat(transitions.get(1).getConditions()).isNotBlank();
+    assertThat(transitions.get(2).getAutonomousPurchase()).isTrue();
+  }
+
+  @Test
+  void aQuotedTripReSelectsAndRefreshesBeforeThePersonConfirms() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(
+            trip(TripStatus.SUBMITTED, true).toBuilder().setPurchaseMode("CONFIRM").build());
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    when(activities.quote(any()))
+        .thenAnswer(
+            inv -> {
+              io.travelos.contracts.supplier.v1.QuoteOfferRequest q = inv.getArgument(0);
+              String id = q.getProviderOfferId().substring("SBX-".length());
+              long cents = id.equals(OFFER_PRICEY) ? 71000 : 47500;
+              return io.travelos.contracts.supplier.v1.QuoteOfferResponse.newBuilder()
+                  .setOffer(offer(id, cents))
+                  .setRequoted(cents != 70000)
+                  .build();
+            });
+    TripWorkflow workflow = start();
+    env.sleep(Duration.ofSeconds(1));
+    workflow.selectionChanged(
+        new TripPlanning.SelectionChanged("bdl_" + OFFER_PRICEY.substring(4), "human/alice"));
+    env.sleep(Duration.ofSeconds(1));
+    workflow.refreshQuote("please");
+    env.sleep(Duration.ofSeconds(1));
+    assertThat(workflow.stage()).isEqualTo(TripPlanning.Stage.AWAITING_PURCHASE);
+    workflow.purchaseAuthorized(
+        new TripPlanning.PurchaseAuthorized(
+            "pau_2", "bdl_" + OFFER_PRICEY.substring(4), "human/alice"));
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING,
+            TripStatus.QUOTED,
+            TripStatus.QUOTED,
+            TripStatus.QUOTED,
+            TripStatus.APPROVED,
+            TripStatus.BOOKING,
+            TripStatus.BOOKED);
+    assertThat(transitions.get(2).getSelectedBundleId())
+        .isEqualTo("bdl_" + OFFER_PRICEY.substring(4));
+    assertThat(transitions.get(2).getTotal().getAmountMinor()).isEqualTo(70000);
+    assertThat(transitions.get(3).getReason()).isEqualTo("quote refreshed");
+    assertThat(transitions.get(3).getTotal().getAmountMinor())
+        .as("re-quoted price")
+        .isEqualTo(71000);
+    ArgumentCaptor<CreateOrderCommand> order = ArgumentCaptor.forClass(CreateOrderCommand.class);
+    verify(activities).createOrder(order.capture());
+    assertThat(order.getValue().getBundle().getTotal().getAmountMinor()).isEqualTo(71000);
+  }
+
+  @Test
+  void aLapsedAuthorizationSendsTheTripBackToThePersonInsteadOfBooking() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(
+            trip(TripStatus.SUBMITTED, true).toBuilder().setPurchaseMode("CONFIRM").build());
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    java.util.concurrent.atomic.AtomicInteger bookingAttempts =
+        new java.util.concurrent.atomic.AtomicInteger();
+    doAnswer(
+            inv -> {
+              TransitionTripRequest r = inv.getArgument(0);
+              transitions.add(r);
+              if (r.getTo() == TripStatus.BOOKING && bookingAttempts.incrementAndGet() == 1) {
+                throw ApplicationFailure.newNonRetryableFailure(
+                    "FAILED_PRECONDITION: PURCHASE_NOT_AUTHORIZED: authorization expired",
+                    "FAILED_PRECONDITION");
+              }
+              return trip(r.getTo(), true);
+            })
+        .when(activities)
+        .transition(any());
+    TripWorkflow workflow = start();
+    env.sleep(Duration.ofSeconds(1));
+    workflow.purchaseAuthorized(new TripPlanning.PurchaseAuthorized("pau_3", null, "human/alice"));
+    env.sleep(Duration.ofSeconds(2));
+    assertThat(workflow.stage())
+        .as("the gate refused; the person is asked again")
+        .isEqualTo(TripPlanning.Stage.AWAITING_PURCHASE);
+    verify(activities, never()).createOrder(any());
+    workflow.purchaseAuthorized(new TripPlanning.PurchaseAuthorized("pau_4", null, "human/alice"));
+    TripWorkflow.Outcome outcome = result(workflow);
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    assertThat(statuses())
+        .containsExactly(
+            TripStatus.PLANNING,
+            TripStatus.QUOTED,
+            TripStatus.APPROVED,
+            TripStatus.BOOKING,
+            TripStatus.QUOTED,
+            TripStatus.APPROVED,
+            TripStatus.BOOKING,
+            TripStatus.BOOKED);
+    verify(activities, times(1)).createOrder(any());
+  }
+
+  @Test
+  void nobodyConfirmingInTimeFailsTheTripWithoutBooking() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(
+            trip(TripStatus.SUBMITTED, true).toBuilder().setPurchaseMode("CONFIRM").build());
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("FAILED");
+    assertThat(outcome.failureStage()).isEqualTo("PURCHASE");
+    assertThat(outcome.failureCode()).isEqualTo("PURCHASE_TIMED_OUT");
+    verify(activities, never()).createOrder(any());
+  }
+
+  @Test
+  void searchPreferencesNarrowTheSearchAndPolicyStillJudges() {
+    when(activities.loadTrip(anyString(), anyString()))
+        .thenReturn(
+            trip(TripStatus.SUBMITTED, true).toBuilder()
+                .setIntent(
+                    trip(TripStatus.SUBMITTED, true).getIntent().toBuilder()
+                        .setPreferences(
+                            io.travelos.contracts.trip.v1.SearchPreferences.newBuilder()
+                                .setCabin("ECONOMY")
+                                .setRefundableOnly(true)))
+                .build());
+    when(activities.search(any()))
+        .thenReturn(
+            SearchAirResponse.newBuilder()
+                .setSearchSessionId("srch_01ARZ3NDEKTSV4RRFFQ69G5FAV")
+                .addOffers(offer(OFFER_CHEAP, 47500).toBuilder().setRefundable(true).build())
+                .addOffers(offer(OFFER_BIZ, 90000))
+                .addOffers(offer(OFFER_PRICEY, 70000))
+                .build());
+    doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
+    TripWorkflow.Outcome outcome = result(start());
+    assertThat(outcome.finalStatus()).isEqualTo("BOOKED");
+    ArgumentCaptor<SearchAirRequest> search = ArgumentCaptor.forClass(SearchAirRequest.class);
+    verify(activities).search(search.capture());
+    assertThat(search.getValue().getCabinsList())
+        .containsExactly(io.travelos.contracts.common.v1.Cabin.ECONOMY);
+    ArgumentCaptor<EvaluateTripRequest> policyRequest =
+        ArgumentCaptor.forClass(EvaluateTripRequest.class);
+    verify(activities).evaluatePolicy(policyRequest.capture());
+    assertThat(policyRequest.getValue().getCandidatesCount())
+        .as("only the refundable offer is a candidate")
+        .isEqualTo(1);
+  }
+
   @Test
   void bookedWithoutApprovalWhenPolicySaysAllow() {
     doAnswer(inv -> policy(inv.getArgument(0), false)).when(activities).evaluatePolicy(any());
@@ -1199,7 +1432,10 @@ class TripWorkflowTest {
             .setPolicyId("US_STANDARD_TRAVEL")
             .setPolicyVersion(1)
             .setOutcome(outcome)
-            .setRequiresApproval(requiresApproval);
+            .setRequiresApproval(requiresApproval)
+            // the seed policy grants autonomous purchase authority (Phase 3); tests that need a
+            // person's confirmation switch it off
+            .setAutonomousPurchase(outcome != Outcome.DENY);
     if (outcome != Outcome.ALLOW) {
       b.addReasons(
           ReasonCode.newBuilder().setCode(code).setRuleId("RULE").setMessage("because " + code));

@@ -4,7 +4,6 @@ import com.google.protobuf.Timestamp;
 import io.temporal.failure.ActivityFailure;
 import io.temporal.failure.ApplicationFailure;
 import io.temporal.workflow.Workflow;
-import io.travelos.contracts.common.v1.Cabin;
 import io.travelos.contracts.common.v1.Money;
 import io.travelos.contracts.common.v1.RequestContext;
 import io.travelos.contracts.common.v1.TimeWindow;
@@ -79,6 +78,12 @@ final class ItineraryFlow {
 
     /** APPROVED | REJECTED | CANCELLED (withdrawn meanwhile), or null when nobody decided. */
     @Nullable String awaitDecision(String tenant, String tripId);
+
+    /**
+     * Phase 3: AUTHORIZED | CANCELLED | REFRESH | SELECTION:&lt;bundleId&gt;, or null when nobody
+     * acted in time.
+     */
+    @Nullable String awaitPurchase(String tenant, String tripId, String selectedBundleId);
 
     /** Moves the trip to BOOKING, or null when it was cancelled while it waited. */
     @Nullable Trip beginBooking(
@@ -249,7 +254,8 @@ final class ItineraryFlow {
                             .setTime(0.25)
                             .setRisk(0.15)
                             .setPreference(0.1)
-                            .setExperience(0.1)));
+                            .setExperience(0.1))
+                    .addAllPreferredCarriers(Purchase.preferredCarriers(intent)));
     for (Component c : components) {
       optimize.addComponents(candidates(c, permittedByComponent.get(c.id()), legs));
     }
@@ -307,10 +313,35 @@ final class ItineraryFlow {
           Offer o = chosen.get(c.id());
           return o == null ? state(c, "SKIPPED", null, null) : state(c, "QUOTED", o, null);
         });
-    Money total = selected.getTotal();
     String explanation =
         host.explain(
             tenant, tripId, intent, selected, ranking, selectedDecision, searched, permitted);
+
+    // ---- Phase 3: purchase authority. Policy granted it for this plan (Travel Core records a
+    // POLICY_AUTONOMY authorization) or a person confirms the quoted plan before anything else.
+    final boolean confirm = Purchase.confirmRequired(trip, selectedDecision);
+    Bundle quoted = selected;
+    if (confirm) {
+      Confirmation c =
+          awaitConfirmation(
+              tenant,
+              tripId,
+              components,
+              selected,
+              selectedDecision,
+              optimized.getOptimizationRunId(),
+              explanation,
+              "planned; a person confirms the purchase",
+              attempt,
+              true);
+      if (c.outcome() != null) {
+        return c.outcome();
+      }
+      quoted = c.plan();
+    }
+    final Bundle planned = quoted;
+    final Money plannedTotal = planned.getTotal();
+    final boolean autonomous = !confirm;
 
     // ---- approval
     String approvalId = null;
@@ -327,11 +358,14 @@ final class ItineraryFlow {
               tripId,
               TripStatus.AWAITING_APPROVAL,
               b -> {
-                b.setSelectedBundleId(selected.getBundleId())
+                b.setSelectedBundleId(planned.getBundleId())
                     .setOptimizationRunId(optimized.getOptimizationRunId())
                     .setPolicyDecisionId(selectedDecision.getDecisionId())
-                    .setTotal(total)
+                    .setTotal(plannedTotal)
                     .setApproverRole(role)
+                    .setAutonomousPurchase(autonomous)
+                    .setQuoteExpiresAt(Purchase.quoteExpiry(planned, Workflow.currentTimeMillis()))
+                    .setConditions(Purchase.conditions(planned))
                     .setReason(
                         decidedBefore
                             ? "the quote behind the earlier approval expired; the re-planned"
@@ -364,11 +398,17 @@ final class ItineraryFlow {
           tripId,
           TripStatus.APPROVED,
           b -> {
-            b.setSelectedBundleId(selected.getBundleId())
+            b.setSelectedBundleId(planned.getBundleId())
                 .setOptimizationRunId(optimized.getOptimizationRunId())
                 .setPolicyDecisionId(selectedDecision.getDecisionId())
-                .setTotal(total)
-                .setReason("in policy, no approval required");
+                .setTotal(plannedTotal)
+                .setAutonomousPurchase(autonomous)
+                .setQuoteExpiresAt(Purchase.quoteExpiry(planned, Workflow.currentTimeMillis()))
+                .setConditions(Purchase.conditions(planned))
+                .setReason(
+                    confirm
+                        ? "purchase authorized; in policy, no approval required"
+                        : "in policy, no approval required");
             if (explanation != null) {
               b.setExplanation(explanation);
             }
@@ -385,11 +425,11 @@ final class ItineraryFlow {
             chosen.containsKey(c.id())
                 ? state(c, "REVALIDATING", chosen.get(c.id()), null)
                 : state(c, "SKIPPED", null, null));
-    Bundle.Builder revalidated = Bundle.newBuilder().setBundleId(selected.getBundleId());
+    Bundle.Builder revalidated = Bundle.newBuilder().setBundleId(planned.getBundleId());
     List<String> changedComponents = new ArrayList<>();
     long newTotal = 0;
     boolean requoted = false;
-    for (Offer o : selected.getOffersList()) {
+    for (Offer o : planned.getOffersList()) {
       QuoteOfferResponse quote;
       try {
         quote =
@@ -432,16 +472,16 @@ final class ItineraryFlow {
       revalidated.addOffers(current);
     }
     revalidated.setTotal(
-        Money.newBuilder().setCurrency(total.getCurrency()).setAmountMinor(newTotal));
+        Money.newBuilder().setCurrency(plannedTotal.getCurrency()).setAmountMinor(newTotal));
     Bundle plan = revalidated.build();
     PolicyDecision bookingDecision = selectedDecision;
-    if (newTotal > total.getAmountMinor()) {
+    if (newTotal > plannedTotal.getAmountMinor()) {
       // Material: the approved plan is stale. Policy judges the new one; a person decides again
       // whenever a person had decided before, or policy now asks for one.
       log.warn(
           "trip {}: revalidation changed the total from {} to {} ({}); re-planning",
           tripId,
-          total.getAmountMinor(),
+          plannedTotal.getAmountMinor(),
           newTotal,
           changedComponents);
       bookingDecision = judge(tenant, tripId, trip, intent, plan);
@@ -462,6 +502,25 @@ final class ItineraryFlow {
               requotedOffers.containsKey(c.id())
                   ? state(c, "QUOTED", requotedOffers.get(c.id()), null)
                   : state(c, "SKIPPED", null, null));
+      if (Purchase.confirmRequired(trip, bookingDecision)) {
+        // The price a person (or policy) authorized is not the price any more: a person confirms
+        // the re-quoted plan before it goes back to approval or to booking.
+        Confirmation c =
+            awaitConfirmation(
+                tenant,
+                tripId,
+                components,
+                plan,
+                bookingDecision,
+                optimized.getOptimizationRunId(),
+                null,
+                "revalidation raised the total to " + money(plan.getTotal()) + "; confirm again",
+                attempt,
+                false);
+        if (c.outcome() != null) {
+          return c.outcome();
+        }
+      }
       if (approvalId != null || bookingDecision.getRequiresApproval()) {
         host.stage(TripPlanning.Stage.AWAITING_APPROVAL);
         PolicyDecision again = bookingDecision;
@@ -477,8 +536,10 @@ final class ItineraryFlow {
                         .setPolicyDecisionId(again.getDecisionId())
                         .setTotal(plan.getTotal())
                         .setApproverRole(role)
+                        .setAutonomousPurchase(!Purchase.confirmRequired(trip, again))
+                        .setConditions(Purchase.conditions(plan))
                         .setReplanReason(
-                            requotedOnly(changedComponents, plan, selected)
+                            requotedOnly(changedComponents, plan, planned)
                                 ? "QUOTE_EXPIRED"
                                 : "PRICE_CHANGED")
                         .setReason(
@@ -532,15 +593,47 @@ final class ItineraryFlow {
               + " while the trip waited; nothing was booked");
     }
     PolicyDecision finalDecision = bookingDecision;
-    Trip bookable =
-        host.beginBooking(
-            tenant,
-            tripId,
-            b ->
-                b.setReason("booking")
-                    .setSelectedBundleId(plan.getBundleId())
-                    .setPolicyDecisionId(finalDecision.getDecisionId())
-                    .setTotal(plan.getTotal()));
+    Trip bookable;
+    while (true) {
+      try {
+        bookable =
+            host.beginBooking(
+                tenant,
+                tripId,
+                b ->
+                    b.setReason("booking")
+                        .setSelectedBundleId(plan.getBundleId())
+                        .setPolicyDecisionId(finalDecision.getDecisionId())
+                        .setTotal(plan.getTotal())
+                        .setAutonomousPurchase(!Purchase.confirmRequired(trip, finalDecision))
+                        .setConditions(Purchase.conditions(plan)));
+        break;
+      } catch (ActivityFailure e) {
+        if (!Purchase.notAuthorized(e)) {
+          throw e;
+        }
+        // The authorization lapsed (expired, withdrawn) between confirmation and booking: the
+        // person confirms again; the approval stands, the price is unchanged.
+        Confirmation c =
+            awaitConfirmation(
+                tenant,
+                tripId,
+                components,
+                plan,
+                finalDecision,
+                optimized.getOptimizationRunId(),
+                null,
+                "the purchase authorization lapsed before booking; confirm again",
+                attempt,
+                false);
+        if (c.outcome() != null) {
+          return c.outcome();
+        }
+        host.transition(
+            tenant, tripId, TripStatus.APPROVED, b -> b.setReason("purchase re-authorized"));
+        host.stage(TripPlanning.Stage.BOOKING);
+      }
+    }
     if (bookable == null) {
       return withdrawn(tripId);
     }
@@ -616,6 +709,142 @@ final class ItineraryFlow {
     return new TripWorkflow.Outcome(tripId, "BOOKED", order.getOrderId(), null, null);
   }
 
+  // ------------------------------------------------------------------ Phase 3: purchase
+
+  /** What waiting for a person ended with: an outcome to return, or the plan to go on with. */
+  record Confirmation(TripWorkflow.@Nullable Outcome outcome, Bundle plan) {}
+
+  /**
+   * QUOTED until a person authorizes the purchase. A refresh re-quotes every offer (when allowed;
+   * an offer gone for good re-plans like revalidation does); a selection means nothing here (the
+   * itinerary optimizer yields one composition), so the quote is simply stated again.
+   */
+  private Confirmation awaitConfirmation(
+      String tenant,
+      String tripId,
+      List<Component> components,
+      Bundle initial,
+      PolicyDecision decision,
+      String optimizationRunId,
+      @Nullable String explanation,
+      String reason,
+      int attempt,
+      boolean allowRefresh) {
+    Bundle current = initial;
+    String why = reason;
+    while (true) {
+      host.stage(TripPlanning.Stage.AWAITING_PURCHASE);
+      final Bundle quoted = current;
+      final String quotedReason = why;
+      host.transition(
+          tenant,
+          tripId,
+          TripStatus.QUOTED,
+          b -> {
+            b.setSelectedBundleId(quoted.getBundleId())
+                .setOptimizationRunId(optimizationRunId)
+                .setPolicyDecisionId(decision.getDecisionId())
+                .setTotal(quoted.getTotal())
+                .setReason(quotedReason)
+                .setQuoteExpiresAt(Purchase.quoteExpiry(quoted, Workflow.currentTimeMillis()))
+                .setConditions(Purchase.conditions(quoted))
+                .addAlternatives(Purchase.alternative(quoted, 1));
+            if (explanation != null) {
+              b.setExplanation(explanation);
+            }
+          });
+      String verdict = host.awaitPurchase(tenant, tripId, current.getBundleId());
+      if (verdict == null) {
+        return new Confirmation(
+            host.fail(
+                tenant,
+                tripId,
+                "PURCHASE",
+                "PURCHASE_TIMED_OUT",
+                "no purchase authorization in time"),
+            current);
+      }
+      if ("CANCELLED".equals(verdict)) {
+        return new Confirmation(withdrawn(tripId), current);
+      }
+      if ("AUTHORIZED".equals(verdict)) {
+        return new Confirmation(null, current);
+      }
+      if ("REFRESH".equals(verdict) && allowRefresh) {
+        Bundle fresh = requoteAll(tenant, tripId, components, current);
+        if (fresh == null) {
+          if (attempt < MAX_PLANS) {
+            host.forgetDecision();
+            host.transition(
+                tenant,
+                tripId,
+                TripStatus.PLANNING,
+                b ->
+                    b.setReason("an offer of the quoted plan is gone; re-planning")
+                        .setReplanReason("QUOTE_EXPIRED"));
+            return new Confirmation(REPLAN, current);
+          }
+          return new Confirmation(
+              host.fail(
+                  tenant,
+                  tripId,
+                  "REVALIDATION",
+                  "OFFER_GONE",
+                  "the quoted plan can no longer be priced"),
+              current);
+        }
+        current = fresh;
+        why = "quote refreshed";
+        continue;
+      }
+      why = "the quote stands";
+    }
+  }
+
+  /** Every offer priced again, or null when one can no longer be quoted at all. */
+  private @Nullable Bundle requoteAll(
+      String tenant, String tripId, List<Component> components, Bundle current) {
+    Bundle.Builder fresh = Bundle.newBuilder().setBundleId(current.getBundleId());
+    long total = 0;
+    for (Offer o : current.getOffersList()) {
+      QuoteOfferResponse quote;
+      try {
+        quote =
+            activities.quote(
+                QuoteOfferRequest.newBuilder()
+                    .setCtx(host.ctx(tenant, tripId, ""))
+                    .setProvider(o.getProvider())
+                    .setProviderOfferId(o.getProviderOfferId())
+                    .build());
+      } catch (ActivityFailure e) {
+        if (isFinal(e)) {
+          log.warn(
+              "trip {}: {} can no longer be quoted",
+              tripId,
+              describe(componentOf(components, o.getComponentId())));
+          return null;
+        }
+        throw e;
+      }
+      Offer requoted = requoted(o, quote.getOffer());
+      total += requoted.getTotal().getAmountMinor();
+      fresh.addOffers(requoted);
+    }
+    Map<String, Offer> requotedOffers = byComponent(fresh.build());
+    report(
+        tenant,
+        tripId,
+        components,
+        c ->
+            requotedOffers.containsKey(c.id())
+                ? state(c, "QUOTED", requotedOffers.get(c.id()), null)
+                : state(c, "SKIPPED", null, null));
+    return fresh
+        .setTotal(
+            Money.newBuilder().setCurrency(current.getTotal().getCurrency()).setAmountMinor(total))
+        .build();
+  }
+
   // ------------------------------------------------------------------ steps
 
   private List<Offer> search(
@@ -631,15 +860,14 @@ final class ItineraryFlow {
                     .setOrigin(leg.getOrigin())
                     .setDestination(leg.getDestination())
                     .setPassengers(Math.max(1, intent.getTravelers()))
-                    .addCabins(Cabin.ECONOMY)
-                    .addCabins(Cabin.PREMIUM_ECONOMY)
-                    .addCabins(Cabin.BUSINESS)
+                    .addAllCabins(Purchase.cabins(intent))
                     .setOutboundDeparture(
                         TimeWindow.newBuilder()
                             .setNotBefore(leg.getEarliestDeparture())
                             .setNotAfter(leg.getArrivalDeadline()))
                     .build());
-        found.getOffersList().forEach(o -> out.add(o.toBuilder().setComponentId(c.id()).build()));
+        Purchase.filter(found.getOffersList(), intent)
+            .forEach(o -> out.add(o.toBuilder().setComponentId(c.id()).build()));
       }
       case HOTEL -> {
         Stay stay = c.stay();

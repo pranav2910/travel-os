@@ -46,6 +46,53 @@ final class TripEvents {
     return envelope("travel.trip.planned", trip, causationId, data, clock);
   }
 
+  /** Phase 3: planned and priced; nothing reserved until a purchase authorization exists. */
+  static EventEnvelope quoted(
+      Trip trip, @Nullable String reason, @Nullable String causationId, Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("selectedBundleId", trip.evidence().selectedBundleId());
+    if (trip.evidence().policyDecisionId() != null) {
+      data.put("policyDecisionId", trip.evidence().policyDecisionId());
+    }
+    data.put("total", money(trip.total()));
+    data.put("purchaseMode", trip.purchaseMode());
+    if (trip.quoteExpiresAt() != null) {
+      data.put("quoteExpiresAt", trip.quoteExpiresAt().toString());
+    }
+    data.put("alternatives", Math.max(1, trip.alternatives().size()));
+    if (reason != null && !reason.isBlank()) {
+      data.put("reason", reason.length() > 500 ? reason.substring(0, 500) : reason);
+    }
+    return envelope("travel.trip.quoted", trip, causationId, data, clock);
+  }
+
+  /** Phase 3: a purchase authorization bound to one plan, price and conditions now exists. */
+  static EventEnvelope purchaseAuthorized(
+      Trip trip,
+      PurchaseAuthorization a,
+      @Nullable String supersededId,
+      @Nullable String causationId,
+      Clock clock) {
+    Map<String, Object> data = new LinkedHashMap<>();
+    data.put("tripId", trip.tripId());
+    data.put("authorizationId", a.authorizationId());
+    data.put("basis", a.basis().name());
+    data.put("bundleId", a.bundleId());
+    data.put("total", money(a.total()));
+    data.put("authorizedBy", a.authorizedBy());
+    if (a.policyDecisionId() != null) {
+      data.put("policyDecisionId", a.policyDecisionId());
+    }
+    if (a.expiresAt() != null) {
+      data.put("expiresAt", a.expiresAt().toString());
+    }
+    if (supersededId != null) {
+      data.put("supersededAuthorizationId", supersededId);
+    }
+    return envelope("travel.trip.purchase-authorized", trip, causationId, data, clock);
+  }
+
   static EventEnvelope booked(
       Trip trip, List<TripComponent> components, @Nullable String causationId, Clock clock) {
     Map<String, Object> data = new LinkedHashMap<>();

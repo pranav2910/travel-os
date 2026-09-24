@@ -25,6 +25,15 @@ public final class TripPlanning {
    */
   public static final String SIGNAL_CANCELLED = "cancelled";
 
+  /** Phase 3: a person authorized the purchase of the quoted plan (durable in Travel Core). */
+  public static final String SIGNAL_PURCHASE_AUTHORIZED = "purchaseAuthorized";
+
+  /** Phase 3: a person chose another of the quoted alternatives; the workflow re-quotes it. */
+  public static final String SIGNAL_SELECTION_CHANGED = "selectionChanged";
+
+  /** Phase 3: a person asked for a fresh price on the quoted plan. */
+  public static final String SIGNAL_QUOTE_REFRESH = "refreshQuote";
+
   public static final String QUERY_STAGE = "stage";
 
   private TripPlanning() {}
@@ -38,6 +47,10 @@ public final class TripPlanning {
   public record ApprovalDecision(
       String approvalId, String decision, String decidedBy, @Nullable String comment) {}
 
+  public record PurchaseAuthorized(String authorizationId, String bundleId, String authorizedBy) {}
+
+  public record SelectionChanged(String bundleId, String changedBy) {}
+
   /** Where the workflow is, for the explainability API and the UI. */
   public enum Stage {
     LOADING,
@@ -46,6 +59,8 @@ public final class TripPlanning {
     SEARCHING,
     EVALUATING_POLICY,
     OPTIMIZING,
+    /** Phase 3: priced and waiting for a person to authorize the purchase (trip QUOTED). */
+    AWAITING_PURCHASE,
     AWAITING_APPROVAL,
     /**
      * Slice 3: quotes and the approved plan are checked again right before any supplier mutation.

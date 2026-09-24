@@ -109,7 +109,9 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                       blankToNull(request.getTraveler().getFamilyName()),
                       blankToNull(request.getTraveler().getEmail()))
                   : null,
-              blankToNull(request.getProjectId()));
+              blankToNull(request.getProjectId()),
+              blankToNull(request.getPurchaseMode()),
+              false);
     } catch (io.travelos.travelcore.trip.IntentRejectedException e) {
       throw Status.INVALID_ARGUMENT
           .withDescription(e.code() + ": " + e.getMessage())
@@ -182,12 +184,58 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                   blankToNull(request.getFailureCode()),
                   blankToNull(request.getCtx().getCausationId()),
                   blankToNull(request.getExplanation()),
-                  blankToNull(request.getReplanReason())));
+                  blankToNull(request.getReplanReason()),
+                  request.getAutonomousPurchase(),
+                  request.hasQuoteExpiresAt() ? instant(request.getQuoteExpiresAt()) : null,
+                  request.getAlternativesList().stream()
+                      .map(TravelCoreGrpcService::fromProto)
+                      .toList(),
+                  blankToNull(request.getConditions())));
       observer.onNext(withComponents(ctx.tenant(), trip));
     } catch (ApiException.NotFound e) {
       throw Status.NOT_FOUND.withDescription(e.getMessage()).asRuntimeException();
+    } catch (TripService.PurchaseNotAuthorizedException e) {
+      // Not a lifecycle bug: the plan has no purchase authorization covering it. The workflow
+      // takes the trip back to QUOTED and waits for a person.
+      throw Status.FAILED_PRECONDITION.withDescription(e.getMessage()).asRuntimeException();
     }
     observer.onCompleted();
+  }
+
+  static io.travelos.travelcore.trip.TripAlternative fromProto(
+      io.travelos.contracts.trip.v1.TripAlternative a) {
+    return new io.travelos.travelcore.trip.TripAlternative(
+        a.getBundleId(),
+        Money.of(a.getTotal().getCurrency(), a.getTotal().getAmountMinor()),
+        blankToNull(a.getSummary()),
+        a.getRank(),
+        a.getRefundable(),
+        a.hasChangePenalty()
+            ? Money.of(a.getChangePenalty().getCurrency(), a.getChangePenalty().getAmountMinor())
+            : null,
+        blankToNull(a.getConditions()));
+  }
+
+  static io.travelos.contracts.trip.v1.TripAlternative toProto(
+      io.travelos.travelcore.trip.TripAlternative a) {
+    io.travelos.contracts.trip.v1.TripAlternative.Builder b =
+        io.travelos.contracts.trip.v1.TripAlternative.newBuilder()
+            .setBundleId(a.bundleId())
+            .setTotal(
+                io.travelos.contracts.common.v1.Money.newBuilder()
+                    .setCurrency(a.total().currency())
+                    .setAmountMinor(a.total().amountMinor()))
+            .setSummary(nullToEmpty(a.summary()))
+            .setRank(a.rank())
+            .setRefundable(a.refundable())
+            .setConditions(nullToEmpty(a.conditions()));
+    if (a.changePenalty() != null) {
+      b.setChangePenalty(
+          io.travelos.contracts.common.v1.Money.newBuilder()
+              .setCurrency(a.changePenalty().currency())
+              .setAmountMinor(a.changePenalty().amountMinor()));
+    }
+    return b.build();
   }
 
   @Override
@@ -290,6 +338,26 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
       io.travelos.common.tenant.TenantId tenant, io.travelos.travelcore.trip.Trip trip) {
     Trip.Builder b = toProto(trip).toBuilder();
     trips
+        .activePurchase(tenant, trip.tripId())
+        .ifPresent(
+            a -> {
+              io.travelos.contracts.trip.v1.PurchaseState.Builder ps =
+                  io.travelos.contracts.trip.v1.PurchaseState.newBuilder()
+                      .setAuthorizationId(a.authorizationId())
+                      .setStatus(a.status().name())
+                      .setBasis(a.basis().name())
+                      .setBundleId(a.bundleId())
+                      .setAuthorizedBy(a.authorizedBy())
+                      .setTotal(
+                          io.travelos.contracts.common.v1.Money.newBuilder()
+                              .setCurrency(a.total().currency())
+                              .setAmountMinor(a.total().amountMinor()));
+              if (a.expiresAt() != null) {
+                ps.setExpiresAt(ts(a.expiresAt()));
+              }
+              b.setPurchase(ps);
+            });
+    trips
         .allocation(tenant, trip.tripId())
         .ifPresent(
             a ->
@@ -330,22 +398,37 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
   }
 
   static io.travelos.travelcore.trip.TravelIntent fromProto(TravelIntent p) {
+    io.travelos.travelcore.trip.TravelIntent base;
     if (p.hasItinerary()) {
-      return io.travelos.travelcore.trip.TravelIntent.of(
-          fromProto(p.getItinerary()),
-          blankToNull(p.getPurpose()),
-          p.getTravelers() == 0 ? 1 : p.getTravelers());
+      base =
+          io.travelos.travelcore.trip.TravelIntent.of(
+              fromProto(p.getItinerary()),
+              blankToNull(p.getPurpose()),
+              p.getTravelers() == 0 ? 1 : p.getTravelers());
+    } else {
+      base =
+          new io.travelos.travelcore.trip.TravelIntent(
+              p.getOrigin(),
+              p.getDestination(),
+              instant(p.getEarliestDeparture()),
+              instant(p.getArrivalDeadline()),
+              p.hasReturnAfter() ? instant(p.getReturnAfter()) : null,
+              p.hasLatestReturn() ? instant(p.getLatestReturn()) : null,
+              blankToNull(p.getPurpose()),
+              p.getHotelRequired(),
+              p.getTravelers() == 0 ? 1 : p.getTravelers());
     }
-    return new io.travelos.travelcore.trip.TravelIntent(
-        p.getOrigin(),
-        p.getDestination(),
-        instant(p.getEarliestDeparture()),
-        instant(p.getArrivalDeadline()),
-        p.hasReturnAfter() ? instant(p.getReturnAfter()) : null,
-        p.hasLatestReturn() ? instant(p.getLatestReturn()) : null,
-        blankToNull(p.getPurpose()),
-        p.getHotelRequired(),
-        p.getTravelers() == 0 ? 1 : p.getTravelers());
+    return p.hasPreferences() ? base.withPreferences(preferences(p.getPreferences())) : base;
+  }
+
+  static io.travelos.travelcore.trip.TravelIntent.SearchPreferences preferences(
+      io.travelos.contracts.trip.v1.SearchPreferences p) {
+    return new io.travelos.travelcore.trip.TravelIntent.SearchPreferences(
+        blankToNull(p.getCabin()),
+        p.getNonstopOnly(),
+        p.getRefundableOnly(),
+        p.getPreferredCarriersList(),
+        p.getMaxStops() == 0 ? null : p.getMaxStops());
   }
 
   /**
@@ -389,11 +472,13 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
               t.hasPickup() ? instant(t.getPickup()) : null,
               t.getRequired()));
     }
-    return io.travelos.travelcore.trip.TravelIntent.of(
-        io.travelos.travelcore.trip.Itinerary.of(
-            legs, stays, transfers, blankToNull(it.getCurrency())),
-        blankToNull(p.getPurpose()),
-        p.getTravelers() == 0 ? 1 : p.getTravelers());
+    io.travelos.travelcore.trip.TravelIntent specs =
+        io.travelos.travelcore.trip.TravelIntent.of(
+            io.travelos.travelcore.trip.Itinerary.of(
+                legs, stays, transfers, blankToNull(it.getCurrency())),
+            blankToNull(p.getPurpose()),
+            p.getTravelers() == 0 ? 1 : p.getTravelers());
+    return p.hasPreferences() ? specs.withPreferences(preferences(p.getPreferences())) : specs;
   }
 
   private static Instant instant(Timestamp ts) {
@@ -509,6 +594,9 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
             .setFailureStage(nullToEmpty(t.failureStage()))
             .setFailureCode(nullToEmpty(t.failureCode()))
             .setExplanation(nullToEmpty(t.explanation()))
+            .setPurchaseMode(t.purchaseMode())
+            .addAllAlternatives(
+                t.alternatives().stream().map(TravelCoreGrpcService::toProto).toList())
             .setTraveler(
                 TravelerSnapshot.newBuilder()
                     .setTravelerId(t.traveler().travelerId())
@@ -533,7 +621,20 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
       if (i.itinerary() != null) {
         intent.setItinerary(toProto(i.itinerary()));
       }
+      if (i.preferences() != null) {
+        io.travelos.travelcore.trip.TravelIntent.SearchPreferences p = i.preferences();
+        intent.setPreferences(
+            io.travelos.contracts.trip.v1.SearchPreferences.newBuilder()
+                .setCabin(nullToEmpty(p.cabin()))
+                .setNonstopOnly(p.nonstopOnly())
+                .setRefundableOnly(p.refundableOnly())
+                .addAllPreferredCarriers(p.preferredCarriers())
+                .setMaxStops(p.maxStops() == null ? 0 : p.maxStops()));
+      }
       b.setIntent(intent);
+    }
+    if (t.quoteExpiresAt() != null) {
+      b.setQuoteExpiresAt(ts(t.quoteExpiresAt()));
     }
     if (t.total() != null) {
       b.setTotal(
