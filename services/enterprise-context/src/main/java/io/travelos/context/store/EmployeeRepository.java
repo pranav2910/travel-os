@@ -4,6 +4,7 @@ import io.travelos.common.tenant.TenantId;
 import io.travelos.context.model.Employee;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -23,12 +24,16 @@ public class EmployeeRepository {
     return jdbc.sql(
                 """
                 INSERT INTO employee (tenant_id, employee_id, email, display_name, work_location, time_zone,
-                  manager_employee_id, active, source_revision, updated_at)
-                VALUES (:tenant, :id, :email, :name, :location, :zone, :manager, :active, :revision, :now)
+                  manager_employee_id, active, source_revision, updated_at,
+                  department_id, cost_center_id, legal_entity_id, office_id)
+                VALUES (:tenant, :id, :email, :name, :location, :zone, :manager, :active, :revision, :now,
+                  :department, :costCenter, :legalEntity, :office)
                 ON CONFLICT (tenant_id, employee_id) DO UPDATE SET
                   email = EXCLUDED.email, display_name = EXCLUDED.display_name, work_location = EXCLUDED.work_location,
                   time_zone = EXCLUDED.time_zone, manager_employee_id = EXCLUDED.manager_employee_id,
-                  active = EXCLUDED.active, source_revision = EXCLUDED.source_revision, updated_at = EXCLUDED.updated_at
+                  active = EXCLUDED.active, source_revision = EXCLUDED.source_revision, updated_at = EXCLUDED.updated_at,
+                  department_id = EXCLUDED.department_id, cost_center_id = EXCLUDED.cost_center_id,
+                  legal_entity_id = EXCLUDED.legal_entity_id, office_id = EXCLUDED.office_id
                 WHERE employee.source_revision < EXCLUDED.source_revision
                 """)
             .param("tenant", e.tenant().value())
@@ -41,6 +46,24 @@ public class EmployeeRepository {
             .param("active", e.active())
             .param("revision", e.sourceRevision())
             .param("now", Rows.ts(e.updatedAt()))
+            .param("department", e.departmentId())
+            .param("costCenter", e.costCenterId())
+            .param("legalEntity", e.legalEntityId())
+            .param("office", e.officeId())
+            .update()
+        == 1;
+  }
+
+  /** Offboarding by a travel admin: inactive now, and a stale HRIS revision cannot revive it. */
+  public boolean deactivate(TenantId tenant, String employeeId, Instant now) {
+    return jdbc.sql(
+                """
+                UPDATE employee SET active = FALSE, source_revision = source_revision + 1, updated_at = :now
+                WHERE tenant_id = :t AND employee_id = :id AND active
+                """)
+            .param("t", tenant.value())
+            .param("id", employeeId)
+            .param("now", Rows.ts(now))
             .update()
         == 1;
   }
@@ -80,6 +103,10 @@ public class EmployeeRepository {
         rs.getString("manager_employee_id"),
         rs.getBoolean("active"),
         rs.getLong("source_revision"),
-        Rows.instant(rs, "updated_at"));
+        Rows.instant(rs, "updated_at"),
+        rs.getString("department_id"),
+        rs.getString("cost_center_id"),
+        rs.getString("legal_entity_id"),
+        rs.getString("office_id"));
   }
 }

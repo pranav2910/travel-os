@@ -72,6 +72,12 @@ travelos:
   grpc:
     server:
       port: ${GRPC_PORT:9081}
+    clients:
+      # Optional (ADR-0014). When set, who may arrange for whom, the passenger identity and the cost
+      # allocation come from Enterprise Context; when empty the Slice 1 rules apply.
+      enterprise-context:
+        address: ${ENTERPRISE_CONTEXT_ADDRESS:}
+        deadline: 5s
   temporal:
     enabled: ${TEMPORAL_ENABLED:true}
     address: ${TEMPORAL_ADDRESS:localhost:7233}

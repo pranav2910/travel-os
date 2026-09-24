@@ -29,6 +29,9 @@ set -a; . "./$ENV_FILE"; set +a
 if [ -z "${LEARNING_DB_PASSWORD:-}" ]; then
   LEARNING_DB_PASSWORD=$(openssl rand -hex 16); echo "LEARNING_DB_PASSWORD=$LEARNING_DB_PASSWORD" >> "$ENV_FILE"; export LEARNING_DB_PASSWORD
 fi
+if [ -z "${TRAVELOS_FIELD_KEY:-}" ]; then
+  TRAVELOS_FIELD_KEY=$(openssl rand -base64 32); echo "TRAVELOS_FIELD_KEY=$TRAVELOS_FIELD_KEY" >> "$ENV_FILE"; export TRAVELOS_FIELD_KEY
+fi
 if [ -z "${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-}" ]; then
   SANDBOX_CONNECTOR_WEBHOOK_SECRET=$(openssl rand -hex 16); echo "SANDBOX_CONNECTOR_WEBHOOK_SECRET=$SANDBOX_CONNECTOR_WEBHOOK_SECRET" >> "$ENV_FILE"; export SANDBOX_CONNECTOR_WEBHOOK_SECRET
 fi
@@ -53,7 +56,7 @@ apply travel-core-secrets -n travelos --from-literal=TRAVEL_CORE_DB_PASSWORD="$T
 apply policy-secrets -n travelos --from-literal=POLICY_DB_PASSWORD="$POLICY_DB_PASSWORD"
 apply supplier-gateway-secrets -n travelos --from-literal=SUPPLIER_GATEWAY_DB_PASSWORD="$SUPPLIER_GATEWAY_DB_PASSWORD" --from-literal=SANDBOX_AIR_WEBHOOK_SECRET="$SANDBOX_AIR_WEBHOOK_SECRET"
 apply disruption-secrets -n travelos --from-literal=DISRUPTION_DB_PASSWORD="$DISRUPTION_DB_PASSWORD"
-apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_DB_PASSWORD="$ENTERPRISE_CONTEXT_DB_PASSWORD" --from-literal=SANDBOX_CONNECTOR_WEBHOOK_SECRET="${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-$(openssl rand -hex 16)}"
+apply enterprise-context-secrets -n travelos --from-literal=ENTERPRISE_CONTEXT_DB_PASSWORD="$ENTERPRISE_CONTEXT_DB_PASSWORD" --from-literal=SANDBOX_CONNECTOR_WEBHOOK_SECRET="${SANDBOX_CONNECTOR_WEBHOOK_SECRET:-$(openssl rand -hex 16)}" --from-literal=TRAVELOS_FIELD_KEY="$TRAVELOS_FIELD_KEY"
 apply learning-secrets -n travelos --from-literal=LEARNING_DB_PASSWORD="$LEARNING_DB_PASSWORD"
 apply order-secrets -n travelos --from-literal=ORDER_DB_PASSWORD="$ORDER_DB_PASSWORD"
 apply audit-secrets -n travelos --from-literal=AUDIT_DB_PASSWORD="$AUDIT_DB_PASSWORD"

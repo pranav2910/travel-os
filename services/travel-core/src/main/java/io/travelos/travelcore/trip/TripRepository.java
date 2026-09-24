@@ -128,6 +128,42 @@ public class TripRepository {
     return spec.query(TripRepository::map).list();
   }
 
+  /**
+   * A MANAGER's view of the tenant: trips whose allocation names them as the traveler's manager or
+   * as the arranger, plus trips with no allocation at all (the Slice 1 rule, kept for them).
+   */
+  public List<Trip> listForManager(
+      TenantId tenant, String managerEmployeeId, @Nullable TripStatus status, int limit) {
+    String where = status == null ? "" : " AND t.status = :status";
+    var spec =
+        jdbc.sql(
+                "SELECT t.* FROM trip t LEFT JOIN trip_allocation a ON a.tenant_id = t.tenant_id AND a.trip_id = t.trip_id"
+                    + " WHERE t.tenant_id = :tenantId"
+                    + " AND (a.trip_id IS NULL OR a.manager_employee_id = :me OR a.arranger_employee_id = :me)"
+                    + where
+                    + " ORDER BY t.created_at DESC, t.trip_id DESC LIMIT :limit")
+            .param("tenantId", tenant.value())
+            .param("me", managerEmployeeId)
+            .param("limit", limit);
+    if (status != null) {
+      spec = spec.param("status", status.name());
+    }
+    return spec.query(TripRepository::map).list();
+  }
+
+  /** Trips the employee arranged for other travelers, newest first. */
+  public List<Trip> listArrangedBy(TenantId tenant, String arrangerEmployeeId, int limit) {
+    return jdbc.sql(
+            "SELECT t.* FROM trip t JOIN trip_allocation a ON a.tenant_id = t.tenant_id AND a.trip_id = t.trip_id"
+                + " WHERE t.tenant_id = :tenantId AND a.arranger_employee_id = :me AND t.traveler_id <> :me"
+                + " ORDER BY t.created_at DESC, t.trip_id DESC LIMIT :limit")
+        .param("tenantId", tenant.value())
+        .param("me", arrangerEmployeeId)
+        .param("limit", limit)
+        .query(TripRepository::map)
+        .list();
+  }
+
   public List<Trip> listForTraveler(TenantId tenant, String travelerId, int limit) {
     return jdbc.sql(
             "SELECT "

@@ -39,7 +39,14 @@ public enum IdPrefix {
   /** Slice 5: one recorded outcome revision. */
   OUTCOME("out"),
   /** Slice 5: a traveler's feedback record. */
-  FEEDBACK("fb");
+  FEEDBACK("fb"),
+  // traveler profiles and organizational context (Enterprise Context)
+  GUEST("gst"),
+  DOCUMENT("doc"),
+  ARRANGER_GRANT("arg"),
+  ORG_UNIT("orgu"),
+  PROJECT("prj"),
+  SENSITIVE_ACCESS("sacc");
 
   private final String prefix;
 

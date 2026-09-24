@@ -56,7 +56,10 @@ public class TripController {
               request.source() == null ? TripSource.API : request.source(),
               request.request(),
               intent,
-              request.traveler() == null ? null : request.traveler().toDomain());
+              request.traveler() == null ? null : request.traveler().toDomain(),
+              request.projectId() == null || request.projectId().isBlank()
+                  ? null
+                  : request.projectId());
     } catch (TravelIntent.HotelRequestException e) {
       throw new ApiException.Unprocessable(e.code(), e.getMessage());
     } catch (IntentRejectedException e) {
@@ -84,7 +87,8 @@ public class TripController {
     return TripResponse.from(
         trip,
         trips.latestApproval(trip.tenantId(), trip.tripId()).orElse(null),
-        trips.components(trip.tenantId(), trip.tripId()));
+        trips.components(trip.tenantId(), trip.tripId()),
+        trips.allocation(trip.tenantId(), trip.tripId()).orElse(null));
   }
 
   /** Slice 3: component status, total and supplier references, one row per leg/stay/transfer. */
@@ -95,9 +99,10 @@ public class TripController {
   }
 
   /**
-   * {@code scope=mine} (default): the caller's own trips. {@code scope=tenant}: every trip of the
-   * tenant, for MANAGER / TRAVEL_ADMIN / FINANCE (an approval inbox is {@code
-   * scope=tenant&status=AWAITING_APPROVAL}). {@code status} filters either scope.
+   * {@code scope=mine} (default): the caller's own trips. {@code scope=arranged}: trips the caller
+   * arranged for others. {@code scope=tenant}: for TRAVEL_ADMIN / FINANCE every trip of the tenant;
+   * for a MANAGER the trips of their reports and the ones they arranged (an approval inbox is
+   * {@code scope=tenant&status=AWAITING_APPROVAL}). {@code status} filters every scope.
    */
   @GetMapping
   public List<TripResponse> list(
@@ -121,9 +126,11 @@ public class TripController {
     List<Trip> found =
         switch (scope) {
           case "mine" -> trips.listMine(me, n);
+          case "arranged" -> trips.listArranged(me, n);
           case "tenant" -> trips.listForTenant(me, wanted, n);
           default ->
-              throw new ApiException.Unprocessable("SCOPE_UNKNOWN", "scope must be mine or tenant");
+              throw new ApiException.Unprocessable(
+                  "SCOPE_UNKNOWN", "scope must be mine, arranged or tenant");
         };
     TripStatus filter = wanted;
     return found.stream()

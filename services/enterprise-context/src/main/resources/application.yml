@@ -68,6 +68,12 @@ travelos:
       # SIMULATED providers. Their webhook secret is shared, like the airline's.
       sandbox-webhook-secret: ${SANDBOX_CONNECTOR_WEBHOOK_SECRET:sandbox-connector-dev-webhook-secret}
       sandbox-page-size: ${SANDBOX_CONNECTOR_PAGE_SIZE:3}
+  profiles:
+    # Encrypted passenger fields (ADR-0014). A base64 AES-256 key from the platform's secret store;
+    # the service refuses to start without one.
+    field-key: ${TRAVELOS_FIELD_KEY:}
+    document-retention-days: ${PROFILE_DOCUMENT_RETENTION_DAYS:90}
+    retention-sweep: ${PROFILE_RETENTION_SWEEP:1h}
 
 management:
   tracing:
@@ -99,3 +105,4 @@ management:
 logging:
   pattern:
     correlation: "[%X{tenant_id:-}] [%X{principal:-}] [%X{correlation_id:-}] "
+

@@ -11,6 +11,7 @@ import io.travelos.spring.web.error.ApiException;
 import io.travelos.travelcore.approval.Approval;
 import io.travelos.travelcore.approval.ApprovalRepository;
 import io.travelos.travelcore.approval.ApprovalSignaler;
+import io.travelos.travelcore.context.ContextClient;
 import io.travelos.workflows.TripPlanning;
 import java.time.Clock;
 import java.time.Instant;
@@ -19,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +32,8 @@ public class TripService {
   /** Slice 1 scope is a product decision, enforced here, not a TODO in a comment. */
   private static final int SLICE_1_MAX_TRAVELERS = 1;
 
+  private static final Logger log = LoggerFactory.getLogger(TripService.class);
+
   private final TripRepository trips;
   private final ApprovalRepository approvals;
   private final TripComponentRepository components;
@@ -35,6 +41,8 @@ public class TripService {
   private final ApprovalSignaler signaler;
   private final Outbox outbox;
   private final Clock clock;
+  private final ContextClient context;
+  private final TripAllocationRepository allocations;
 
   public TripService(
       TripRepository trips,
@@ -43,7 +51,9 @@ public class TripService {
       ApprovalSignaler signaler,
       Outbox outbox,
       Clock clock,
-      TripComponentRepository components) {
+      TripComponentRepository components,
+      ContextClient context,
+      TripAllocationRepository allocations) {
     this.trips = trips;
     this.approvals = approvals;
     this.ledger = ledger;
@@ -51,6 +61,8 @@ public class TripService {
     this.outbox = outbox;
     this.clock = clock;
     this.components = components;
+    this.context = context;
+    this.allocations = allocations;
   }
 
   /**
@@ -75,10 +87,10 @@ public class TripService {
       @Nullable String sourceReference) {
     String travelerId =
         command.travelerId() == null ? me.employeeIdOrThrow() : command.travelerId();
-    if (!TripAccess.canCreateFor(me, travelerId)) {
-      throw new ApiException.Forbidden(
-          "NOT_AN_ARRANGER", "only MANAGER or TRAVEL_ADMIN may create trips for other travelers");
-    }
+    // Who may arrange for whom is Enterprise Context's answer (self, HRIS manager, guest sponsor,
+    // an explicit grant, TRAVEL_ADMIN), never a claim in the request. Without Enterprise Context
+    // the Slice 1 rule stands. Nothing in the body can widen either.
+    ContextClient.Authorization authorization = authorize(me, travelerId, command.projectId());
     if (command.intent() != null && command.intent().travelers() > SLICE_1_MAX_TRAVELERS) {
       throw new ApiException.Unprocessable(
           "SLICE_SCOPE_SINGLE_TRAVELER", "this release books trips for one traveler at a time");
@@ -95,10 +107,17 @@ public class TripService {
       // Catalog, clock and currency are checked once, here: a stored trip is never re-judged.
       IntentValidation.check(command.intent(), now);
     }
-    // The snapshot is the requester's own claims when they travel themselves. A trip arranged for
-    // someone else is booked in that person's name, so the arranger must say who they are.
+    // The reservation is made in the traveler's name as their profile states it. Only when
+    // Enterprise Context knows no profile does the identity come from elsewhere: the requester's
+    // own claims when they travel themselves, or the arranger's statement of who they book for.
     TravelerSnapshot traveler;
-    if (travelerId.equals(me.employeeId())) {
+    ContextClient.@Nullable Snapshot profile =
+        profile(me, authorization, travelerId, command.projectId());
+    if (profile != null) {
+      traveler =
+          new TravelerSnapshot(
+              travelerId, profile.givenName(), profile.familyName(), profile.email());
+    } else if (travelerId.equals(me.employeeId())) {
       traveler = TravelerSnapshot.of(travelerId, me);
     } else if (command.traveler() != null && command.traveler().complete()) {
       traveler = command.traveler().snapshot(travelerId);
@@ -141,9 +160,107 @@ public class TripService {
                   new ApiException.Conflict(
                       "TRIP_CREATE_RACE", "the request raced a concurrent create; retry"));
     }
+    if (profile != null) {
+      ContextClient.Allocation a = profile.allocation();
+      allocations.insert(
+          me.tenant(),
+          new TripAllocation(
+              trip.tripId(),
+              a.departmentId(),
+              a.costCenterId(),
+              a.legalEntityId(),
+              a.officeId(),
+              a.projectId(),
+              a.projectRestricted(),
+              a.managerEmployeeId(),
+              me.employeeId(),
+              authorization.basis() == null ? "SELF" : authorization.basis(),
+              profile.kind(),
+              profile.profileVersion(),
+              now));
+    }
     trips.appendHistory(trip, null, TripStatus.SUBMITTED, null, me.principal(), now);
     outbox.append(TripEvents.created(trip, null, clock));
     return trip;
+  }
+
+  private ContextClient.Authorization authorize(
+      RequestPrincipal me, String travelerId, @Nullable String projectId) {
+    boolean self = travelerId.equals(me.employeeId());
+    if (!context.enabled()) {
+      if (!TripAccess.canCreateFor(me, travelerId)) {
+        throw new ApiException.Forbidden(
+            "NOT_AN_ARRANGER", "only MANAGER or TRAVEL_ADMIN may create trips for other travelers");
+      }
+      return new ContextClient.Authorization(true, self ? "SELF" : "LEGACY_ROLE", null, false);
+    }
+    ContextClient.Authorization a;
+    try {
+      a = context.authorize(me, travelerId, projectId);
+    } catch (ContextClient.ContextUnavailableException e) {
+      if (self && projectId == null) {
+        // A person may always ask for their own travel; the profile is filled in later.
+        log.warn(
+            "enterprise-context unavailable; {} requests own trip without a profile",
+            me.principal().id(),
+            e);
+        return new ContextClient.Authorization(true, "SELF", null, false);
+      }
+      throw new ApiException(
+          HttpStatus.SERVICE_UNAVAILABLE,
+          "CONTEXT_UNAVAILABLE",
+          "Enterprise Context did not answer; arranging for another traveler needs its authorization");
+    }
+    if (a.allowed()) {
+      return a;
+    }
+    String reason = a.reasonCode() == null ? "NOT_AN_ARRANGER" : a.reasonCode();
+    if (self && "TRAVELER_UNKNOWN".equals(reason) && projectId == null) {
+      // Not yet in the directory (no HRIS sync, no profile): their own travel is still theirs.
+      return new ContextClient.Authorization(true, "SELF", null, false);
+    }
+    throw new ApiException.Forbidden(
+        reason,
+        switch (reason) {
+          case "TRAVELER_INACTIVE" -> "traveler " + travelerId + " is deactivated";
+          case "PROJECT_RESTRICTED" ->
+              "project " + projectId + " is restricted to its members and their managers";
+          case "PROJECT_UNKNOWN" -> "no active project " + projectId;
+          case "TRAVELER_UNKNOWN" -> "no traveler " + travelerId;
+          default -> me.principal().id() + " may not arrange travel for " + travelerId;
+        });
+  }
+
+  private ContextClient.@Nullable Snapshot profile(
+      RequestPrincipal me,
+      ContextClient.Authorization authorization,
+      String travelerId,
+      @Nullable String projectId) {
+    if (!context.enabled() || "LEGACY_ROLE".equals(authorization.basis())) {
+      return null;
+    }
+    try {
+      return context.snapshot(me, travelerId, projectId, "TRIP_CREATE").orElse(null);
+    } catch (ContextClient.ContextUnavailableException e) {
+      if (travelerId.equals(me.employeeId())) {
+        log.warn("enterprise-context unavailable; own trip proceeds on claims", e);
+        return null;
+      }
+      throw new ApiException(
+          HttpStatus.SERVICE_UNAVAILABLE,
+          "CONTEXT_UNAVAILABLE",
+          "Enterprise Context did not answer");
+    }
+  }
+
+  /** The allocation captured at creation, when there is one. */
+  @Transactional(readOnly = true)
+  public Optional<TripAllocation> allocation(TenantId tenant, String tripId) {
+    return allocations.find(tenant, tripId);
+  }
+
+  private boolean visible(RequestPrincipal me, Trip trip) {
+    return TripAccess.canRead(me, trip, allocations.find(trip.tenantId(), trip.tripId()));
   }
 
   /** The trip already created with this key, provided the body is the same request. */
@@ -159,7 +276,7 @@ public class TripService {
   public Trip get(RequestPrincipal me, String tripId) {
     return trips
         .find(me.tenant(), tripId)
-        .filter(trip -> TripAccess.canRead(me, trip))
+        .filter(trip -> visible(me, trip))
         // 404, not 403: the caller learns nothing about trips they cannot see.
         .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
   }
@@ -180,6 +297,12 @@ public class TripService {
     return trips.listForTraveler(me.tenant(), me.employeeIdOrThrow(), limit);
   }
 
+  /** Trips the caller arranged for others (an arranger's desk). */
+  @Transactional(readOnly = true)
+  public List<Trip> listArranged(RequestPrincipal me, int limit) {
+    return trips.listArrangedBy(me.tenant(), me.employeeIdOrThrow(), limit);
+  }
+
   /**
    * The tenant's trips for the roles that may read any of them (an approver's inbox). A traveler
    * asking for the tenant scope is refused: the list would show trips they may not read.
@@ -190,7 +313,11 @@ public class TripService {
       throw new ApiException.Forbidden(
           "NOT_TENANT_WIDE", "MANAGER, TRAVEL_ADMIN or FINANCE role required for scope=tenant");
     }
-    return trips.listForTenant(me.tenant(), status, limit);
+    if (me.hasAnyRole("TRAVEL_ADMIN", "FINANCE")) {
+      return trips.listForTenant(me.tenant(), status, limit);
+    }
+    // A manager's inbox: their reports' trips and the ones they arranged, never the tenant's.
+    return trips.listForManager(me.tenant(), me.employeeIdOrThrow(), status, limit);
   }
 
   @Transactional(readOnly = true)
@@ -256,7 +383,7 @@ public class TripService {
     Trip trip =
         trips
             .find(me.tenant(), tripId)
-            .filter(t -> TripAccess.canRead(me, t))
+            .filter(t -> visible(me, t))
             .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
     if (trip.status() == TripStatus.COMPLETED) {
       return trip;
@@ -602,7 +729,7 @@ public class TripService {
     Trip trip =
         trips
             .find(me.tenant(), tripId)
-            .filter(t -> TripAccess.canRead(me, t))
+            .filter(t -> visible(me, t))
             .orElseThrow(() -> new ApiException.NotFound("trip", tripId));
     if (!me.hasAnyRole("MANAGER", "TRAVEL_ADMIN")) {
       throw new ApiException.Forbidden(
@@ -610,6 +737,10 @@ public class TripService {
     }
     if (trip.travelerId().equals(me.employeeId())) {
       throw new ApiException.Forbidden("SELF_APPROVAL", "a traveler cannot approve their own trip");
+    }
+    if (!TripAccess.canApprove(me, trip, allocations.find(trip.tenantId(), trip.tripId()))) {
+      throw new ApiException.Forbidden(
+          "NOT_THE_APPROVER", "this trip's approval belongs to the traveler's manager");
     }
     Optional<Approval> pending = approvals.pendingForTrip(me.tenant(), tripId);
     if (pending.isPresent() && trip.status() != TripStatus.AWAITING_APPROVAL) {
@@ -653,14 +784,24 @@ public class TripService {
       TripSource source,
       @Nullable String requestText,
       @Nullable TravelIntent intent,
-      @Nullable TravelerIdentity traveler) {
+      @Nullable TravelerIdentity traveler,
+      @Nullable String projectId) {
 
     public CreateTrip(
         @Nullable String travelerId,
         TripSource source,
         @Nullable String requestText,
         @Nullable TravelIntent intent) {
-      this(travelerId, source, requestText, intent, null);
+      this(travelerId, source, requestText, intent, null, null);
+    }
+
+    public CreateTrip(
+        @Nullable String travelerId,
+        TripSource source,
+        @Nullable String requestText,
+        @Nullable TravelIntent intent,
+        @Nullable TravelerIdentity traveler) {
+      this(travelerId, source, requestText, intent, traveler, null);
     }
 
     public CreateTrip {
@@ -678,7 +819,8 @@ public class TripService {
               source.name(),
               requestText == null ? "" : requestText.strip(),
               intent == null ? "" : intent.canonical(),
-              traveler == null ? "" : traveler.canonical());
+              traveler == null ? "" : traveler.canonical(),
+              projectId == null ? "" : projectId);
       return Fingerprints.sha256Hex(canonical);
     }
   }

@@ -26,3 +26,8 @@ travelos:
     connectors:
       sandbox-webhook-secret: test-connector-secret
       sandbox-page-size: 2
+  profiles:
+    # Test-only key: random bytes generated for the test suite, no relation to any environment.
+    field-key: 5yetio0v/+DwTMZCy4o/HKpMeVIHeuU0T8GlKWzjX9U=
+    document-retention-days: 30
+    retention-sweep: 1h

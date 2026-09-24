@@ -108,7 +108,8 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                       blankToNull(request.getTraveler().getGivenName()),
                       blankToNull(request.getTraveler().getFamilyName()),
                       blankToNull(request.getTraveler().getEmail()))
-                  : null);
+                  : null,
+              blankToNull(request.getProjectId()));
     } catch (io.travelos.travelcore.trip.IntentRejectedException e) {
       throw Status.INVALID_ARGUMENT
           .withDescription(e.code() + ": " + e.getMessage())
@@ -288,6 +289,19 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
   private Trip withComponents(
       io.travelos.common.tenant.TenantId tenant, io.travelos.travelcore.trip.Trip trip) {
     Trip.Builder b = toProto(trip).toBuilder();
+    trips
+        .allocation(tenant, trip.tripId())
+        .ifPresent(
+            a ->
+                b.setAllocation(
+                    io.travelos.contracts.trip.v1.TripAllocation.newBuilder()
+                        .setDepartmentId(nullToEmpty(a.departmentId()))
+                        .setCostCenterId(nullToEmpty(a.costCenterId()))
+                        .setLegalEntityId(nullToEmpty(a.legalEntityId()))
+                        .setOfficeId(nullToEmpty(a.officeId()))
+                        .setProjectId(nullToEmpty(a.projectId()))
+                        .setProjectRestricted(a.projectRestricted())
+                        .setManagerEmployeeId(nullToEmpty(a.managerEmployeeId()))));
     for (TripComponent c : trips.components(tenant, trip.tripId())) {
       b.addComponents(toProto(c));
     }
@@ -500,7 +514,8 @@ public class TravelCoreGrpcService extends TravelCoreServiceGrpc.TravelCoreServi
                     .setTravelerId(t.traveler().travelerId())
                     .setGivenName(t.traveler().givenName())
                     .setFamilyName(t.traveler().familyName())
-                    .setEmail(t.traveler().email()));
+                    .setEmail(t.traveler().email())
+                    .setKind(t.travelerId().startsWith("gst_") ? "GUEST" : "EMPLOYEE"));
     if (t.intent() != null) {
       io.travelos.travelcore.trip.TravelIntent i = t.intent();
       TravelIntent.Builder intent =

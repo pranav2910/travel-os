@@ -24,7 +24,9 @@ public record CreateTripRequest(
     @Nullable @Size(max = 4000) String request,
     @Nullable @Valid IntentRequest intent,
     @Nullable TripSource source,
-    @Nullable @Valid TravelerRequest traveler) {
+    @Nullable @Valid TravelerRequest traveler,
+    /** The project the travel is charged to; a restricted project admits its members only. */
+    @Nullable @Size(max = 64) String projectId) {
 
   public record TravelerRequest(
       @Nullable @Size(max = 100) String givenName,

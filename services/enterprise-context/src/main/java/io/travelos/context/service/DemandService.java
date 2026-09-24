@@ -291,7 +291,11 @@ public class DemandService {
                 : h.managerEmployeeId(),
             h.active() && item.status() == SourceItem.Status.ACTIVE,
             item.revision(),
-            now);
+            now,
+            blank(h.departmentId()),
+            blank(h.costCenterId()),
+            blank(h.legalEntityId()),
+            blank(h.officeId()));
     employees.upsert(e);
     if (e.active()) {
       return 0;
@@ -1356,5 +1360,9 @@ public class DemandService {
 
   static String cap(String s) {
     return s.length() <= 2000 ? s : s.substring(s.length() - 2000);
+  }
+
+  private static @Nullable String blank(@Nullable String v) {
+    return v == null || v.isBlank() ? null : v;
   }
 }

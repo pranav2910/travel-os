@@ -143,6 +143,10 @@ enterprise-context:
         remoteRef: { key: travelos/ENV/enterprise-context/db, property: password }
       - secretKey: SANDBOX_CONNECTOR_WEBHOOK_SECRET
         remoteRef: { key: travelos/ENV/enterprise-context/sandbox-connector, property: webhook_secret }
+      # Profile field-encryption key (base64 AES-256), generated into Secrets Manager by the
+      # bootstrap; rotation = new key + re-encrypt (ADR-0014).
+      - secretKey: TRAVELOS_FIELD_KEY
+        remoteRef: { key: travelos/ENV/enterprise-context/profiles, property: field_key }
   networkPolicy:
     httpFrom: *httpFromVpc
     extraEgress: *awsEgress

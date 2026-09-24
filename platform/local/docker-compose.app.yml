@@ -47,6 +47,9 @@ services:
       PORT: 8081
       GRPC_PORT: 9081
       TRAVEL_CORE_DB_URL: jdbc:postgresql://postgres:5432/travel_core
+      # Profiles & arranger authorization (ADR-0014); the channel is opened lazily, so start order
+      # does not matter.
+      ENTERPRISE_CONTEXT_ADDRESS: enterprise-context:9090
     ports:
       - "8081:8081"
       - "9081:9081"
@@ -166,6 +169,9 @@ services:
       ENTERPRISE_CONTEXT_DB_URL: jdbc:postgresql://postgres:5432/enterprise_context
       TRAVEL_CORE_ADDRESS: travel-core:9081
       CONTEXT_SYNC_INTERVAL: 30s
+      # Field-encryption key for profiles (base64 AES-256). LOCAL STACK ONLY: this value protects
+      # nothing but a laptop's sandbox data; every other environment gets its key from a secret.
+      TRAVELOS_FIELD_KEY: ${TRAVELOS_FIELD_KEY:-bG9jYWwtZGV2LW9ubHktZmllbGQta2V5LTMyYnl0ZXM=}
     ports:
       - "8090:8090"
       - "9090:9090"

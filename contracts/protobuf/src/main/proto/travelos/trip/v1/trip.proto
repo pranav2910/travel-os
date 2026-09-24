@@ -159,6 +159,8 @@ message Trip {
   string explanation = 20;
   // Slice 3: component-level status, empty for Slice 1/2 shaped trips.
   repeated ComponentState components = 21;
+  // Organizational allocation captured at request time (absent on trips from before profiles).
+  TripAllocation allocation = 22;
 }
 
 message TravelerSnapshot {
@@ -166,6 +168,20 @@ message TravelerSnapshot {
   string given_name = 2;
   string family_name = 3;
   string email = 4;
+  string kind = 5;                    // EMPLOYEE | GUEST; empty on trips from before profiles
+  string phone = 6;
+  string date_of_birth = 7;           // YYYY-MM-DD when the profile knew it
+}
+
+// Where the trip is charged and who answers for it, as captured when it was requested.
+message TripAllocation {
+  string department_id = 1;
+  string cost_center_id = 2;
+  string legal_entity_id = 3;
+  string office_id = 4;
+  string project_id = 5;
+  bool project_restricted = 6;
+  string manager_employee_id = 7;
 }
 
 // Internal API used by the trip workflow. Travel Core stays the owner of trip state; the workflow
@@ -248,6 +264,8 @@ message CreateTripRequest {
   // Who travels, when traveler_id is not ctx.principal: the reservation is made in this name
   // (TRAVELER_IDENTITY_REQUIRED otherwise). Enterprise Context sends the verified HRIS identity.
   TravelerIdentity traveler = 9;
+  // The client/project the trip is charged to (validated against the traveler's projects).
+  string project_id = 10;
 }
 
 message TravelerIdentity {

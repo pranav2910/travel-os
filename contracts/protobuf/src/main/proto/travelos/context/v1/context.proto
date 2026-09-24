@@ -20,6 +20,99 @@ service EnterpriseContextService {
   rpc FailSync(FailSyncRequest) returns (SyncRun);
   // Trusted directory lookup for other services (identity, work location, manager).
   rpc GetEmployee(GetEmployeeRequest) returns (Employee);
+  // The passenger as the profile states them (names as on documents, contact, documents when the
+  // caller says a supplier needs them) plus the organizational allocation at this moment. Every
+  // read of document numbers is logged with the caller's principal and purpose.
+  rpc GetTravelerSnapshot(GetTravelerSnapshotRequest) returns (TravelerSnapshotResponse);
+  // May this principal arrange travel for that traveler (self, HRIS manager, guest sponsor, an
+  // explicit grant, or the TRAVEL_ADMIN role) — and for that project, when one is named?
+  rpc AuthorizeArranger(AuthorizeArrangerRequest) returns (ArrangerAuthorization);
+}
+
+message GetTravelerSnapshotRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string traveler_id = 2;             // an employee id or a guest id (gst_...)
+  bool include_documents = 3;         // document numbers only when a supplier needs them
+  string purpose = 4;                 // e.g. BOOKING, TRIP_CREATION — kept in the access log
+  string project_id = 5;              // optional: the allocation names it when given
+  // Who is asking on the traveler's behalf. Enterprise Context decides what they may see: the
+  // phone, date of birth and loyalty numbers go to self, sponsor, travel admins and arrangers with
+  // a grant; document numbers additionally need a grant that allows them. Everyone else gets a
+  // redacted snapshot (last four characters), and every disclosure is written to the access log.
+  string arranger_employee_id = 6;
+  repeated string arranger_roles = 7;
+}
+
+message TravelerSnapshotResponse {
+  PassengerSnapshot passenger = 1;
+  OrgAllocation allocation = 2;
+}
+
+message PassengerSnapshot {
+  string traveler_id = 1;
+  string kind = 2;                    // EMPLOYEE | GUEST
+  string given_name = 3;
+  string family_name = 4;
+  string middle_name = 5;
+  string email = 6;
+  string phone = 7;
+  string date_of_birth = 8;           // YYYY-MM-DD, empty when unknown
+  string gender = 9;                  // as the documents state it; empty when unknown
+  string nationality = 10;            // ISO 3166-1 alpha-2
+  string home_airport = 11;
+  bool active = 12;
+  repeated LoyaltyMembership loyalty = 13;
+  repeated TravelDocument documents = 14;
+  string profile_version = 15;
+  string preferences_json = 16;       // seat/meal/airline/hotel preferences, as stored
+  string sponsor_employee_id = 17;    // guests: who is responsible for them
+}
+
+message LoyaltyMembership {
+  string program = 1;                 // e.g. UA, DL, HH (airline / hotel program code)
+  string member_number = 2;           // filled only when include_documents is true
+  string member_number_last4 = 3;
+}
+
+message TravelDocument {
+  string document_id = 1;
+  string type = 2;                    // PASSPORT | NATIONAL_ID | VISA
+  string number = 3;                  // filled only when include_documents is true
+  string number_last4 = 4;
+  string issuing_country = 5;
+  string nationality = 6;
+  string expires_on = 7;              // YYYY-MM-DD
+  string holder_given_name = 8;
+  string holder_family_name = 9;
+}
+
+message OrgAllocation {
+  string department_id = 1;
+  string department_code = 2;
+  string cost_center_id = 3;
+  string cost_center_code = 4;
+  string legal_entity_id = 5;
+  string legal_entity_code = 6;
+  string office_id = 7;
+  string project_id = 8;
+  string project_code = 9;
+  bool project_restricted = 10;
+  string manager_employee_id = 11;
+}
+
+message AuthorizeArrangerRequest {
+  travelos.common.v1.RequestContext ctx = 1;
+  string arranger_employee_id = 2;
+  repeated string arranger_roles = 3;  // realm roles from the arranger's JWT, as the caller saw them
+  string traveler_id = 4;
+  string project_id = 5;               // optional
+}
+
+message ArrangerAuthorization {
+  bool allowed = 1;
+  string basis = 2;                    // SELF | MANAGER | SPONSOR | GRANT | TRAVEL_ADMIN | (empty)
+  string reason_code = 3;              // when refused: NOT_AN_ARRANGER | TRAVELER_INACTIVE | PROJECT_RESTRICTED | TRAVELER_UNKNOWN
+  bool may_read_documents = 4;
 }
 
 message SyncPageRequest {

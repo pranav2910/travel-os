@@ -28,10 +28,13 @@ travel-core:
   env:
     TRAVEL_CORE_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/travel_core
     TRAVEL_CORE_DB_USER: travel_core_app
+    ENTERPRISE_CONTEXT_ADDRESS: enterprise-context:9090
   networkPolicy:
     httpFrom: *httpFrom
     httpFromApps: [web]
     grpcFromApps: [trip-planning]
+    grpcToApps:
+      - { app: enterprise-context, port: 9090 }
 
 policy:
   name: policy
@@ -102,7 +105,7 @@ disruption:
 enterprise-context:
   name: enterprise-context
   ports: { http: 8090, grpc: 9090 }
-  secretRef: enterprise-context-secrets       # DB password + sandbox connector webhook secret
+  secretRef: enterprise-context-secrets       # DB password + sandbox connector webhook secret + TRAVELOS_FIELD_KEY
   env:
     ENTERPRISE_CONTEXT_DB_URL: jdbc:postgresql://postgres.travelos-infra:5432/enterprise_context
     ENTERPRISE_CONTEXT_DB_USER: enterprise_context_app
@@ -111,7 +114,7 @@ enterprise-context:
   networkPolicy:
     httpFrom: *httpFrom
     httpFromApps: [web]
-    grpcFromApps: [trip-planning]
+    grpcFromApps: [trip-planning, travel-core]
     grpcToApps:
       - { app: travel-core, port: 9081 }
 
