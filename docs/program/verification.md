@@ -224,3 +224,24 @@ platform/complete-backend`, `gh workflow run kind-e2e.yml --ref platform/complet
 | `./gradlew --offline :libs:spring-outbox:test :services:order:test` with both fixes | order 36 run, 36 passed; spring-outbox 6 run, 6 passed; the outbox suite repeated three more times, green each time |
 | `ci` at `ca5045f` (run 36057159224) | SUCCESS: gradle check, web app (lint, types, unit tests, build), helm charts, terraform static checks, container images |
 | `kind-e2e` at `ca5045f` (run 36057163058) | SUCCESS: all 29 steps, including images built and deployed to kind, slice 1–5 end-to-end scripts, every chaos script, and the browser E2E against the cluster (Chromium + WebKit, real Keycloak, real bookings) with 20 of 20 specs passing, the refused-cancellation spec included |
+
+## Follow-up — in-flight workflows survive a worker upgrade (ADR-0022, 2026-09-30)
+
+Found when a trip from the 2026-09-23 QA run was approved on the local stack after the completion
+program's images replaced the earlier ones: the approval was recorded, the trip stayed
+`AWAITING_APPROVAL`. The worker log showed `NonDeterministicException … expected 'Governance'` at
+event 17 for five workflows, retried by Temporal every few minutes for hours: the new code scheduled
+commands the old histories never recorded, and the approval signal was never read.
+
+| Command | Result |
+|---|---|
+| `git worktree add … main` (commit `61fcf14`, the last before the program); a temporary test in that worktree drove the old `TripWorkflowImpl` with the old test harness (fake activities) to the approval and through a booking, and wrote `client.fetchHistory(…).toJson()` | four histories, recorded by the released code from its own fixtures: `round-trip-awaiting-approval`, `round-trip-booked`, `itinerary-awaiting-approval`, `itinerary-booked` (the same command sequences as the stranded QA workflows) |
+| `./gradlew --offline :workflows:trip-planning:test --tests '*WorkflowReplayTest*'` **without** the guards | 4 run, 0 passed, 4 failed (`NonDeterministicException` at the first new command) |
+| change: `TripWorkflowImpl.CHANGE_GOVERNED_PURCHASE` (`Workflow.getVersion`) recorded after the PLANNING transition; governance, purchase confirmation, budget reservation and the passenger read run only on the governed path in `TripWorkflowImpl` and `ItineraryFlow`; an execution recorded before the change treats the policy outcome and its approval as the purchase authority, as it did when recorded | |
+| `./gradlew --offline :workflows:trip-planning:test --tests '*WorkflowReplayTest*'` with the guards | 4 run, 4 passed |
+| `./gradlew --offline :workflows:trip-planning:test` | 70 run, 70 passed (new executions unchanged) |
+| `make images`; `docker compose … up -d --no-deps --force-recreate trip-planning` on the running stack | the rebuilt worker replays the five stranded workflows: no non-determinism failures in its log; a round trip approved on 2026-09-23 booked its week-old sandbox fare and ended `FAILED OFFER_EXPIRED`, as the old code would have; an itinerary re-planned (`QUOTE_EXPIRED`) and returned to `AWAITING_APPROVAL` with fresh quotes; the seven-leg trip whose approval had been ignored for a week read that approval (`AWAITING_APPROVAL → APPROVED`, "approved by human/carol"), found its first leg no longer quotable (`APPROVED → PLANNING`, `OFFER_EXPIRED`), re-planned and asked for a decision again (`PLANNING → AWAITING_APPROVAL`, a new approval id), all within one second of the retry firing |
+
+Status distinction: the replay fixtures are recorded from the repository's own earlier code, not
+from any environment, and the live check ran on the local stack with simulated suppliers. The rule
+for future worker changes is in `docs/runbooks/go-live.md` and ADR-0022.

@@ -130,11 +130,23 @@ final class ItineraryFlow {
   private final Host host;
   private final Logger log;
 
-  ItineraryFlow(TripActivities activities, TripActivities booking, Host host, Logger log) {
+  /**
+   * False only for an execution recorded before {@link TripWorkflowImpl#CHANGE_GOVERNED_PURCHASE}.
+   */
+  private final boolean governed;
+
+  ItineraryFlow(
+      TripActivities activities, TripActivities booking, Host host, Logger log, boolean governed) {
     this.activities = activities;
     this.booking = booking;
     this.host = host;
     this.log = log;
+    this.governed = governed;
+  }
+
+  /** Phase 3's confirmation; never for an execution recorded before it (the host's marker). */
+  private boolean confirmRequired(Trip trip, PolicyDecision decision) {
+    return governed && Purchase.confirmRequired(trip, decision);
   }
 
   /** One component of the frozen itinerary, in one shape. */
@@ -163,16 +175,18 @@ final class ItineraryFlow {
   private io.travelos.contracts.policy.v1.@Nullable Governance governance;
 
   TripWorkflow.Outcome run(String tenant, String tripId, Trip trip) {
-    try {
-      governance =
-          activities.governance(
-              io.travelos.contracts.policy.v1.GetGovernanceRequest.newBuilder()
-                  .setCtx(host.ctx(tenant, tripId, ""))
-                  .setTravelerId(trip.getTravelerId())
-                  .setScope(Governed.scopeOf(trip))
-                  .build());
-    } catch (ActivityFailure e) {
-      log.warn("trip {}: governance unavailable; searching public fares", tripId);
+    if (governed) {
+      try {
+        governance =
+            activities.governance(
+                io.travelos.contracts.policy.v1.GetGovernanceRequest.newBuilder()
+                    .setCtx(host.ctx(tenant, tripId, ""))
+                    .setTravelerId(trip.getTravelerId())
+                    .setScope(Governed.scopeOf(trip))
+                    .build());
+      } catch (ActivityFailure e) {
+        log.warn("trip {}: governance unavailable; searching public fares", tripId);
+      }
     }
     for (int attempt = 1; ; attempt++) {
       TripWorkflow.Outcome outcome = plan(tenant, tripId, trip, attempt);
@@ -339,7 +353,7 @@ final class ItineraryFlow {
 
     // ---- Phase 3: purchase authority. Policy granted it for this plan (Travel Core records a
     // POLICY_AUTONOMY authorization) or a person confirms the quoted plan before anything else.
-    final boolean confirm = Purchase.confirmRequired(trip, selectedDecision);
+    final boolean confirm = confirmRequired(trip, selectedDecision);
     Bundle quoted = selected;
     if (confirm) {
       Confirmation c =
@@ -525,7 +539,7 @@ final class ItineraryFlow {
               requotedOffers.containsKey(c.id())
                   ? state(c, "QUOTED", requotedOffers.get(c.id()), null)
                   : state(c, "SKIPPED", null, null));
-      if (Purchase.confirmRequired(trip, bookingDecision)) {
+      if (confirmRequired(trip, bookingDecision)) {
         // The price a person (or policy) authorized is not the price any more: a person confirms
         // the re-quoted plan before it goes back to approval or to booking.
         Confirmation c =
@@ -561,7 +575,7 @@ final class ItineraryFlow {
                         .setApproverRole(role)
                         .addAllApprovalChain(Governed.chain(again, role))
                         .setApprovalExpiresAfterSeconds(again.getApprovalExpiresAfterSeconds())
-                        .setAutonomousPurchase(!Purchase.confirmRequired(trip, again))
+                        .setAutonomousPurchase(!confirmRequired(trip, again))
                         .setConditions(Purchase.conditions(plan))
                         .setReplanReason(
                             requotedOnly(changedComponents, plan, planned)
@@ -620,18 +634,20 @@ final class ItineraryFlow {
     // Phase 7: the scope's budget, reserved under its lock; a hard budget that does not fit stops
     // the purchase here (a soft one was judged by policy and, when required, approved).
     io.travelos.contracts.policy.v1.BudgetReservation reserved = null;
-    try {
-      reserved =
-          activities.reserveBudget(
-              io.travelos.contracts.policy.v1.ReserveBudgetRequest.newBuilder()
-                  .setCtx(host.ctx(tenant, tripId, tripId + ":RESERVE-BUDGET:1"))
-                  .setTripId(tripId)
-                  .setTravelerId(trip.getTravelerId())
-                  .setScope(Governed.scopeOf(trip))
-                  .setAmount(plan.getTotal())
-                  .build());
-    } catch (ActivityFailure e) {
-      log.warn("trip {}: budget could not be reserved; proceeding without", tripId);
+    if (governed) {
+      try {
+        reserved =
+            activities.reserveBudget(
+                io.travelos.contracts.policy.v1.ReserveBudgetRequest.newBuilder()
+                    .setCtx(host.ctx(tenant, tripId, tripId + ":RESERVE-BUDGET:1"))
+                    .setTripId(tripId)
+                    .setTravelerId(trip.getTravelerId())
+                    .setScope(Governed.scopeOf(trip))
+                    .setAmount(plan.getTotal())
+                    .build());
+      } catch (ActivityFailure e) {
+        log.warn("trip {}: budget could not be reserved; proceeding without", tripId);
+      }
     }
     if (reserved != null
         && reserved.getStatus() == io.travelos.contracts.policy.v1.BudgetStatus.EXCEEDED
@@ -651,7 +667,7 @@ final class ItineraryFlow {
                         .setSelectedBundleId(plan.getBundleId())
                         .setPolicyDecisionId(finalDecision.getDecisionId())
                         .setTotal(plan.getTotal())
-                        .setAutonomousPurchase(!Purchase.confirmRequired(trip, finalDecision))
+                        .setAutonomousPurchase(!confirmRequired(trip, finalDecision))
                         .setConditions(Purchase.conditions(plan)));
         break;
       } catch (ActivityFailure e) {

@@ -143,6 +143,21 @@ public class TripWorkflowImpl implements TripWorkflow {
   static final Duration PURCHASE_POLL = Duration.ofHours(1);
 
   private TripPlanning.Stage stage = TripPlanning.Stage.LOADING;
+
+  /**
+   * Phases 3 to 7 changed what this workflow schedules between the PLANNING transition and the
+   * order: a governance read before the search, a purchase confirmation when policy did not grant
+   * autonomy, a budget reservation and a passenger read before booking. Temporal replays a running
+   * execution's history against the current code, so an execution recorded before that change must
+   * keep the sequence it recorded (an approval can wait for days). This marker, recorded once per
+   * execution where the first new command would appear, decides which path an execution takes;
+   * {@code WorkflowReplayTest} replays a history recorded by the earlier code to prove it.
+   */
+  static final String CHANGE_GOVERNED_PURCHASE = "governed-purchase";
+
+  /** False only while running an execution recorded before {@link #CHANGE_GOVERNED_PURCHASE}. */
+  private boolean governed = true;
+
   private @Nullable ApprovalDecision decision;
   private TripPlanning.@Nullable PurchaseAuthorized purchase;
   private TripPlanning.@Nullable SelectionChanged selection;
@@ -245,9 +260,15 @@ public class TripWorkflowImpl implements TripWorkflow {
 
       transition(tenant, tripId, TripStatus.PLANNING, b -> b.setReason("planning started"));
 
+      // An execution recorded before Phases 3 to 7 replays what it recorded: no governance read,
+      // no purchase confirmation, no budget reservation, no passenger read. For it the policy
+      // outcome, and the approval it may have required, is the purchase authority, as it was then.
+      governed = Workflow.getVersion(CHANGE_GOVERNED_PURCHASE, Workflow.DEFAULT_VERSION, 1) >= 1;
+
       // ---- Slice 3: an itinerary of legs, stays and transfers takes its own path
       if (intent.hasItinerary() && intent.getItinerary().getLegsCount() > 0) {
-        return new ItineraryFlow(activities, booking, new Bridge(), log).run(tenant, tripId, trip);
+        return new ItineraryFlow(activities, booking, new Bridge(), log, governed)
+            .run(tenant, tripId, trip);
       }
 
       // ---- search
@@ -368,7 +389,7 @@ public class TripWorkflowImpl implements TripWorkflow {
       // ---- Phase 3: purchase authority. Either policy granted it for this plan (recorded as a
       // POLICY_AUTONOMY authorization by Travel Core) or a person confirms the quoted plan first.
       Plan plan = new Plan(selected, selectedDecision, explanation);
-      boolean confirm = Purchase.confirmRequired(trip, selectedDecision);
+      boolean confirm = governed && Purchase.confirmRequired(trip, selectedDecision);
       if (confirm) {
         String verdict =
             quoteUntilAuthorized(
@@ -398,7 +419,8 @@ public class TripWorkflowImpl implements TripWorkflow {
       final PolicyDecision chosenDecision = plan.decision;
       final Money chosenTotal = plan.total;
       final String chosenExplanation = plan.explanation;
-      final boolean autonomous = !confirm && chosenDecision.getAutonomousPurchase();
+      final boolean autonomous =
+          governed ? !confirm && chosenDecision.getAutonomousPurchase() : true;
       final Timestamp quoteExpiry = Purchase.quoteExpiry(chosen, Workflow.currentTimeMillis());
 
       // ---- approval
@@ -705,16 +727,18 @@ public class TripWorkflowImpl implements TripWorkflow {
    * email) is what the supplier gets; a supplier that needs more refuses with a clear code.
    */
   private Passenger passenger(String tenant, String tripId, Trip trip) {
-    try {
-      Passenger full = activities.passenger(tenant, tripId, trip.getTravelerId());
-      if (full != null && !full.getGivenName().isBlank() && !full.getFamilyName().isBlank()) {
-        return full;
+    if (governed) {
+      try {
+        Passenger full = activities.passenger(tenant, tripId, trip.getTravelerId());
+        if (full != null && !full.getGivenName().isBlank() && !full.getFamilyName().isBlank()) {
+          return full;
+        }
+      } catch (ActivityFailure e) {
+        log.warn(
+            "trip {}: passenger details unavailable ({}); booking on the trip's snapshot",
+            tripId,
+            failureCode(e));
       }
-    } catch (ActivityFailure e) {
-      log.warn(
-          "trip {}: passenger details unavailable ({}); booking on the trip's snapshot",
-          tripId,
-          failureCode(e));
     }
     return Passenger.newBuilder()
         .setGivenName(trip.getTraveler().getGivenName())
@@ -1090,6 +1114,9 @@ public class TripWorkflowImpl implements TripWorkflow {
   /** Phase 7: the governance of the trip's scope; null when policy cannot say (no agreements). */
   private io.travelos.contracts.policy.v1.@Nullable Governance governance(
       String tenant, String tripId, Trip trip) {
+    if (!governed) {
+      return null;
+    }
     try {
       return activities.governance(
           io.travelos.contracts.policy.v1.GetGovernanceRequest.newBuilder()
@@ -1106,6 +1133,9 @@ public class TripWorkflowImpl implements TripWorkflow {
 
   private io.travelos.contracts.policy.v1.@Nullable BudgetReservation reserveBudget(
       String tenant, String tripId, Trip trip, io.travelos.contracts.common.v1.Money total) {
+    if (!governed) {
+      return null;
+    }
     try {
       return activities.reserveBudget(
           io.travelos.contracts.policy.v1.ReserveBudgetRequest.newBuilder()

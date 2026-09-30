@@ -62,7 +62,15 @@ done; none of them is optional.
   its consumer group offset and let it re-read the topic.
 - **A stuck workflow**: Temporal UI shows the stage (`query stage`); a workflow waiting on a person
   (approval, purchase confirmation) has a case or a notification; a workflow that lost an answer
-  retries with the same idempotency key, never books twice.
+  retries with the same idempotency key, never books twice. A workflow whose pending task fails with
+  `NON_DETERMINISTIC_ERROR` was recorded by an earlier worker that the current one no longer
+  replays: roll the worker back, add the missing `Workflow.getVersion` guard and a replay fixture
+  (ADR-0022), then roll forward; nothing is lost meanwhile, the execution waits.
+- **Upgrading the worker** (`workflows/trip-planning`): executions in flight, above all those
+  waiting for an approval or a purchase confirmation, replay their recorded history on the new code.
+  Before the rollout, record histories from the released worker's test harness the way
+  `WorkflowReplayTest` describes and make the build replay them; after the rollout, watch the
+  worker's log and the Temporal UI for pending workflow tasks that keep failing.
 - **A supplier outage**: bookings fail with the supplier's code and no charge (the payment was only
   authorized and is voided); recoveries fall to a person (`RECOVERY_FAILED` cases).
 - **Rotating a credential**: replace the secret, roll the deployment; adapters read it at startup.
