@@ -245,3 +245,4 @@ commands the old histories never recorded, and the approval signal was never rea
 Status distinction: the replay fixtures are recorded from the repository's own earlier code, not
 from any environment, and the live check ran on the local stack with simulated suppliers. The rule
 for future worker changes is in `docs/runbooks/go-live.md` and ADR-0022.
+| `ci` (run 36665940344) and `kind-e2e` (run 36665942551) at `23c621f` | both SUCCESS: the whole-repo Gradle check with `WorkflowReplayTest`, and every kind step including the browser E2E and the slice 1–5 scripts on the guarded worker |
